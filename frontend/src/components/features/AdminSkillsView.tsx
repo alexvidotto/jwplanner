@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ArrowLeft, Check, ChevronUp, ChevronDown, Briefcase, Users, User, Minus, Book, XCircle } from 'lucide-react';
+import { ArrowLeft, Check, ChevronUp, ChevronDown, Briefcase, Users, User, Minus, Book } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { useUpdateParticipant, useBulkUpdateParticipants } from '../../hooks/useParticipants';
 
 // Added internal types for self-containment if not imported, but best to import.
 interface AdminSkillsViewProps {
@@ -13,9 +14,15 @@ interface AdminSkillsViewProps {
 export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }: AdminSkillsViewProps) => {
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [changedUserIds, setChangedUserIds] = useState<Set<string>>(new Set());
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+  // Remove unused hook
+  // const updateParticipant = useUpdateParticipant(); 
+  const bulkUpdateParticipants = useBulkUpdateParticipants();
 
   // Alternar habilidade para UM usuário
-  const toggleAbility = (participantId: string, abilityKey: string) => {
+  const toggleAbility = async (participantId: string, abilityKey: string) => {
     const participant = participants.find(p => p.id === participantId);
     if (!participant) return;
 
@@ -29,10 +36,13 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
     }
 
     setParticipants(participants.map(p => p.id === participantId ? { ...p, abilities: newAbilities } : p));
+
+    // Mark as changed
+    setChangedUserIds(prev => new Set(prev).add(participantId));
   };
 
   // Alternar habilidade para TODOS os selecionados
-  const toggleBulkAbility = (abilityKey: string) => {
+  const toggleBulkAbility = async (abilityKey: string) => {
     const selectedArray = Array.from(selectedIds);
     if (selectedArray.length === 0) return;
 
@@ -42,6 +52,7 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
       return p?.abilities?.includes(abilityKey);
     });
 
+    const updates: { id: string; abilities: string[] }[] = [];
     const newParticipants = participants.map(p => {
       if (!selectedIds.has(p.id)) return p;
 
@@ -55,10 +66,48 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
           newAbilities = [...newAbilities, abilityKey];
         }
       }
+
+      // Collect update promise
+      updates.push({ id: p.id, abilities: newAbilities });
+
       return { ...p, abilities: newAbilities };
     });
 
     setParticipants(newParticipants);
+
+    // Mark all selected as changed
+    setChangedUserIds(prev => {
+      const next = new Set(prev);
+      selectedIds.forEach(id => next.add(id));
+      return next;
+    });
+  };
+
+  const handleSave = async () => {
+    // Collect all changed users
+    // If we are in bulk mode (selectedIds > 0), we save only selected? 
+    // Wait, the user might have made individual changes BEFORE selecting users.
+    // It's safer to save ALL changed users.
+
+    // BUT, the "Bulk Save" button is inside the "Edit Selected" panel.
+    // If I use that button, I should probably save everything anyway to avoid confusion.
+    // Let's make "handleSave" universal.
+
+    const idsToSave = Array.from(changedUserIds);
+    if (idsToSave.length === 0) return;
+
+    const changes = participants
+      .filter(p => changedUserIds.has(p.id))
+      .map(p => ({ id: p.id, abilities: p.abilities || [] }));
+
+    try {
+      await bulkUpdateParticipants.mutateAsync(changes);
+      setChangedUserIds(new Set());
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+    } catch (error) {
+      console.error('Failed to save skills:', error);
+    }
   };
 
   // Selecionar/Deselecionar usuário individual
@@ -68,6 +117,8 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
       newSelected.delete(id);
     } else {
       newSelected.add(id);
+      // Collapse any expanded user when selecting to avoid visual confusion
+      setExpandedUserId(null);
     }
     setSelectedIds(newSelected);
   };
@@ -82,6 +133,7 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
       ids.forEach(id => newSelected.delete(id));
     } else {
       ids.forEach(id => newSelected.add(id));
+      setExpandedUserId(null);
     }
     setSelectedIds(newSelected);
   };
@@ -108,11 +160,23 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
             <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
             <h1 className="font-bold text-gray-800 text-lg">Matriz de Habilidades</h1>
           </div>
-          {selectedIds.size > 0 && (
-            <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setSelectedIds(new Set())}>
-              Limpar Seleção
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {(changedUserIds.size > 0 || selectedIds.size > 0) && (
+              <Button
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white animate-in zoom-in-50 duration-200"
+                onClick={handleSave}
+                disabled={bulkUpdateParticipants.isPending || changedUserIds.size === 0}
+              >
+                {bulkUpdateParticipants.isPending ? 'Salvando...' : `Salvar (${changedUserIds.size})`}
+              </Button>
+            )}
+            {selectedIds.size > 0 && (
+              <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setSelectedIds(new Set())}>
+                Limpar Seleção
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -163,8 +227,11 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
                         </div>
 
                         <div
-                          onClick={() => setExpandedUserId(isExpanded ? null : p.id)}
-                          className="flex-1 flex items-center justify-between cursor-pointer"
+                          onClick={() => {
+                            if (selectedIds.size > 0) return; // Prevent expansion in bulk mode
+                            setExpandedUserId(isExpanded ? null : p.id);
+                          }}
+                          className={`flex-1 flex items-center justify-between cursor-pointer ${selectedIds.size > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <div className="flex items-center gap-4">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${isExpanded ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
@@ -176,7 +243,7 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
                             </div>
                           </div>
                           <div className="text-gray-400">
-                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            {selectedIds.size === 0 && (isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />)}
                           </div>
                         </div>
                       </div>
@@ -246,20 +313,18 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
       </div>
 
       {/* PAINEL DE EDIÇÃO EM MASSA (FIXO NA PARTE INFERIOR) */}
-      {selectedIds.size > 0 && (
+      {selectedIds.size > 0 ? (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom-10 duration-300 max-h-[400px] overflow-y-auto">
           <div className="max-w-4xl mx-auto">
-            <div className="p-4 bg-gray-900 text-white flex items-center justify-between sticky top-0 z-10">
+            <div className="p-4 bg-gray-900 text-white flex items-center justify-between sticky top-0 z-10 shadow-md">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">{selectedIds.size}</div>
                 <div>
                   <p className="font-bold text-sm">Editando Selecionados</p>
-                  <p className="text-xs text-gray-400">Alterações aplicadas a todos</p>
+                  <p className="text-xs text-gray-400">Alterações pendentes ({changedUserIds.size})</p>
                 </div>
               </div>
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/20" onClick={() => setSelectedIds(new Set())}>
-                <XCircle size={20} />
-              </Button>
+
             </div>
 
             <div className="p-6 grid md:grid-cols-3 gap-6 pb-10">
@@ -276,7 +341,6 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
                     <div className="space-y-2">
                       {sectionParts.map(part => {
                         const selectedArr = Array.from(selectedIds);
-                        // Verifica quantos selecionados têm a habilidade
                         const countMain = selectedArr.filter(id => participants.find(p => p.id === id)?.abilities?.includes(part.id)).length;
                         const allMain = countMain === selectedIds.size;
                         const someMain = countMain > 0 && !allMain;
@@ -315,6 +379,14 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
               })}
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 z-50">
+          <Check size={20} />
+          <span className="font-bold">Salvo com sucesso!</span>
         </div>
       )}
     </div>

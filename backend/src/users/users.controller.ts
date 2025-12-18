@@ -21,8 +21,28 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Post('bulk-skills')
+  async bulkUpdateSkills(@Body() body: { updates: { id: string; abilities: string[] }[] }) {
+    await this.usersService.updateSkillsBulk(body.updates);
+    return { success: true };
+  }
+
   @Put(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.ParticipanteUpdateInput) {
+  async update(@Param('id') id: string, @Body() body: any) {
+    const { abilities, ...data } = body;
+
+    if (abilities && Array.isArray(abilities)) {
+      // Replace all existing skills with the new list
+      data.habilidades = {
+        deleteMany: {},
+        create: abilities.map((ability: string) => {
+          const isLeitor = ability.endsWith('_reader');
+          const parteTemplateId = isLeitor ? ability.replace('_reader', '') : ability;
+          return { parteTemplateId, isLeitor };
+        }),
+      };
+    }
+
     return this.usersService.update(id, data);
   }
 }

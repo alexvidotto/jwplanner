@@ -59,6 +59,7 @@ model Habilidade {
   id              String        @id @default(uuid())
   participanteId  String
   parteTemplateId String
+  isLeitor        Boolean       @default(false)
   
   participante    Participante  @relation(fields: [participanteId], references: [id])
   parteTemplate   ParteTemplate @relation(fields: [parteTemplateId], references: [id])

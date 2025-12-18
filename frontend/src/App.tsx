@@ -12,6 +12,7 @@ import { useParticipants } from './hooks/useParticipants';
 import { useParts } from './hooks/useParts';
 import { useWeeks } from './hooks/useWeeks';
 import { transformWeeksToFrontend, transformParticipantsToFrontend, transformPartsToFrontend } from './lib/transformers';
+import { LoadingSpinner } from './components/ui/LoadingSpinner';
 
 const queryClient = new QueryClient();
 
@@ -104,6 +105,7 @@ const AppContent = () => {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LoadingSpinner />
       <Router>
         <AppContent />
       </Router>

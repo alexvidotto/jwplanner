@@ -20,12 +20,14 @@ export class PrismaUsersRepository implements UsersRepository {
   async findAll(): Promise<Participante[]> {
     return this.prisma.participante.findMany({
       orderBy: { nome: 'asc' },
+      include: { habilidades: true },
     });
   }
 
   async findById(id: string): Promise<Participante | null> {
     return this.prisma.participante.findUnique({
       where: { id },
+      include: { habilidades: true },
     });
   }
 
@@ -39,6 +41,30 @@ export class PrismaUsersRepository implements UsersRepository {
     return this.prisma.participante.update({
       where: { id },
       data,
+      include: { habilidades: true },
     });
+  }
+
+  async updateSkillsBulk(updates: { id: string; abilities: string[] }[]): Promise<void> {
+    await this.prisma.$transaction(
+      updates.map(({ id, abilities }) =>
+        this.prisma.participante.update({
+          where: { id },
+          data: {
+            habilidades: {
+              deleteMany: {},
+              create: abilities.map((ability) => {
+                const isLeitor = ability.endsWith('_reader');
+                const parteTemplateId = isLeitor ? ability.replace('_reader', '') : ability;
+                return {
+                  parteTemplateId,
+                  isLeitor
+                };
+              }),
+            },
+          },
+        })
+      )
+    );
   }
 }

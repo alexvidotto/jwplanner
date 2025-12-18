@@ -6,4 +6,5 @@ export abstract class UsersRepository {
   abstract findById(id: string): Promise<Participante | null>;
   abstract findByEmail(email: string): Promise<Participante | null>;
   abstract update(id: string, data: Prisma.ParticipanteUpdateInput): Promise<Participante>;
+  abstract updateSkillsBulk(updates: { id: string; abilities: string[] }[]): Promise<void>;
 }

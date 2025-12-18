@@ -46,4 +46,14 @@ export class InMemoryUsersRepository implements UsersRepository {
     this.users[index] = updatedUser;
     return updatedUser;
   }
+
+  async updateSkillsBulk(updates: { id: string; abilities: string[] }[]): Promise<void> {
+    updates.forEach(({ id, abilities }) => {
+      const user = this.users.find((u) => u.id === id);
+      // In-memory implementation doesn't support skills yet, just a placeholder to fix build
+      if (user) {
+        // user.abilities = abilities; // If we extended the type
+      }
+    });
+  }
 }

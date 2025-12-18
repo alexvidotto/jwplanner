@@ -64,3 +64,20 @@ export const useDeleteParticipant = () => {
     },
   });
 };
+
+export const useBulkUpdateParticipants = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (updates: { id: string; abilities: string[] }[]) => {
+      if (USE_MOCK) {
+        console.log('Mock bulk update participants:', updates);
+        return;
+      }
+      const { data } = await api.post('/users/bulk-skills', { updates });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['participants'] });
+    },
+  });
+};

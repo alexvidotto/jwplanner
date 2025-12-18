@@ -61,7 +61,9 @@ export const transformParticipantsToFrontend = (users: any[]) => {
 
     // Backend: habilidades has { parteTemplateId: ... }
     // Frontend expects array of strings (templateIds)
-    const abilities = u.habilidades?.map((h: any) => h.parteTemplateId) || [];
+    const abilities = u.habilidades?.map((h: any) =>
+      h.isLeitor ? `${h.parteTemplateId}_reader` : h.parteTemplateId
+    ) || [];
 
     return {
       id: u.id,

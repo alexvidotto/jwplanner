@@ -21,4 +21,8 @@ export class UsersService {
   async update(id: string, data: Prisma.ParticipanteUpdateInput): Promise<Participante> {
     return this.usersRepository.update(id, data);
   }
+
+  async updateSkillsBulk(updates: { id: string; abilities: string[] }[]): Promise<void> {
+    return this.usersRepository.updateSkillsBulk(updates);
+  }
 }

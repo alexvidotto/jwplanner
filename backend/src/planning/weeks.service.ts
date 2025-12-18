@@ -122,4 +122,103 @@ export class WeeksService {
       return lastA - lastB;
     });
   }
+
+
+  async findByDate(date: string) {
+    // Ensure date is ISO-8601 or YYYY-MM-DD
+    const start = new Date(date);
+    return this.prisma.semana.findFirst({
+      where: { dataInicio: start },
+      include: {
+        designacoes: {
+          include: {
+            parteTemplate: true,
+            titular: true,
+            ajudante: true
+          },
+          orderBy: { parteTemplate: { secao: 'asc' } }
+        }
+      }
+    });
+  }
+
+  async createWeek(date: string) {
+    const start = new Date(date);
+    const templates = await this.prisma.parteTemplate.findMany();
+    const descricao = this.formatWeekDescription(start);
+
+    return this.prisma.semana.create({
+      data: {
+        dataInicio: start,
+        descricao,
+        tipo: 'NORMAL',
+        designacoes: {
+          create: templates.map(tpl => ({
+            parteTemplateId: tpl.id,
+            tempo: tpl.tempoPadrao || 5,
+            status: 'PENDENTE',
+          }))
+        }
+      },
+      include: {
+        designacoes: {
+          include: {
+            parteTemplate: true,
+            titular: true,
+            ajudante: true
+          }
+        }
+      }
+    });
+
+  }
+
+  async update(id: string, data: any) {
+    const transaction = [];
+
+    // Update Week fields (e.g. Presidente)
+    if (data.presidentId !== undefined) {
+      transaction.push(
+        this.prisma.semana.update({
+          where: { id },
+          data: { presidenteId: data.presidentId }
+        })
+      );
+    }
+
+    // Update Designations
+    // We expect data.designacoes to be an array of updates
+    if (data.designacoes && Array.isArray(data.designacoes)) {
+      data.designacoes.forEach((d: any) => {
+        transaction.push(
+          this.prisma.designacao.update({
+            where: { id: d.id },
+            data: {
+              titularId: d.assignedTo || null,
+              ajudanteId: d.assistantId || null,
+              status: d.status,
+            }
+          })
+        );
+      });
+    }
+
+    if (transaction.length > 0) {
+      await this.prisma.$transaction(transaction);
+    }
+
+    return this.prisma.semana.findUnique({
+      where: { id },
+      include: {
+        designacoes: {
+          include: {
+            parteTemplate: true,
+            titular: true,
+            ajudante: true
+          },
+          orderBy: { parteTemplate: { secao: 'asc' } }
+        }
+      }
+    });
+  }
 }

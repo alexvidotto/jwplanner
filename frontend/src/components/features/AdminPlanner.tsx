@@ -14,11 +14,12 @@ interface AdminPlannerProps {
   setWeekData: (data: any) => void;
   onBack: () => void;
   onNavigateWeek: (direction: number) => void;
-  participants: any[];
   partTemplates: any[];
+  onSave?: (weekData: any) => Promise<void>;
+  participants: any[];
 }
 
-export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, participants, partTemplates }: AdminPlannerProps) => {
+export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, participants, partTemplates, onSave }: AdminPlannerProps) => {
   const [selectedPart, setSelectedPart] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeAddMenu, setActiveAddMenu] = useState<string | null>(null);
@@ -99,13 +100,15 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
     setDraggedPart(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    // In real app, this would be an API call
-    setTimeout(() => {
-      setIsSaving(false);
-      showToast("Alterações salvas com sucesso!");
-    }, 800);
+    if (onSave) {
+      await onSave(weekData);
+    } else {
+      setTimeout(() => { }, 800); // Fallback
+    }
+    setIsSaving(false);
+    showToast("Alterações salvas com sucesso!");
   };
 
   const handleToggleWeekCanceled = () => {
@@ -365,6 +368,69 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
           </div>
         ) : (
           <>
+              {/* PRESIDENT CARD */}
+              <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h2 className="text-lg font-bold text-gray-800">Presidente da Reunião</h2>
+
+                <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
+                  {/* President Assignee */}
+                  <div className="w-full sm:w-[280px]">
+                    {weekData.presidentId ? (
+                      <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm">
+                            {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
+                          </div>
+                          <span className="text-gray-700 font-medium truncate">
+                            {participants.find(p => p.id === weekData.presidentId)?.name}
+                          </span>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <StatusEditMenu
+                            variant="circle"
+                            status={weekData.presidentStatus}
+                            onChange={(s) => setWeekData({ ...weekData, presidentStatus: s })}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
+                        + Designar Presidente
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Opening Prayer */}
+                  <div className="w-full sm:w-[280px] bg-gray-50 rounded px-3 py-2 flex items-center justify-between border border-transparent hover:border-gray-200 transition-colors">
+                    {weekData.openingPrayerId ? (
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="text-gray-400 text-sm font-medium whitespace-nowrap">Oração Inicial:</span>
+                        <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-gray-700 font-medium text-sm hover:text-blue-600 truncate flex-1 text-right">
+                          {participants.find(p => p.id === weekData.openingPrayerId)?.name}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 w-full justify-between">
+                        <span className="text-gray-400 text-sm font-medium">Oração Inicial:</span>
+                        <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-blue-600 text-sm hover:underline">
+                          Definir
+                        </button>
+                      </div>
+                    )}
+
+                    {weekData.openingPrayerId && (
+                      <div onClick={(e) => e.stopPropagation()} className="ml-2">
+                        <StatusEditMenu
+                          variant="circle"
+                          status={weekData.openingPrayerStatus}
+                          onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
             {/* SEÇÕES DINÂMICAS */}
             {weekData.sections.map((section: any) => {
               // Render 'geral' section differently or just as a normal section?

@@ -1,5 +1,23 @@
-import { format } from 'date-fns';
+
+import { format, addDays, startOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const formatDateRange = (date: Date) => {
+  // Ensure we are working with the Monday of the week
+  const startDate = startOfWeek(date, { weekStartsOn: 1 });
+  const endDate = addDays(startDate, 6);
+
+  const startMonth = format(startDate, 'M');
+  const endMonth = format(endDate, 'M');
+
+  if (startMonth === endMonth) {
+    return `${format(startDate, 'd')}–${format(endDate, 'd')} de ${capitalize(format(endDate, 'MMMM', { locale: ptBR }))} `;
+  } else {
+    return `${format(startDate, 'd')} de ${capitalize(format(startDate, 'MMM', { locale: ptBR }))} – ${format(endDate, 'd')} de ${capitalize(format(endDate, 'MMM', { locale: ptBR }))}`;
+  }
+};
 
 export const transformWeeksToFrontend = (weeksData: any[]) => {
   if (!weeksData) return [];
@@ -54,9 +72,12 @@ export const transformWeekToFrontend = (week: any) => {
     }
   });
 
+  const startDate = new Date(week.dataInicio);
+
   return {
     id: week.id,
-    dateLabel: format(new Date(week.dataInicio), "d 'de' MMMM", { locale: ptBR }),
+    dateLabel: formatDateRange(startDate),
+    date: startDate,
     presidentId: week.presidenteId,
     presidentStatus: 'PENDENTE',
     openingPrayerId,
@@ -111,7 +132,8 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
   return {
     id: null, // Virtual
     dataInicio: date.toISOString(), // Keep raw date for saving
-    dateLabel: format(date, "d 'de' MMMM", { locale: ptBR }),
+    dateLabel: formatDateRange(date),
+    date: date,
     presidentId: null,
     presidentStatus: 'PENDENTE',
     openingPrayerId,

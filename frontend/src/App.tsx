@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Dashboard } from './components/features/Dashboard';
 import { AdminParticipantsView } from './components/features/AdminParticipantsView';
@@ -16,22 +16,35 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 
 const queryClient = new QueryClient();
 
+const getNextMonday = (date: Date) => {
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day == 0 ? -6 : 1);
+  const newDate = new Date(date.setDate(diff));
+  newDate.setHours(0, 0, 0, 0);
+  return newDate;
+};
+
 const AppContent = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // API Hooks
   const { data: participantsData, isLoading: isLoadingParticipants } = useParticipants();
   const { data: partsData, isLoading: isLoadingParts } = useParts();
 
-  // Date State (Monday of current week)
-  const [currentDate, setCurrentDate] = useState(() => {
-    const d = new Date();
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day == 0 ? -6 : 1);
-    const date = new Date(d.setDate(diff));
-    date.setHours(0, 0, 0, 0); // Normalize
-    return date;
-  });
+  // Date State (Derived from URL or Default)
+  const currentDate = useMemo(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      // Parse YYYY-MM-DD as local date to avoid UTC shifts
+      const [y, m, d] = dateParam.split('-').map(Number);
+      if (y && m && d) {
+        const date = new Date(y, m - 1, d);
+        return getNextMonday(date);
+      }
+    }
+    return getNextMonday(new Date());
+  }, [searchParams]);
 
   const { data: weekData, isLoading: isLoadingWeek, refetch: refetchWeek } = useWeekByDate(currentDate);
   const { mutateAsync: createWeek } = useCreateWeek();
@@ -40,25 +53,6 @@ const AppContent = () => {
   // Local state
   const [participants, setParticipants] = useState<any[]>([]);
   const [parts, setParts] = useState<any[]>([]);
-  // We manage local modifications via AdminPlanner's internal state usually, 
-  // but if we want to bubble up, we can.
-  // AdminPlanner accepts setWeekData to update its local prop, which is fine.
-  // BUT AdminPlanner is remounted if key changes?
-  // Or currentWeek object reference changes.
-
-  // Computed Current Week (Virtual or Real)
-  // We use a state to hold the 'displayed' week to allow local edits to persist across renders 
-  // until saved? No, AdminPlanner handles local edits.
-  // We just need to pass the INITIAL data correctly.
-
-  // Solution: We don't hoist 'currentWeek' state up to App unless we want to.
-  // But AdminPlanner expects 'weekData' and 'setWeekData'.
-  // We can just pass the computed week and a dummy setWeekData if we don't need top-level control,
-  // OR we hoist state. Hoisting is unsafe if we switch weeks rapidly.
-  // Let's rely on AdminPlanner's internal state handling derived from props?
-  // AdminPlanner: "const [weekData, setWeekData] = ... props?" No, it uses props directly.
-  // It uses `weekData` from props. It does NOT have local state for weekData.
-  // So we MUST hoist the state here.
 
   const [activeWeek, setActiveWeek] = useState<any>(null);
 
@@ -79,7 +73,11 @@ const AppContent = () => {
     if (isLoadingWeek || isLoadingParts) return; // Wait loading
 
     if (weekData) {
-      setActiveWeek(transformWeekToFrontend(weekData));
+      const transformed = transformWeekToFrontend(weekData);
+
+      // Safety check: if backend date differs significantly, we might have mismatch? 
+      // But typically it matches.
+      setActiveWeek(transformed);
     } else if (parts.length > 0) {
       // Generate Virtual
       setActiveWeek(generateVirtualWeek(currentDate, parts));
@@ -89,8 +87,14 @@ const AppContent = () => {
   const handleNavigateWeek = (direction: number) => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + (direction * 7));
-    setCurrentDate(newDate);
-    setActiveWeek(null); // Clear active week while loading new one
+
+    // Update URL
+    // We format as YYYY-MM-DD
+    const dateStr = newDate.toISOString().split('T')[0];
+    setSearchParams({ date: dateStr });
+
+    // Trigger loading state visually immediately?
+    setActiveWeek(null);
   };
 
   const handleUpdateWeek = (updatedWeek: any) => {

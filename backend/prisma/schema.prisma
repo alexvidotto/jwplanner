@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Privilegio {
+  ANCIAO
+  SERVO
+  PUB_HOMEM
+  PUB_MULHER
+}
+
+enum StatusDesignacao {
+  PENDENTE
+  CONFIRMADO
+  RECUSADO
+  SUBSTITUIDO
+}
+
+enum TipoSemana {
+  NORMAL
+  VISITA_VIAJANTE
+  ASSEMBLEIA
+}
+
+model Participante {
+  id           String            @id @default(uuid())
+  nome         String
+  email        String?           @unique
+  telefone     String?
+  privilegio   Privilegio
+  podeDesignar Boolean           @default(true)
+  uidAuth      String?           @unique
+  
+  habilidades       Habilidade[]
+  designacoes       Designacao[]      @relation("Titular")
+  ajudas            Designacao[]      @relation("Ajudante")
+  indisponibilidades Indisponibilidade[]
+}
+
+model ParteTemplate {
+  id              String       @id @default(uuid())
+  titulo          String
+  secao           String
+  requerAjudante  Boolean      @default(false)
+  requerLeitor    Boolean      @default(false)
+  generoExclusivo Privilegio?
+  tempoPadrao     Int?         // Minutes
+
+  habilidades     Habilidade[]
+  designacoes     Designacao[]
+}
+
+model Habilidade {
+  id              String        @id @default(uuid())
+  participanteId  String
+  parteTemplateId String
+  
+  participante    Participante  @relation(fields: [participanteId], references: [id])
+  parteTemplate   ParteTemplate @relation(fields: [parteTemplateId], references: [id])
+}
+
+model Semana {
+  id           String      @id @default(uuid())
+  dataInicio   DateTime
+  descricao    String
+  tipo         TipoSemana  @default(NORMAL)
+  presidenteId String?
+  
+  designacoes  Designacao[]
+}
+
+model Designacao {
+  id              String           @id @default(uuid())
+  semanaId        String
+  parteTemplateId String
+  titularId       String?
+  ajudanteId      String?
+  tituloDoTema    String?
+  tempo           Int?
+  status          StatusDesignacao @default(PENDENTE)
+  tokenConfirmacao String?         @unique
+  
+  semana          Semana           @relation(fields: [semanaId], references: [id])
+  parteTemplate   ParteTemplate    @relation(fields: [parteTemplateId], references: [id])
+  titular         Participante?    @relation("Titular", fields: [titularId], references: [id])
+  ajudante        Participante?    @relation("Ajudante", fields: [ajudanteId], references: [id])
+}
+
+model Indisponibilidade {
+  id             String       @id @default(uuid())
+  participanteId String
+  dataInicio     DateTime
+  dataFim        DateTime
+  motivo         String?
+  
+  participante   Participante @relation(fields: [participanteId], references: [id])
+}

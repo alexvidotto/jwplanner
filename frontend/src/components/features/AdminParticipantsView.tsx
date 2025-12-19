@@ -88,19 +88,19 @@ export const AdminParticipantsView = ({ participants, setParticipants, onBack }:
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
-            <h1 className="font-bold text-gray-800 text-lg">Cadastro de Usuários</h1>
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2 sm:ml-0"><ArrowLeft size={20} /></Button>
+            <h1 className="font-bold text-gray-800 text-lg sm:text-lg truncate max-w-[200px] sm:max-w-none">Cadastro de Usuários</h1>
           </div>
-          <Button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', active: true }); setIsModalOpen(true); }}>
-            <Plus size={16} /> Novo
+          <Button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', active: true }); setIsModalOpen(true); }} size="sm" className="whitespace-nowrap">
+            <Plus size={16} /> <span className="hidden sm:inline">Novo Usuário</span><span className="sm:hidden">Novo</span>
           </Button>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>

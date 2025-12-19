@@ -98,9 +98,27 @@ const AppContent = () => {
     setActiveWeek(null);
   };
 
+  const handleJumpToCurrentWeek = () => {
+    // Check if we are already on current week (no date param or date matches next monday)
+    const currentParam = searchParams.get('date');
+    if (!currentParam) {
+      // Already on current week (default), do nothing to avoid reload/flicker or just ensuring activeWeek is set?
+      // If we are "stuck" for some reason, we might want to reload, but usually we just want to navigate.
+      // If activeWeek is null, the effect should handle it ONLY if we change something.
+      // But if we do nothing, activeWeek remains whatever it is (likely correct).
+      // We can just return.
+      return;
+    }
+
+    // If not on current week, we clear params.
+    setSearchParams({}); // Clear date param to default to Today
+    setActiveWeek(null);
+  };
+
   const handleUpdateWeek = (updatedWeek: any) => {
     setActiveWeek(updatedWeek);
   };
+
 
   const handleSaveWeek = async (weekToSave: any) => {
     try {
@@ -206,6 +224,7 @@ const AppContent = () => {
             setWeekData={handleUpdateWeek}
             onBack={() => navigate('/')}
             onNavigateWeek={handleNavigateWeek}
+            onJumpToCurrentWeek={handleJumpToCurrentWeek}
             participants={participants}
             partTemplates={parts}
             onSave={handleSaveWeek}

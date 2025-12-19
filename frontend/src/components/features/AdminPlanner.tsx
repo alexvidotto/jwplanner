@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, X, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, X, Star, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 import { EditableField } from '../ui/EditableField';
@@ -15,12 +15,31 @@ interface AdminPlannerProps {
   setWeekData: (data: any) => void;
   onBack: () => void;
   onNavigateWeek: (direction: number) => void;
+  onJumpToCurrentWeek: () => void;
   partTemplates: any[];
   onSave?: (weekData: any) => Promise<void>;
   participants: any[];
 }
 
-export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, participants, partTemplates, onSave }: AdminPlannerProps) => {
+export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, onJumpToCurrentWeek, participants, partTemplates, onSave }: AdminPlannerProps) => {
+  // ... existing state ...
+
+  // ... render ...
+  <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-4 w-max">
+    <button onClick={() => onNavigateWeek(-1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+      <ChevronLeft size={20} />
+    </button>
+    <div className="text-center flex flex-col items-center group cursor-pointer" onClick={onJumpToCurrentWeek} title="Voltar para semana atual">
+      <h1 className="font-bold text-gray-800 text-lg leading-tight flex items-center gap-2">
+        Planejamento
+        <Calendar size={14} className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </h1>
+      <p className="text-xs text-gray-500 whitespace-nowrap">{weekData.dateLabel}</p>
+    </div>
+    <button onClick={() => onNavigateWeek(1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-white transition-colors">
+      <ChevronRight size={20} />
+    </button>
+  </div>
   const [selectedPart, setSelectedPart] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeAddMenu, setActiveAddMenu] = useState<string | null>(null);
@@ -483,6 +502,9 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
           </div>
 
           <div className="flex items-center gap-2 z-10">
+            <Button size="sm" variant="ghost" onClick={onJumpToCurrentWeek} className="hidden sm:flex text-gray-600 hover:bg-gray-100" title="Voltar para semana atual">
+              <Calendar size={20} />
+            </Button>
             <Button size="sm" variant="primary" onClick={handleSave} disabled={isSaving} className="hidden sm:flex">
               {isSaving ? 'Salvando...' : <><Save size={16} /> Salvar</>}
             </Button>

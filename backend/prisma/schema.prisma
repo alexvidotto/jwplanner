@@ -74,6 +74,11 @@ model Semana {
   descricao    String
   tipo         TipoSemana  @default(NORMAL)
   presidenteId String?
+  statusPresidente StatusDesignacao @default(PENDENTE)
+  
+  // Optional: direct week assignments (legacy/simple)
+  oracaoId     String? // If we want to track who did prayer directly on week
+  statusOracao StatusDesignacao @default(PENDENTE)
   
   designacoes  Designacao[]
 }

@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, MessageCircle, CheckCircle, Clock, XCircle, AlertTriangle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, MessageCircle, Smartphone, Copy, Check } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 
@@ -14,7 +14,7 @@ interface TrackingViewProps {
 
 export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, onJumpToCurrentWeek, onStatusChange }: TrackingViewProps) => {
 
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED'>('ALL');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Helper to find participant phone
   const getParticipantPhone = (id: string) => {
@@ -45,7 +45,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         partTitle: 'Presidente',
         assigneeId: weekData.presidentId,
         status: weekData.presidentStatus || 'PENDENTE',
-        section: 'Geral'
+        section: 'Geral',
+        observation: ''
       });
     }
 
@@ -57,7 +58,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         partTitle: 'Oração Inicial',
         assigneeId: weekData.openingPrayerId,
         status: weekData.openingPrayerStatus || 'PENDENTE',
-        section: 'Geral'
+        section: 'Geral',
+        observation: ''
       });
     }
 
@@ -71,7 +73,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
               partTitle: part.title,
               assigneeId: part.assignedTo,
               status: part.status || 'PENDENTE',
-              section: section.title
+              section: section.title,
+              observation: part.observation
             });
           }
           if (part.assistantId) {
@@ -81,7 +84,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
               partTitle: part.title, // Or "Ajudante em..."
               assigneeId: part.assistantId,
               status: part.assistantStatus || 'PENDENTE',
-              section: section.title
+              section: section.title,
+              observation: part.observation // Assistant shares observation? Usually yes for main part
             });
           }
           if (part.readerId) {
@@ -91,7 +95,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
               partTitle: part.title,
               assigneeId: part.readerId,
               status: part.readerStatus || 'PENDENTE',
-              section: section.title
+              section: section.title,
+              observation: part.observation
             });
           }
         });
@@ -101,11 +106,9 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
     return all;
   }, [weekData]);
 
-  const filteredAssignments = assignments.filter(a => {
-    if (filter === 'PENDING') return a.status === 'PENDENTE';
-    if (filter === 'CONFIRMED') return a.status === 'CONFIRMADO';
-    return true;
-  });
+  // Determine what to show. The user image implies showing all but highlighting Pending.
+  // We'll show all assignments.
+  const filteredAssignments = assignments;
 
   const stats = {
     total: assignments.length,
@@ -113,21 +116,43 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
     confirmed: assignments.filter(a => a.status === 'CONFIRMADO').length
   };
 
+  const getMessageText = (assignment: any) => {
+    const name = getParticipantName(assignment.assigneeId);
+    const date = weekData.dateLabel || 'esta semana';
+    let message = `Olá ${name}, tudo bem? Lembrete de sua designação (${assignment.partTitle}) para a semana de ${date}.`;
+
+    if (assignment.observation) {
+      message += `\nObs: ${assignment.observation}`;
+    }
+
+    message += `\nPor favor, confirme se poderá realizar.`;
+    return message;
+  };
+
   const generateWhatsAppLink = (assignment: any) => {
     const phone = getParticipantPhone(assignment.assigneeId);
     if (!phone) return null;
 
-    const name = getParticipantName(assignment.assigneeId);
-    const date = weekData.dateLabel || 'esta semana';
     // Clean phone number
     const cleanPhone = phone.replace(/\D/g, '');
 
     // Check if phone has country code. Assuming BR (55) if length is 10 or 11.
     const finalPhone = cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
 
-    const message = `Olá ${name}, tudo bem? Lembrete de sua designação (${assignment.partTitle}) para a semana de ${date}. Por favor, confirme se poderá realizar.`;
+    const message = getMessageText(assignment);
 
     return `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
+  };
+
+  const handleCopyMessage = async (assignment: any) => {
+    const message = getMessageText(assignment);
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedId(assignment.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
 
   // Extract unique sections from assignments to ensure everything is rendered
@@ -144,108 +169,117 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
   }, [assignments]);
 
   return (
-    <div className="bg-gray-900 min-h-screen pb-20 text-gray-100 flex flex-col items-center">
+    <div className="bg-gray-100 min-h-screen pb-20 font-sans">
       {/* HEADER */}
-      <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-10 shadow-sm w-full">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between relative">
-          <div className="flex items-center gap-3 z-10">
-            <Button variant="ghost" size="icon" onClick={onBack} className="text-gray-400 hover:text-white hover:bg-gray-700"><ArrowLeft size={20} /></Button>
-          </div>
+      <header className="bg-[#0f172a] text-white sticky top-0 z-10 shadow-md">
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between relative">
+          <Button variant="ghost" size="icon" onClick={onBack} className="text-gray-400 hover:text-white hover:bg-white/10">
+            <ArrowLeft size={20} />
+          </Button>
 
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-4 w-max">
-            <button onClick={() => onNavigateWeek(-1)} className="p-2 hover:bg-gray-700 rounded-full text-gray-500 transition-colors">
-              <ChevronLeft size={20} />
-            </button>
-            <div className="text-center">
-              <h1 className="font-bold text-gray-100 text-lg leading-tight">
-                Acompanhamento
-              </h1>
-              <p className="text-xs text-gray-500 whitespace-nowrap">{weekData.dateLabel}</p>
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Semana</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => onNavigateWeek(-1)} className="text-gray-500 hover:text-white transition-colors">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-sm font-medium text-white whitespace-nowrap">{weekData.dateLabel}</span>
+              <button onClick={() => onNavigateWeek(1)} className="text-gray-500 hover:text-white transition-colors">
+                <ChevronRight size={16} />
+              </button>
             </div>
-            <button onClick={() => onNavigateWeek(1)} className="p-2 hover:bg-gray-700 rounded-full text-gray-400 hover:text-white transition-colors">
-              <ChevronRight size={20} />
-            </button>
           </div>
 
-          <div className="flex items-center gap-2 z-10">
-            <Button size="sm" variant="ghost" onClick={onJumpToCurrentWeek} className="flex text-gray-400 hover:bg-gray-700 hover:text-white" title="Voltar para semana atual">
-              <Calendar size={20} />
-            </Button>
-          </div>
+          <div className="w-10"></div> {/* Spacer for alignment */}
         </div>
       </header>
 
-      <div className="max-w-md w-full p-4 space-y-6">
-        {/* SUMMARY CARD */}
-        <div className="grid grid-cols-3 gap-3">
-          <button onClick={() => setFilter('ALL')} className={`p-3 rounded-xl border transition-all ${filter === 'ALL' ? 'bg-blue-900/30 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-gray-800 border-gray-700 hover:bg-gray-750'}`}>
-            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Total</div>
-            <div className="text-xl font-black text-blue-400">{stats.total}</div>
-          </button>
-          <button onClick={() => setFilter('PENDING')} className={`p-3 rounded-xl border transition-all ${filter === 'PENDING' ? 'bg-yellow-900/30 border-yellow-500/50 ring-1 ring-yellow-500/30' : 'bg-gray-800 border-gray-700 hover:bg-gray-750'}`}>
-            <div className="text-[10px] text-yellow-600 uppercase font-bold tracking-wider mb-1">Pendentes</div>
-            <div className="text-xl font-black text-yellow-500">{stats.pending}</div>
-          </button>
-          <button onClick={() => setFilter('CONFIRMED')} className={`p-3 rounded-xl border transition-all ${filter === 'CONFIRMED' ? 'bg-green-900/30 border-green-500/50 ring-1 ring-green-500/30' : 'bg-gray-800 border-gray-700 hover:bg-gray-750'}`}>
-            <div className="text-[10px] text-green-600 uppercase font-bold tracking-wider mb-1">Confirmados</div>
-            <div className="text-xl font-black text-green-500">{stats.confirmed}</div>
-          </button>
+      <div className="max-w-md w-full mx-auto p-4 space-y-4">
+        {/* SUMMARY BANNER */}
+        <div className="bg-[#1e293b] rounded-lg p-4 flex items-center gap-3 shadow-sm select-none">
+          <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-[#1e293b] font-bold text-sm">
+            {stats.pending}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-white font-bold text-sm">Pendentes</span>
+            <span className="text-xs text-gray-400">Aguardando confirmação</span>
+          </div>
         </div>
 
         {/* LIST */}
-        <div className="space-y-6">
+        <div className="space-y-3">
           {sections.map((sectionTitle) => {
+            // Filter out confirmed if we want to mimic "Pendentes" view? 
+            // The image implies a list of items. Some appear confirmed (green dot).
+            // So we show ALL, but style them differently.
             const sectionAssignments = filteredAssignments.filter(a => a.section === sectionTitle);
 
             if (sectionAssignments.length === 0) return null;
 
             return (
               <div key={sectionTitle}>
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">{sectionTitle}</h3>
+                {/* <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">{sectionTitle}</h3> */}
                 <div className="space-y-3">
                   {sectionAssignments.map(a => {
                     const phone = getParticipantPhone(a.assigneeId);
                     const waLink = generateWhatsAppLink(a);
+                    const isConfirmed = a.status === 'CONFIRMADO';
+                    const isPending = a.status === 'PENDENTE';
+
+                    // Colors based on status
+                    const stripColor = isConfirmed ? 'border-green-500' : (isPending ? 'border-yellow-500' : 'border-red-500');
 
                     return (
-                      <div key={a.id} className="bg-gray-800 rounded-lg border border-gray-700 p-4 flex items-center justify-between shadow-sm hover:border-gray-600 transition-all">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-lg 
-                                  ${a.status === 'CONFIRMADO' ? 'bg-green-900/50 text-green-400' :
-                              a.status === 'PENDENTE' ? 'bg-yellow-900/50 text-yellow-400' : 'bg-red-900/50 text-red-400'}`}>
-                            {getParticipantName(a.assigneeId).charAt(0)}
+                      <div key={a.id} className={`bg-white rounded-lg shadow-sm border-l-[4px] ${stripColor} p-4 flex items-center justify-between`}>
+                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900 text-sm truncate">
+                              {getParticipantName(a.assigneeId)}
+                            </span>
+                            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">
+                              {a.role === 'TITULAR' ? 'Titular' : a.role}
+                            </span>
                           </div>
-                          <div className="min-w-0">
-                            <div className="font-bold text-gray-200 truncate">{getParticipantName(a.assigneeId)}</div>
-                            <div className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase flex-shrink-0
-                                        ${a.role === 'TITULAR' ? 'bg-blue-900/30 text-blue-300' :
-                                  a.role === 'AJUDANTE' ? 'bg-green-900/30 text-green-300' :
-                                    a.role === 'LEITOR' ? 'bg-purple-900/30 text-purple-300' : 'bg-gray-700 text-gray-400'}`}>
-                                {a.role}
-                              </span>
-                              <span className="truncate">{a.partTitle}</span>
-                            </div>
+
+                          <span className="text-xs text-gray-500 truncate">{a.partTitle}</span>
+                          {a.observation && (
+                            <span className="text-xs text-gray-400 italic truncate mt-0.5 block">Obs: {a.observation}</span>
+                          )}
+
+                          <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                            {/* <div className="w-3 h-4 border border-gray-300 rounded-[2px]" /> */}
+                            <Smartphone size={12} className="text-gray-400" />
+                            <span>{phone || 'Sem telefone'}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 pl-2 flex-shrink-0">
-                          {/* Status Menu */}
+                        <div className="flex items-center gap-4 pl-3 flex-shrink-0">
+                          {/* Status Dot */}
                           <StatusEditMenu
                             status={a.status}
                             onChange={(newStatus) => onStatusChange(a.id, newStatus)}
-                            variant="badge"
+                            variant="circle"
                           />
 
-                          {waLink ? (
-                            <a href={waLink} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-green-900/20 text-green-400 hover:bg-green-600 hover:text-white transition-colors border border-green-900/30" title="Enviar mensagem no WhatsApp">
-                              <MessageCircle size={20} />
-                            </a>
-                          ) : (
-                            <div className="p-2 rounded-full bg-gray-700 text-gray-500 cursor-not-allowed" title="Sem telefone cadastrado">
-                              <MessageCircle size={20} />
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleCopyMessage(a)}
+                              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                              title="Copiar mensagem"
+                            >
+                              {copiedId === a.id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                            </button>
+
+                            {waLink ? (
+                              <a href={waLink} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-blue-500 hover:bg-blue-50 transition-colors">
+                                <MessageCircle size={16} className="-ml-0.5 -mt-0.5 fill-current" />
+                              </a>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-300">
+                                <MessageCircle size={16} />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -255,12 +289,6 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
             );
           })}
         </div>
-
-        {filteredAssignments.length === 0 && (
-          <div className="text-center py-10 text-gray-500">
-            <p>Nenhuma designação encontrada.</p>
-          </div>
-        )}
       </div>
     </div>
   );

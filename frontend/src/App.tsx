@@ -197,6 +197,7 @@ const AppContent = () => {
             data: {
               designacoes: updates,
               presidentId: weekToSave.presidentId,
+              presidentStatus: weekToSave.presidentStatus,
               tipo: weekToSave.isCanceled ? 'NO_MEET' : 'NORMAL'
             }
           });
@@ -236,6 +237,7 @@ const AppContent = () => {
           data: {
             designacoes: updates,
             presidentId: weekToSave.presidentId,
+            presidentStatus: weekToSave.presidentStatus,
             tipo: weekToSave.isCanceled ? 'NO_MEET' : 'NORMAL'
           }
         });

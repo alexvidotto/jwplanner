@@ -117,7 +117,7 @@ export const transformWeekToFrontend = (week: any) => {
     dateLabel: formatDateRange(startDate),
     date: startDate,
     presidentId: week.presidenteId,
-    presidentStatus: 'PENDENTE',
+    presidentStatus: week.statusPresidente || 'PENDENTE',
     openingPrayerId,
     openingPrayerStatus,
     openingPrayerPartId,

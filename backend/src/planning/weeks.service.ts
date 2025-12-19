@@ -330,6 +330,8 @@ export class WeeksService {
     // Update Week fields (e.g. Presidente, Tipo)
     const weekDataToUpdate: any = {};
     if (data.presidentId !== undefined) weekDataToUpdate.presidenteId = data.presidentId;
+    if (data.presidentStatus !== undefined) weekDataToUpdate.statusPresidente = data.presidentStatus;
+    // if (data.openingPrayerStatus !== undefined) weekDataToUpdate.statusOracao = data.openingPrayerStatus; // Optional if we use direct field
     if (data.tipo !== undefined) weekDataToUpdate.tipo = data.tipo;
     if (data.descricao !== undefined) weekDataToUpdate.descricao = data.descricao;
 

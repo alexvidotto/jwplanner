@@ -123,9 +123,9 @@ export const transformWeekToFrontend = (week: any) => {
     openingPrayerPartId,
     openingPrayerTemplateId,
     sections: [sectionsMap.tesouros, sectionsMap.fsm, sectionsMap.nvc],
-    isCanceled: false
+    isCanceled: week.tipo === 'NO_MEET'
   };
-}
+};
 
 export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
   const sectionsMap: Record<string, any> = {
@@ -206,7 +206,7 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
     openingPrayerPartId,
     openingPrayerTemplateId,
     sections: [sectionsMap.tesouros, sectionsMap.fsm, sectionsMap.nvc],
-    isCanceled: false
+    isCanceled: false // Default to false for virtual/new weeks
   };
 };
 

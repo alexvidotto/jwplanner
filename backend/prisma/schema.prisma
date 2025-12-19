@@ -25,6 +25,7 @@ enum TipoSemana {
   NORMAL
   VISITA_VIAJANTE
   ASSEMBLEIA
+  NO_MEET
 }
 
 model Participante {

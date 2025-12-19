@@ -327,12 +327,16 @@ export class WeeksService {
   async update(id: string, data: any) {
     const transaction = [];
 
-    // Update Week fields (e.g. Presidente)
-    if (data.presidentId !== undefined) {
+    // Update Week fields (e.g. Presidente, Tipo)
+    const weekDataToUpdate: any = {};
+    if (data.presidentId !== undefined) weekDataToUpdate.presidenteId = data.presidentId;
+    if (data.tipo !== undefined) weekDataToUpdate.tipo = data.tipo;
+
+    if (Object.keys(weekDataToUpdate).length > 0) {
       transaction.push(
         this.prisma.semana.update({
           where: { id },
-          data: { presidenteId: data.presidentId }
+          data: weekDataToUpdate
         })
       );
     }

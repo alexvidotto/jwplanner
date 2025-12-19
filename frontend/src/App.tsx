@@ -162,8 +162,15 @@ const AppContent = () => {
           }
         }));
 
-        if (updates.length > 0 || weekToSave.presidentId) {
-          await updateWeek({ id: savedWeekId, data: { designacoes: updates, presidentId: weekToSave.presidentId } });
+        if (updates.length > 0 || weekToSave.presidentId || weekToSave.isCanceled !== undefined) {
+          await updateWeek({
+            id: savedWeekId,
+            data: {
+              designacoes: updates,
+              presidentId: weekToSave.presidentId,
+              tipo: weekToSave.isCanceled ? 'NO_MEET' : 'NORMAL'
+            }
+          });
         }
       } else {
         // 2. Standard Update
@@ -195,7 +202,14 @@ const AppContent = () => {
             ordem: orderCounter++
           });
         }));
-        await updateWeek({ id: savedWeekId, data: { designacoes: updates, presidentId: weekToSave.presidentId } });
+        await updateWeek({
+          id: savedWeekId,
+          data: {
+            designacoes: updates,
+            presidentId: weekToSave.presidentId,
+            tipo: weekToSave.isCanceled ? 'NO_MEET' : 'NORMAL'
+          }
+        });
       }
 
       await refetchWeek(); // Sync everything

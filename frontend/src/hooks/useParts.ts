@@ -67,3 +67,16 @@ export const useDeletePart = () => {
     },
   });
 };
+
+export const usePartHistory = (partId: string | null) => {
+  return useQuery({
+    queryKey: ['partHistory', partId],
+    queryFn: async () => {
+      if (!partId) return [];
+      if (USE_MOCK) return [];
+      const { data } = await api.get(`/parts/${partId}/history`);
+      return data;
+    },
+    enabled: !!partId,
+  });
+};

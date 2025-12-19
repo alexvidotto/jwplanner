@@ -30,4 +30,9 @@ export class PartsController {
   remove(@Param('id') id: string) {
     return this.partsService.remove(id);
   }
+
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.partsService.getPartHistory(id);
+  }
 }

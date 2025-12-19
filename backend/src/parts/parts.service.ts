@@ -28,4 +28,17 @@ export class PartsService {
   async remove(id: string): Promise<ParteTemplate> {
     return this.prisma.parteTemplate.delete({ where: { id } });
   }
+
+  async getPartHistory(partId: string): Promise<any[]> {
+    return this.prisma.designacao.findMany({
+      where: { parteTemplateId: partId },
+      include: {
+        semana: true,
+        titular: true,
+        ajudante: true
+      },
+      orderBy: { semana: { dataInicio: 'desc' } }, // Newest first
+      take: 20
+    });
+  }
 }

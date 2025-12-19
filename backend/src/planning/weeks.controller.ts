@@ -29,4 +29,20 @@ export class WeeksController {
   update(@Param('id') id: string, @Body() body: any) {
     return this.weeksService.update(id, body);
   }
+
+  @Get(':weekId/suggestions/:partTemplateId')
+  getSuggestions(
+    @Param('weekId') weekId: string,
+    @Param('partTemplateId') partTemplateId: string
+  ) {
+    return this.weeksService.getSuggestions(weekId, partTemplateId);
+  }
+
+  @Get('suggestions/by-date')
+  getSuggestionsByDate(
+    @Query('date') date: string,
+    @Query('partTemplateId') partTemplateId: string
+  ) {
+    return this.weeksService.getSuggestions(date, partTemplateId);
+  }
 }

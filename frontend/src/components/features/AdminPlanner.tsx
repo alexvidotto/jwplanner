@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 import { EditableField } from '../ui/EditableField';
@@ -7,6 +7,7 @@ import { EditableDescription } from '../ui/EditableDescription';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Toast } from '../ui/Toast';
 import { parseTime, formatTotalTime } from '../../lib/utils';
+import { useSuggestions } from '../../hooks/useSuggestions';
 // Note: Using absolute paths or relative paths as needed. Assuming strict file structure.
 
 interface AdminPlannerProps {
@@ -23,6 +24,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
   const [selectedPart, setSelectedPart] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeAddMenu, setActiveAddMenu] = useState<string | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState<{ isOpen: boolean; type: string; partId: string; role: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [draggedPart, setDraggedPart] = useState<{ partId: string, sectionId: string } | null>(null);
@@ -130,6 +132,38 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
 
     setWeekData({ ...weekData, sections: updatedSections });
     setDraggedPart(null);
+  };
+
+  const handleClearAssignment = () => {
+    if (!showClearConfirm) return;
+    const { type, partId, role } = showClearConfirm;
+
+    const newWeekData = { ...weekData };
+
+    if (type === 'president') {
+      newWeekData.presidentId = null;
+      newWeekData.presidentStatus = 'PENDENTE';
+    } else if (type === 'openingPrayer') {
+      newWeekData.openingPrayerId = null;
+      newWeekData.openingPrayerStatus = 'PENDENTE';
+      // Also clear potentially linked part if it exists (though usually virtual)
+    } else if (type === 'assignment') {
+      newWeekData.sections = newWeekData.sections.map((section: any) => ({
+        ...section,
+        parts: section.parts.map((p: any) => {
+          if (p.id === partId) {
+            if (role === 'reader') return { ...p, readerId: null, readerStatus: 'PENDENTE' };
+            if (role === 'assistant') return { ...p, assistantId: null, assistantStatus: 'PENDENTE' };
+            return { ...p, assignedTo: null, status: 'PENDENTE' };
+          }
+          return p;
+        })
+      }));
+    }
+
+    setWeekData(newWeekData);
+    setShowClearConfirm(null);
+    showToast("Designação removida.");
   };
 
   const handleSave = async () => {
@@ -292,44 +326,72 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
     showToast("Parte removida.");
   };
 
-  const getSuggestions = () => {
+  // Determine effective Week Identifier for suggestions
+  // If we have a DB ID, use it. If not (new week), use the Date string properly formatted.
+  // Actually, useSuggestions now handles date strings. Let's prefer date string if we have it for simplicity?
+  // No, useSuggestions logic: if UUID -> ID lookup. If Date -> Date lookup.
+  // If we have a loaded weekData with ID, use ID.
+  const weekIdentifier = (weekData?.id && !weekData.id.startsWith('new-') && !weekData.id.startsWith('virtual-'))
+    ? weekData.id
+    : (weekData.date?.toISOString() || '');
+
+  const { data: suggestions = [], isLoading: isLoadingSuggestions } = useSuggestions(
+    weekIdentifier,
+    selectedPart?.templateId || selectedPart?.id // Fallback to ID for special roles like president
+  );
+
+  const filteredSuggestions = useMemo(() => {
     if (!selectedPart) return [];
 
-    return participants.filter(p => {
-      // 0. Filtro de Ativo (Designar: Sim/Não)
+    // Fallback: If hook returns empty or failed, maybe we should fall back to 'participants' (local)? 
+    // Plan says "Replace". If backend is authority, we trust backend for sorting.
+    // BUT backend 'getSuggestions' endpoint handles filtering by Skill and Unavailability.
+    // We still need to filter by 'Active', 'Gender' (Assistant), 'Role' (Reader vs Principal if backend mixes them).
+
+    if (isLoadingSuggestions || !suggestions) return [];
+
+    // ... filtering logic ...
+    const source = suggestions;
+
+    return source.filter((p: any) => {
+    // 0. Filtro de Ativo
       if (p.active === false) return false;
 
       // 1. Filtro de Ajudante (Gênero)
-      if (selectedPart.roleTarget === 'assistant') {
-        const mainPart = weekData.sections.flatMap((s: any) => s.parts).find((pt: any) => pt.id === selectedPart.id);
+      if (selectedPart?.roleTarget === 'assistant') {
+        const mainPart = weekData?.sections?.flatMap((s: any) => s.parts).find((pt: any) => pt.id === selectedPart.id);
         const mainPerson = participants.find(user => user.id === mainPart?.assignedTo);
+        // If main person is PM (Woman), assistant must be PM (Woman).
+        // If main person is PH (Man), assistant can be PH (Man).
         if (mainPerson?.gender === 'PM' && p.gender !== 'PM') return false;
-        if (mainPerson?.gender === 'PH' && p.gender !== 'PH') return false;
-        return true;
+        // if (mainPerson?.gender === 'PH' && p.gender !== 'PH') return false; // Men usually have Men assistants, but sometimes Women? No, usually Men-Men or Women-Women in school.
+        // Actually, rarely a man has a woman assistant unless it's a specific setting, but usually strict matching.
+        // Safe default: Match gender.
+        if (mainPerson?.gender && p.gender !== mainPerson.gender) return false;
       }
 
-      // 2. Filtro de Habilidade (Vinculado ao Template ID)
-      if (selectedPart.templateId) {
-        // Se estamos buscando um LEITOR, procuramos a habilidade _reader
+      // 2. Filtro de Habilidade (Refinement)
+      if (selectedPart?.templateId) {
+      // ... existing ability logic ...
         if (selectedPart.roleTarget === 'reader') {
-          if (!p.abilities?.includes(`${selectedPart.templateId}_reader`)) return false;
+          if (!p.abilities?.includes(`${selectedPart.templateId}_reader`) && !p.abilities?.includes(selectedPart.templateId)) return false;
+          // Allow generic ability too if specific reader ability missing? Maybe strict for now.
         } else {
-          // Se estamos buscando Titular, procuramos a habilidade padrão
           if (!p.abilities?.includes(selectedPart.templateId)) return false;
         }
       }
 
-      // Se for Presidente ou Oração e não tiver templateId explícito, assumimos logica simples (Anciao/Servo/PH)
-      if (selectedPart.id === 'president') {
+      // 3. Special Filters
+      if (selectedPart?.id === 'president') {
         if (p.type !== 'ANCIAO' && p.type !== 'SERVO') return false;
       }
-      if (selectedPart.id === 'openingPrayer') {
+      if (selectedPart?.id === 'openingPrayer') {
         if (p.gender !== 'PH') return false;
       }
 
       return true;
     });
-  };
+  }, [suggestions, isLoadingSuggestions, selectedPart, weekData, participants]);
 
   const getAvailablePartsForSection = (sectionId: string) => {
     return partTemplates.filter(pt => pt.section === sectionId);
@@ -437,22 +499,26 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                 </div>
 
                 {/* Opening Prayer */}
-                <div className="w-full sm:w-[280px] bg-gray-50 rounded px-2 py-2 flex items-center justify-between border border-transparent hover:border-gray-200 transition-colors">
-                  {weekData.openingPrayerId ? (
+                  <div className="w-full sm:w-[280px] bg-gray-50 rounded px-2 py-2 flex items-center justify-between border border-transparent hover:border-gray-200 transition-colors">
                     <div className="flex items-center gap-2 w-full">
                       <span className="text-gray-400 text-sm font-medium whitespace-nowrap">Oração Inicial:</span>
-                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', templateId: weekData.openingPrayerTemplateId }, 'main')} className="text-gray-700 font-medium text-sm hover:text-blue-600 truncate flex-1 text-right">
-                        {participants.find(p => p.id === weekData.openingPrayerId)?.name}
-                      </button>
+                      <div className="flex items-center justify-between mt-2 flex-1">
+                        <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')}>
+                          {weekData.openingPrayerId ? (
+                            <div className="flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-sm font-medium w-full">
+                              <Users size={16} />
+                              <span>{participants.find(p => p.id === weekData.openingPrayerId)?.name || 'Oração Inicial'}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-gray-400 text-sm px-3 py-1.5 border border-dashed rounded-lg hover:bg-gray-50 w-full bg-white">
+                              <Plus size={16} />
+                              <span>Designar Oração</span>
+                            </div>
+                          )}
+                        </div>
+                        {weekData.openingPrayerId && <button onClick={(e) => { e.stopPropagation(); setShowClearConfirm({ isOpen: true, type: 'openingPrayer', partId: 'openingPrayer', role: 'openingPrayer' }); }} className="text-gray-400 hover:text-red-500 ml-2 p-1"><XCircle size={18} /></button>}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 w-full justify-between">
-                      <span className="text-gray-400 text-sm font-medium">Oração Inicial:</span>
-                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', templateId: weekData.openingPrayerTemplateId }, 'main')} className="text-blue-600 text-sm hover:underline">
-                        Definir
-                      </button>
-                    </div>
-                  )}
 
                   {weekData.openingPrayerId && weekData.openingPrayerId !== weekData.presidentId && (
                     <div onClick={(e) => e.stopPropagation()} className="ml-2">
@@ -576,7 +642,8 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                                       {participants.find(p => p.id === part.assignedTo)?.name}
                                     </span>
                                   </div>
-                                  <div onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                    <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'titular' })} className="text-gray-400 hover:text-red-500 p-1"><XCircle size={16} /></button>
                                     <StatusEditMenu
                                       variant="circle"
                                       status={part.status}
@@ -594,13 +661,22 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                                 <div className="relative">
                                   {part.assistantId || part.readerId ? (
                                     <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className={`flex items-center justify-between bg-gray-50 rounded p-2 border border-transparent hover:bg-gray-100`}>
-                                      <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className="flex items-center gap-2 cursor-pointer">
-                                        <span className="text-xs text-gray-400">{part.requiresReader ? 'Leitor:' : 'Ajudante:'}</span>
-                                        <span className="text-sm text-gray-600 truncate max-w-[100px]">
-                                          {participants.find(p => p.id === (part.assistantId || part.readerId))?.name}
-                                        </span>
+                                      <div className="flex items-center justify-between w-full mt-1">
+                                        <div className="flex items-center gap-2 flex-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant'); }}>
+                                          {part.assistantId || part.readerId ? (
+                                            <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm font-medium w-full">
+                                              <Users size={14} />
+                                              <span className="truncate">{participants.find(p => p.id === (part.assistantId || part.readerId))?.name || 'Desconhecido'}</span>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-1 text-gray-400 text-sm px-2 py-1 w-full border border-dashed rounded hover:bg-gray-50 bg-white">
+                                              <Plus size={14} />
+                                              <span>Designar {part.requiresReader ? 'Leitor' : 'Ajudante'}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        {(part.assistantId || part.readerId) && <button onClick={(e) => { e.stopPropagation(); setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: part.requiresReader ? 'reader' : 'assistant' }); }} className="text-gray-400 hover:text-red-500 ml-1 p-1"><XCircle size={16} /></button>}
                                       </div>
-
                                       {/* Status do Ajudante ou Leitor - Círculo Editável */}
                                       {((section.id === 'fsm' && part.assistantId) || part.readerId) && (
                                         <StatusEditMenu
@@ -611,9 +687,14 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                                       )}
                                     </div>
                                   ) : (
-                                    <button onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className="text-xs text-gray-400 hover:text-blue-600 flex items-center gap-1">
-                                      + {part.requiresReader ? 'Leitor' : 'Ajudante'}
-                                    </button>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 flex-1 cursor-pointer" onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')}>
+                                          <div className="flex items-center gap-1 text-gray-400 text-sm px-2 py-1 w-full border border-dashed rounded hover:bg-gray-50 bg-white">
+                                            <Plus size={14} />
+                                            <span>Designar {part.requiresReader ? 'Leitor' : 'Ajudante'}</span>
+                                          </div>
+                                        </div>
+                                      </div>
                                   )}
                                 </div>
                               )}
@@ -645,10 +726,18 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
       {/* Modais... */}
       <ConfirmModal
         isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ isOpen: false, data: null })}
-        onConfirm={executeRemovePart}
         title="Remover Parte"
-        message="Tem certeza que deseja remover esta parte da programação?"
+        message="Tem certeza que deseja remover esta parte? Esta ação não pode ser desfeita."
+        onConfirm={executeRemovePart}
+        onClose={() => setConfirmDialog({ isOpen: false, data: null })}
+      />
+
+      <ConfirmModal
+        isOpen={!!showClearConfirm?.isOpen}
+        title="Limpar Designação"
+        message="Tem certeza que deseja remover esta designação?"
+        onConfirm={handleClearAssignment}
+        onClose={() => setShowClearConfirm(null)}
       />
 
       <Toast
@@ -672,7 +761,13 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
               </div>
             </div>
             <div className="overflow-y-auto flex-1 p-2 space-y-1">
-              {getSuggestions().length > 0 ? getSuggestions().map(p => {
+              {isLoadingSuggestions ? (
+                <div className="flex flex-col items-center justify-center p-8 text-gray-400">
+                  <Loader2 size={32} className="animate-spin mb-2" />
+                  <p>Buscando sugestões...</p>
+                </div>
+              ) : filteredSuggestions.length > 0 ? (
+                filteredSuggestions.map((p: any, index: number) => {
                 // Determine if user has the SPECIFIC ability required (Reader or Main)
                 let isApt = false;
                 if (selectedPart?.templateId) {
@@ -683,14 +778,28 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                   }
                 }
 
+              // Actually the sorting already puts best first. Let's just highlight top 1 as "Best" or just show history.
+
                 return (
-                  <button key={p.id} onClick={() => handleSelectParticipant(p.id)} className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg transition-colors text-left group">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold group-hover:bg-blue-200 group-hover:text-blue-700">
+                  <button key={p.id} onClick={() => handleSelectParticipant(p.id)} className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg transition-colors text-left group border-b border-transparent hover:border-blue-100">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold group-hover:bg-blue-200 group-hover:text-blue-700 relative">
                       {p.name.charAt(0)}
+                      {index === 0 && <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 border-2 border-white"><Check size={8} className="text-white" /></div>}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-800">{p.name}</p>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex justify-between items-start">
+                        <p className="font-medium text-gray-800">{p.name}</p>
+                        {p.lastAssignmentDate ? (
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                            {new Date(p.lastAssignmentDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-green-600 font-medium whitespace-nowrap">
+                            Disponível
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                         <span className="bg-gray-100 px-1.5 rounded border">{p.type}</span>
                         {isApt &&
                           <span className="text-green-600 flex items-center gap-1"><Check size={10} /> Apto</span>
@@ -699,7 +808,12 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                     </div>
                   </button>
                 )
-              }) : <div className="p-8 text-center text-gray-500">Nenhum participante elegível encontrado.<br /><span className="text-xs">Verifique as habilidades ou gênero.</span></div>}
+            })) : (
+                <div className="p-8 text-center text-gray-500">
+                  Nenhum participante elegível encontrado.<br />
+                  <span className="text-xs">Verifique as habilidades ou gênero.</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

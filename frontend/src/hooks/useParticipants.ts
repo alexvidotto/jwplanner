@@ -81,3 +81,15 @@ export const useBulkUpdateParticipants = () => {
     },
   });
 };
+export const useParticipantHistory = (userId: string | null) => {
+  return useQuery({
+    queryKey: ['participantHistory', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      if (USE_MOCK) return [];
+      const { data } = await api.get(`/users/${userId}/history`);
+      return data;
+    },
+    enabled: !!userId,
+  });
+};

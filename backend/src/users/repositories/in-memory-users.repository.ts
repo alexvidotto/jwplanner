@@ -5,6 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class InMemoryUsersRepository implements UsersRepository {
+  async findHistory(userId: string): Promise<any[]> {
+    return [];
+  }
+
   private users: Participante[] = [];
 
   async create(data: Prisma.ParticipanteCreateInput): Promise<Participante> {

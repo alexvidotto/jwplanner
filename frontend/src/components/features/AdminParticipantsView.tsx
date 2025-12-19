@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ArrowLeft, Plus, Edit2, Trash2, Check, Ban } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { PRIVILEGE_OPTIONS } from '../../lib/constants';
-import { useCreateParticipant, useUpdateParticipant, useDeleteParticipant } from '../../hooks/useParticipants';
+import { useCreateParticipant, useUpdateParticipant, useDeleteParticipant, useParticipantHistory } from '../../hooks/useParticipants';
+import { Loader2 } from 'lucide-react';
 
 interface Participant {
   id: string;
@@ -24,6 +25,8 @@ interface AdminParticipantsViewProps {
 export const AdminParticipantsView = ({ participants, setParticipants, onBack }: AdminParticipantsViewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const { data: history, isLoading: isLoadingHistory } = useParticipantHistory(editingId);
   const [formData, setFormData] = useState({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', active: true });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -85,6 +88,30 @@ export const AdminParticipantsView = ({ participants, setParticipants, onBack }:
     }
   };
 
+  const toggleActive = async (id: string, currentActive: boolean | undefined) => {
+    try {
+      await updateParticipant.mutateAsync({ id, podeDesignar: !currentActive });
+    } catch (error) {
+      console.error('Failed to toggle active status:', error);
+      alert('Erro ao alterar status.');
+    }
+  };
+
+  const isDirty = useMemo(() => {
+    if (!editingId) return !!formData.name; // New user: dirty if name has content
+    // Find original
+    const original = participants.find(p => p.id === editingId);
+    if (!original) return false;
+
+    return (
+      formData.name !== original.name ||
+      formData.type !== original.type ||
+      formData.gender !== original.gender ||
+      (formData.phone || '') !== (original.phone || '') ||
+      formData.active !== (original.active !== false)
+    );
+  }, [formData, editingId, participants]);
+
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
@@ -104,30 +131,46 @@ export const AdminParticipantsView = ({ participants, setParticipants, onBack }:
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-3 text-gray-500 font-medium">Nome</th>
-                <th className="px-6 py-3 text-gray-500 font-medium">Privilégio</th>
-                <th className="px-6 py-3 text-gray-500 font-medium">Gênero</th>
-                <th className="px-6 py-3 text-gray-500 font-medium text-center">Designar</th>
-                <th className="px-6 py-3 text-gray-500 font-medium text-right">Ações</th>
+                <th className="p-3 text-gray-500 font-medium">Nome</th>
+                <th className="p-3 text-gray-500 font-medium hidden md:table-cell">Privilégio</th>
+                <th className="p-3 text-gray-500 font-medium hidden md:table-cell">Telefone</th>
+                <th className="p-3 text-gray-500 font-medium">Status</th>
+                <th className="p-3 text-gray-500 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {participants.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{p.name}</td>
-                  <td className="px-6 py-4 text-gray-600">
-                    <span className="px-2 py-1 rounded bg-gray-100 border text-xs">{PRIVILEGE_OPTIONS.find(o => o.value === p.type)?.label || p.type}</span>
+              {participants.map(participant => (
+                <tr key={participant.id} className="hover:bg-gray-50 border-b last:border-0 cursor-pointer" onClick={() => handleEdit(participant)}>
+                  <td className="p-3">
+                    <div className="font-medium text-gray-800">{participant.name}</div>
+                    <div className="text-xs text-gray-500 md:hidden">{PRIVILEGE_OPTIONS.find(o => o.value === participant.type)?.label || participant.type}</div>
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{p.gender === 'PH' ? 'H' : 'M'}</td>
-                  <td className="px-6 py-4 text-center">
-                    {p.active !== false ?
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold"><Check size={12} /> Sim</span> :
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold"><Ban size={12} /> Não</span>
-                    }
+                  <td className="p-3 hidden md:table-cell">
+                    <span className={`px-2 py-1 rounded text-xs border ${participant.type === 'ANCIAO' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                      participant.type === 'SERVO' ? 'bg-green-50 text-green-700 border-green-100' :
+                        participant.type === 'PIONEIRO' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                          'bg-gray-50 text-gray-600 border-gray-100'
+                      }`}>
+                      {PRIVILEGE_OPTIONS.find(o => o.value === participant.type)?.label}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 text-right flex justify-end gap-2">
-                    <button onClick={() => handleEdit(p)} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16} /></button>
-                    <button onClick={() => setConfirmDelete(p.id)} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                  <td className="p-3 hidden md:table-cell text-gray-600 text-sm">
+                    {participant.phone || '-'}
+                  </td>
+                  <td className="p-3">
+                    <span onClick={(e) => { e.stopPropagation(); toggleActive(participant.id, participant.active); }} className={`cursor-pointer px-2 py-1 rounded text-xs border ${participant.active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                      {participant.active ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </td>
+                  <td className="p-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(participant); }} title="Editar">
+                        <Edit2 size={16} className="text-blue-600" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmDelete(participant.id); }} title="Excluir">
+                        <Trash2 size={16} className="text-red-600" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -202,10 +245,52 @@ export const AdminParticipantsView = ({ participants, setParticipants, onBack }:
                   </div>
                 </label>
               </div>
+
+              {editingId && (
+                <div className="pt-2 border-t mt-2">
+                  <h4 className="font-semibold text-gray-800 text-sm mb-2">Histórico Recente</h4>
+                  {isLoadingHistory ? (
+                    <div className="flex justify-center p-4"><Loader2 className="animate-spin text-gray-400" size={20} /></div>
+                  ) : history && history.length > 0 ? (
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1 text-sm bg-gray-50 p-2 rounded-lg">
+                      {history.map((h: any) => {
+                        let roleLabel = 'TITULAR';
+                        let roleColor = 'text-blue-600 bg-blue-50';
+
+                        if (h.ajudanteId === editingId) {
+                          if (h.parteTemplate?.requerLeitor) {
+                            roleLabel = 'LEITOR';
+                            roleColor = 'text-purple-600 bg-purple-50';
+                          } else {
+                            roleLabel = 'AJUDANTE';
+                            roleColor = 'text-green-600 bg-green-50';
+                          }
+                        }
+
+                        return (
+                          <div key={h.id} className="flex justify-between items-center text-xs border-b border-gray-100 last:border-0 pb-1">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-gray-700 truncate max-w-[150px]">{h.parteTemplate?.titulo || h.tituloDoTema || 'Designação'}</span>
+                              <span className={`text-[10px] px-1 rounded w-fit ${roleColor} font-semibold`}>{roleLabel}</span>
+                            </div>
+                            <span className="text-gray-500 whitespace-nowrap">
+                              {new Date(h.semana.dataInicio).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">Nenhuma designação encontrada.</p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>Salvar</Button>
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSave} disabled={!isDirty}>
+                {editingId ? 'Salvar Alterações' : 'Criar Usuário'}
+              </Button>
             </div>
           </div>
         </div>

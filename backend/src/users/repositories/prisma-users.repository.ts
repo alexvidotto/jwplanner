@@ -67,4 +67,20 @@ export class PrismaUsersRepository implements UsersRepository {
       )
     );
   }
+
+  async findHistory(userId: string): Promise<any[]> {
+    return this.prisma.designacao.findMany({
+      where: {
+        OR: [{ titularId: userId }, { ajudanteId: userId }]
+      },
+      include: {
+        semana: true,
+        parteTemplate: true
+      },
+      orderBy: {
+        semana: { dataInicio: 'desc' }
+      },
+      take: 50
+    });
+  }
 }

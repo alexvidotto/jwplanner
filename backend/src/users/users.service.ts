@@ -25,4 +25,8 @@ export class UsersService {
   async updateSkillsBulk(updates: { id: string; abilities: string[] }[]): Promise<void> {
     return this.usersRepository.updateSkillsBulk(updates);
   }
+
+  async getHistory(userId: string): Promise<any[]> {
+    return this.usersRepository.findHistory(userId);
+  }
 }

@@ -86,44 +86,107 @@ export class WeeksService {
 
   constructor(private readonly prisma: PrismaService) { }
 
-  async getSuggestions(weekId: string, partTemplateId: string) {
-    const week = await this.prisma.semana.findUnique({ where: { id: weekId } });
+  async getSuggestions(weekIdentifier: string, partTemplateId: string) {
+    let week;
+    const isDate = !isNaN(Date.parse(weekIdentifier)) && weekIdentifier.includes('-'); // Simple check
+
+    if (isDate) {
+      week = { dataInicio: new Date(weekIdentifier) };
+    } else {
+      week = await this.prisma.semana.findUnique({ where: { id: weekIdentifier } });
+    }
+
     if (!week) return [];
 
     // 1. Find candidates with the skill
-    const candidates = await this.prisma.participante.findMany({
-      where: {
-        habilidades: {
-          some: {
-            parteTemplateId: partTemplateId
-          }
-        },
-        podeDesignar: true,
-        // 2. Filter unavailability
-        indisponibilidades: {
-          none: {
-            dataInicio: { lte: week.dataInicio }, // Logic simplification: checks if unavailable range overlaps week start
-            dataFim: { gte: week.dataInicio }
-          }
+    // 1. Find candidates with the skill
+    let whereClause: any = {
+      podeDesignar: true,
+      indisponibilidades: {
+        none: {
+          dataInicio: { lte: week.dataInicio },
+          dataFim: { gte: week.dataInicio }
         }
-      },
+      }
+    };
+
+    if (partTemplateId === 'president') {
+      whereClause.privilegio = { in: ['ANCIAO', 'SERVO'] };
+    } else if (partTemplateId === 'openingPrayer') {
+      // Assuming any brother can do opening prayer if active
+      // Or specifically PH? Usually any baptized brother.
+      // Front-end filters by 'PH', so let's filter by gender related privileges if needed, 
+      // or just trust the 'podeDesignar' + gender check on frontend.
+      // But let's filter purely by gender implication if we can.
+      // Actually, let's just NOT filter by 'habilidades' for these special roles.
+    } else {
+      whereClause.habilidades = {
+        some: {
+          parteTemplateId: partTemplateId
+        }
+      };
+    }
+
+    const candidates = await this.prisma.participante.findMany({
+      where: whereClause,
       include: {
         designacoes: {
           include: { semana: true },
           orderBy: { semana: { dataInicio: 'desc' } },
-          take: 1
-        }
+          // Fetch more history to analyze better
+          take: 20
+        },
+        habilidades: true
       }
     });
 
-    // 3. Sort by last assignment (oldest first)
-    return candidates.sort((a, b) => {
-      const lastA = a.designacoes[0]?.semana?.dataInicio?.getTime() || 0;
-      const lastB = b.designacoes[0]?.semana?.dataInicio?.getTime() || 0;
-      return lastA - lastB;
-    });
-  }
+    // 3. Process candidates to find specific history
+    const processedCandidates = candidates.map(c => {
+      // Find last time they did THIS specific part
+      const lastSpecificAssignment = c.designacoes.find(d => d.parteTemplateId === partTemplateId);
 
+      // Find last time they did ANY assignment
+      const lastGeneralAssignment = c.designacoes[0];
+
+      return {
+        participant: c,
+        lastAssignmentDate: lastSpecificAssignment?.semana?.dataInicio || null,
+        lastGeneralAssignmentDate: lastGeneralAssignment?.semana?.dataInicio || null,
+        // Helper for sorting: timestamp (0 if never)
+        lastSpecificTs: lastSpecificAssignment?.semana?.dataInicio?.getTime() || 0,
+        lastGeneralTs: lastGeneralAssignment?.semana?.dataInicio?.getTime() || 0
+      };
+    });
+
+    // 4. Sort by last specific assignment (Oldest date first => smaller timestamp first? No, we want those who haven't done it for a long time.
+    // So distinct logic: 
+    // - Never done (ts=0) -> Priority 1
+    // - Done long ago (small ts) -> Priority 2
+    // - Done recently (large ts) -> Priority 3
+    // So Ascending order of timestamp works! 0 comes first (never). Then 2020. Then 2024.
+
+    return processedCandidates.sort((a, b) => {
+      // Primary: Specific Part History
+      if (a.lastSpecificTs !== b.lastSpecificTs) {
+        return a.lastSpecificTs - b.lastSpecificTs;
+      }
+      // Secondary: General History (If tie on specific, prefer who hasn't worked recently at all)
+      return a.lastGeneralTs - b.lastGeneralTs;
+    }).map(item => {
+      const p = item.participant as any;
+      return {
+        id: p.id,
+        name: p.nome,
+        type: p.privilegio,
+        gender: (p.privilegio === 'PUB_MULHER') ? 'PM' : 'PH', // Basic inference
+        active: p.podeDesignar,
+        abilities: p.habilidades ? p.habilidades.map((h: any) => h.isLeitor ? `${h.parteTemplateId}_reader` : h.parteTemplateId) : [],
+        lastAssignmentDate: item.lastAssignmentDate,
+        lastGeneralAssignmentDate: item.lastGeneralAssignmentDate
+      };
+    });
+
+  }
 
   async findByDate(date: string) {
     // Ensure date is ISO-8601 or YYYY-MM-DD

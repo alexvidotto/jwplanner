@@ -45,4 +45,9 @@ export class UsersController {
 
     return this.usersService.update(id, data);
   }
+
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.usersService.getHistory(id);
+  }
 }

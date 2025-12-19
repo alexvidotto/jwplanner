@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo as useMemo2 } from 'react';
 import { ArrowLeft, Plus, Edit2, Trash2, Book } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
-import { useCreatePart, useUpdatePart, useDeletePart } from '../../hooks/useParts';
+import { useCreatePart, useUpdatePart, useDeletePart, usePartHistory } from '../../hooks/useParts';
+import { Loader2 } from 'lucide-react';
 
 interface PartTemplate {
   id: string;
@@ -24,6 +25,7 @@ interface AdminPartsViewProps {
 export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { data: history, isLoading: isLoadingHistory } = usePartHistory(editingId);
   const [formData, setFormData] = useState({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -78,6 +80,25 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
     }
   };
 
+  const isDirty = useMemo2(() => {
+    if (!editingId) return !!formData.title;
+    const original = parts.find(p => p.id === editingId);
+    if (!original) return false;
+    // Compare fields
+    const timeInt = parseInt(formData.defaultTime.replace(/\D/g, '')) || 5;
+    const origTimeInt = parseInt((original.defaultTime || '5').replace(/\D/g, '')) || 5;
+
+    return (
+      formData.title !== original.title ||
+      formData.section !== original.section ||
+      timeInt !== origTimeInt ||
+      formData.requiresAssistant !== (original.requiresAssistant || false) ||
+      formData.requiresReader !== (original.requiresReader || false) ||
+      formData.hasObservation !== (original.hasObservation || false) ||
+      formData.hasTime !== (original.hasTime ?? true)
+    );
+  }, [formData, editingId, parts]);
+
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
@@ -107,18 +128,19 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
             </thead>
             <tbody className="divide-y">
               {parts.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50">
+                <tr key={p.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleEdit(p)}>
                   <td className="px-6 py-4 font-medium text-gray-900">{p.title}</td>
                   <td className="px-6 py-4 text-gray-600 uppercase text-xs">{p.section}</td>
                   <td className="px-6 py-4 text-gray-600">{p.hasTime !== false ? p.defaultTime : '-'}</td>
                   <td className="px-6 py-4 text-gray-600">{p.requiresAssistant ? 'Sim' : '-'}</td>
                   <td className="px-6 py-4 text-gray-600">{p.requiresReader ? <span className="text-blue-600 font-bold flex items-center gap-1"><Book size={14} /> Sim</span> : '-'}</td>
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
-                    <button onClick={() => handleEdit(p)} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16} /></button>
-                    <button onClick={() => setConfirmDelete(p.id)} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(p); }} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(p.id); }} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
                   </td>
                 </tr>
               ))}
+
             </tbody>
           </table>
         </div>
@@ -170,10 +192,45 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
                   </label>
                 </div>
               </div>
+
+              <div className="pt-4 border-t">
+                <h4 className="font-medium text-gray-800 mb-2">Histórico Recente</h4>
+                {isLoadingHistory ? (
+                  <div className="flex justify-center p-4">
+                    <Loader2 className="animate-spin text-blue-600" />
+                  </div>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {history && history.length > 0 ? (
+                      history.map((h: any, i: number) => (
+                        <div key={i} className="text-sm bg-gray-50 p-2 rounded flex flex-col gap-1">
+                          <div className="flex justify-between">
+                            <span className="font-medium text-gray-800">{h.titular?.nome || 'Sem Titular'}</span>
+                            <span className="text-gray-500 text-xs">
+                              {new Date(h.semana.dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                            </span>
+                          </div>
+                          {h.ajudante && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                              <span className={`font-semibold ${h.parteTemplate?.requerLeitor ? 'text-purple-600' : 'text-green-600'}`}>
+                                {h.parteTemplate?.requerLeitor ? 'Leitor:' : 'Ajudante:'}
+                              </span>
+                              <span>{h.ajudante.nome}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">Nenhuma designação encontrada.</p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>Salvar</Button>
+              <Button onClick={handleSave} disabled={!isDirty}>Salvar</Button>
             </div>
           </div>
         </div>

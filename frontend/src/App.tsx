@@ -14,6 +14,7 @@ import { transformWeekToFrontend, generateVirtualWeek, transformParticipantsToFr
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { parseTime } from './lib/utils';
 import { MonthView } from './components/features/MonthView';
+import { TrackingView } from './components/features/TrackingView';
 
 const queryClient = new QueryClient();
 
@@ -204,6 +205,46 @@ const AppContent = () => {
     }
   };
 
+  const handleStatusChange = async (assignmentId: string, newStatus: string) => {
+    if (!activeWeek) return;
+
+    const weekCopy = JSON.parse(JSON.stringify(activeWeek));
+    let changeMade = false;
+
+    // President
+    if (assignmentId === 'president') {
+      weekCopy.presidentStatus = newStatus;
+      changeMade = true;
+    }
+    // Opening Prayer
+    else if (assignmentId === 'openingPrayer') {
+      weekCopy.openingPrayerStatus = newStatus;
+      changeMade = true;
+    }
+    else {
+      // Check sections
+      // Logic to find part by customized Ids
+      for (const section of weekCopy.sections) {
+        for (const part of section.parts) {
+          if (assignmentId === part.id) {
+            part.status = newStatus;
+            changeMade = true;
+          } else if (assignmentId === `${part.id}-ass`) {
+            part.assistantStatus = newStatus;
+            changeMade = true;
+          } else if (assignmentId === `${part.id}-read`) {
+            part.readerStatus = newStatus;
+            changeMade = true;
+          }
+        }
+      }
+    }
+
+    if (changeMade) {
+      await handleSaveWeek(weekCopy);
+    }
+  };
+
   if (isLoadingParticipants || isLoadingParts) {
     return <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando dados iniciais...</div>;
   }
@@ -232,6 +273,18 @@ const AppContent = () => {
         ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
       } />
       <Route path="/month" element={<MonthView onBack={() => navigate('/')} />} />
+      <Route path="/tracking" element={
+        activeWeek ? (
+          <TrackingView
+            weekData={activeWeek}
+            participants={participants}
+            onBack={() => navigate('/')}
+            onNavigateWeek={handleNavigateWeek}
+            onJumpToCurrentWeek={handleJumpToCurrentWeek}
+            onStatusChange={handleStatusChange}
+          />
+        ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
+      } />
       <Route path="/my-assignments" element={
         <ParticipantView
           weekData={activeWeek}

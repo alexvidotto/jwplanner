@@ -51,7 +51,7 @@ export const Dashboard = ({ onNavigate }: DashboardProps) => {
 
           <div className="space-y-3">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Outras Visões</h2>
-            <button onClick={() => { }} className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl flex items-center justify-between hover:bg-gray-100 transition-all group">
+            <button onClick={() => onNavigate('/tracking')} className="w-full bg-gray-50 border border-gray-200 p-4 rounded-xl flex items-center justify-between hover:bg-gray-100 transition-all group">
               <div className="flex items-center gap-3">
                 <div className="bg-green-50 p-2.5 rounded-lg text-green-600"><MessageCircle size={20} /></div>
                 <div className="text-left"><p className="font-semibold text-gray-800">Acompanhamento</p><p className="text-xs text-gray-500">Cobrar designações via Zap</p></div>

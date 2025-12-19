@@ -155,6 +155,7 @@ const AppContent = () => {
         if (weekToSave.openingPrayerPartId) {
           updates.push({
             id: weekToSave.openingPrayerPartId,
+            parteTemplateId: weekToSave.openingPrayerTemplateId,
             assignedTo: weekToSave.openingPrayerId,
             assistantId: null,
             status: weekToSave.openingPrayerStatus,
@@ -165,6 +166,7 @@ const AppContent = () => {
         weekToSave.sections.forEach((s: any) => s.parts.forEach((p: any) => {
           updates.push({
             id: p.id,
+            parteTemplateId: p.templateId,
             assignedTo: p.assignedTo,
             assistantId: p.assistantId,
             status: p.status,

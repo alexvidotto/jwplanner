@@ -190,22 +190,73 @@ export class WeeksService {
 
     // Update Designations
     // We expect data.designacoes to be an array of updates
+    // Update Designations with Sync Logic (Delete missing, Create new, Update existing)
     if (data.designacoes && Array.isArray(data.designacoes)) {
-      data.designacoes.forEach((d: any) => {
+      // 1. Get current designations to identify what to delete
+      const currentDesignations = await this.prisma.designacao.findMany({
+        where: { semanaId: id },
+        select: { id: true }
+      });
+      const currentIds = currentDesignations.map(d => d.id);
+
+      // 2. Identify incoming IDs (exclude temporary IDs like 'new-' or 'virtual-')
+      // Actually, we process all incoming. If ID is 'new-' or 'virtual-', it's a create.
+      // If ID is a UUID but present in incoming, it's update.
+      // If ID is in currentIds but NOT in incoming, it's delete.
+
+      const incomingIds = data.designacoes
+        .map((d: any) => d.id)
+        .filter((id: string) => !id.startsWith('new-') && !id.startsWith('virtual-') && currentIds.includes(id));
+
+      const idsToDelete = currentIds.filter(id => !incomingIds.includes(id));
+
+      // 3. Delete missing
+      if (idsToDelete.length > 0) {
         transaction.push(
-          this.prisma.designacao.update({
-            where: { id: d.id },
-            data: {
-              titularId: d.assignedTo || null,
-              ajudanteId: d.assistantId || null,
-              status: d.status,
-              ordem: d.ordem !== undefined ? d.ordem : undefined,
-              observacao: d.observation,
-              tituloDoTema: d.tituloDoTema,
-              tempo: d.tempo,
-            }
+          this.prisma.designacao.deleteMany({
+            where: { id: { in: idsToDelete } }
           })
         );
+      }
+
+      // 4. Update or Create
+      data.designacoes.forEach((d: any) => {
+        const isNew = d.id.startsWith('new-') || d.id.startsWith('virtual-') || !currentIds.includes(d.id);
+
+        if (isNew) {
+          // Create
+          transaction.push(
+            this.prisma.designacao.create({
+              data: {
+                semanaId: id,
+                parteTemplateId: d.parteTemplateId,
+                titularId: d.assignedTo || null,
+                ajudanteId: d.assistantId || null,
+                status: d.status || 'PENDENTE',
+                ordem: d.ordem !== undefined ? d.ordem : 0,
+                observacao: d.observation,
+                tituloDoTema: d.tituloDoTema,
+                tempo: d.tempo,
+              }
+            })
+          );
+        } else {
+        // Update
+          transaction.push(
+            this.prisma.designacao.update({
+              where: { id: d.id },
+              data: {
+                titularId: d.assignedTo || null,
+                ajudanteId: d.assistantId || null,
+                status: d.status,
+                ordem: d.ordem !== undefined ? d.ordem : undefined,
+                observacao: d.observation,
+                tituloDoTema: d.tituloDoTema,
+                tempo: d.tempo,
+              }
+            })
+          );
+        }
       });
     }
 

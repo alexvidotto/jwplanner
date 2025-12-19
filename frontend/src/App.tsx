@@ -127,13 +127,13 @@ const AppContent = () => {
         }
 
         weekToSave.sections.forEach((s: any) => s.parts.forEach((p: any) => {
-          if (p.assignedTo || p.assistantId) {
+          if (p.assignedTo || p.assistantId || p.readerId) {
             const match = newWeek.designacoes.find((d: any) => d.parteTemplateId === p.templateId);
             if (match) {
               updates.push({
                 id: match.id,
                 assignedTo: p.assignedTo,
-                assistantId: p.assistantId,
+                assistantId: p.readerId || p.assistantId, // Use readerId if present, otherwise assistantId (simplification, assuming no overlap)
                 status: p.status || 'PENDENTE',
                 observation: p.observation,
                 tituloDoTema: p.title,
@@ -168,7 +168,7 @@ const AppContent = () => {
             id: p.id,
             parteTemplateId: p.templateId,
             assignedTo: p.assignedTo,
-            assistantId: p.assistantId,
+            assistantId: p.readerId || p.assistantId,
             status: p.status,
             observation: p.observation,
             tituloDoTema: p.title,

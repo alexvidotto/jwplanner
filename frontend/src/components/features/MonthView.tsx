@@ -35,7 +35,8 @@ export const MonthView = ({ onBack }: MonthViewProps) => {
         const enrichPart = (part: any) => ({
             ...part,
             assignedToName: getParticipantName(part.assignedTo),
-            assistantName: getParticipantName(part.assistantId)
+          assistantName: getParticipantName(part.assistantId),
+          readerName: getParticipantName(part.readerId)
         });
 
         const enrichedSections = w.sections.map((section: any) => ({

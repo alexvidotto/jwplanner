@@ -6,14 +6,14 @@ import { AdminParticipantsView } from './components/features/AdminParticipantsVi
 import { AdminPartsView } from './components/features/AdminPartsView';
 import { AdminSkillsView } from './components/features/AdminSkillsView';
 import { AdminPlanner } from './components/features/AdminPlanner';
-import { AdminMonthView } from './components/features/AdminMonthView';
 import { ParticipantView } from './components/features/ParticipantView';
 import { useParticipants } from './hooks/useParticipants';
 import { useParts } from './hooks/useParts';
 import { useWeekByDate, useCreateWeek, useUpdateWeek } from './hooks/useWeeks';
 import { transformWeekToFrontend, generateVirtualWeek, transformParticipantsToFrontend, transformPartsToFrontend } from './lib/transformers';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
-import { parseTime } from './lib/utils'; // Added import
+import { parseTime } from './lib/utils';
+import { MonthView } from './components/features/MonthView';
 
 const queryClient = new QueryClient();
 
@@ -212,7 +212,7 @@ const AppContent = () => {
           />
         ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
       } />
-      <Route path="/month" element={<AdminMonthView weeks={[]} onBack={() => navigate('/')} participants={participants} />} />
+      <Route path="/month" element={<MonthView onBack={() => navigate('/')} />} />
       <Route path="/my-assignments" element={
         <ParticipantView
           weekData={activeWeek}

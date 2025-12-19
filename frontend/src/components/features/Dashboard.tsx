@@ -28,7 +28,7 @@ export const Dashboard = ({ onNavigate }: DashboardProps) => {
             <button onClick={() => onNavigate('/month')} className="w-full bg-white border border-gray-200 p-4 rounded-xl flex items-center justify-between hover:border-blue-500 hover:shadow-md transition-all group">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-50 p-2.5 rounded-lg text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors"><Printer size={20} /></div>
-                <div className="text-left"><p className="font-semibold text-gray-800">Relatório Mensal</p><p className="text-xs text-gray-500">Visualizar e imprimir mês</p></div>
+                <div className="text-left"><p className="font-semibold text-gray-800">Visão do Mês</p><p className="text-xs text-gray-500">Visualizar e imprimir mês</p></div>
               </div>
               <ChevronRight className="text-gray-300 group-hover:text-indigo-500" size={20} />
             </button>

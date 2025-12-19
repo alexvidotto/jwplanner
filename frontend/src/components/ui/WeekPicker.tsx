@@ -5,15 +5,13 @@ import {
   subMonths, 
   startOfMonth, 
   endOfMonth, 
-  eachDayOfInterval, 
+  eachWeekOfInterval, 
   startOfWeek, 
-  endOfWeek, 
-  isSameMonth, 
-  isSameDay,
-  isToday
+  addDays,
+  isSameWeek,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface WeekPickerProps {
   currentDate: Date;
@@ -22,19 +20,35 @@ interface WeekPickerProps {
   onClose: () => void;
 }
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const formatDateRange = (date: Date) => {
+  const startDate = startOfWeek(date, { weekStartsOn: 1 });
+  const endDate = addDays(startDate, 6);
+
+  const startMonth = format(startDate, 'M');
+  const endMonth = format(endDate, 'M');
+
+  if (startMonth === endMonth) {
+    return `${format(startDate, 'd')}–${format(endDate, 'd')} de ${capitalize(format(endDate, 'MMMM', { locale: ptBR }))} `;
+  } else {
+    return `${format(startDate, 'd')} de ${capitalize(format(startDate, 'MMM', { locale: ptBR }))} – ${format(endDate, 'd')} de ${capitalize(format(endDate, 'MMM', { locale: ptBR }))}`;
+  }
+};
+
 export const WeekPicker = ({ currentDate, onSelectDate, isOpen, onClose }: WeekPickerProps) => {
   const [viewDate, setViewDate] = useState(currentDate);
 
-  const days = useMemo(() => {
+  const weeks = useMemo(() => {
     const monthStart = startOfMonth(viewDate);
     const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start on Monday
-    const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
-    return eachDayOfInterval({
-      start: startDate,
-      end: endDate
-    });
+    // We want weeks that cover the month
+    // eachWeekOfInterval gives us standard weeks
+    return eachWeekOfInterval({
+      start: monthStart,
+      end: monthEnd
+    }, { weekStartsOn: 1 });
   }, [viewDate]);
 
   const handlePrevMonth = () => setViewDate(subMonths(viewDate, 1));
@@ -57,39 +71,24 @@ export const WeekPicker = ({ currentDate, onSelectDate, isOpen, onClose }: WeekP
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((day, i) => (
-            <div key={i} className="text-center text-xs font-bold text-gray-400">
-              {day}
-            </div>
-          ))}
-        </div>
+        <div className="flex flex-col gap-2">
+          {weeks.map((weekStart, idx) => {
+            const isSelected = isSameWeek(weekStart, currentDate, { weekStartsOn: 1 });
+            const label = formatDateRange(weekStart);
 
-        <div className="grid grid-cols-7 gap-1">
-          {days.map((day, idx) => {
-            const isCurrentMonth = isSameMonth(day, viewDate);
-            const isSelected = isSameDay(day, currentDate);
-            const isDayToday = isToday(day);
-
-            // Calculate if this day is part of the selected week?
-            // Usually we just highlight the specific day or maybe the whole week?
-            // Let's just highlight the day for now, simple picker.
-            
             return (
               <button
                 key={idx}
                 onClick={() => {
-                  onSelectDate(day);
+                  onSelectDate(weekStart);
                   onClose();
                 }}
                 className={`
-                  h-9 w-9 text-sm rounded-full flex items-center justify-center transition-colors
-                  ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-700 hover:bg-blue-50'}
-                  ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
-                  ${isDayToday && !isSelected ? 'border border-blue-600 text-blue-600 font-bold' : ''}
+                  w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors
+                  ${isSelected ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}
                 `}
               >
-                {format(day, 'd')}
+                {label}
               </button>
             );
           })}

@@ -38,6 +38,8 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
     return acc + section.parts.reduce((pAcc: number, part: any) => pAcc + parseTime(part.time), 0);
   }, 0);
 
+  const presidentTemplate = partTemplates.find(pt => pt.title === 'Presidente');
+
   const MAX_MINUTES = 105;
   const isOverTime = totalMinutes > MAX_MINUTES;
 
@@ -376,7 +378,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                 {/* President Assignee */}
                 <div className="w-full sm:w-[280px]">
                   {weekData.presidentId ? (
-                    <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
+                    <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: presidentTemplate?.id }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm">
                           {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
@@ -394,7 +396,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
+                    <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: presidentTemplate?.id }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
                       + Designar Presidente
                     </button>
                   )}
@@ -405,14 +407,14 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                   {weekData.openingPrayerId ? (
                     <div className="flex items-center gap-2 w-full">
                       <span className="text-gray-400 text-sm font-medium whitespace-nowrap">Oração Inicial:</span>
-                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-gray-700 font-medium text-sm hover:text-blue-600 truncate flex-1 text-right">
+                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', templateId: weekData.openingPrayerTemplateId }, 'main')} className="text-gray-700 font-medium text-sm hover:text-blue-600 truncate flex-1 text-right">
                         {participants.find(p => p.id === weekData.openingPrayerId)?.name}
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 w-full justify-between">
                       <span className="text-gray-400 text-sm font-medium">Oração Inicial:</span>
-                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-blue-600 text-sm hover:underline">
+                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', templateId: weekData.openingPrayerTemplateId }, 'main')} className="text-blue-600 text-sm hover:underline">
                         Definir
                       </button>
                     </div>

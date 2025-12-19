@@ -76,6 +76,17 @@ export const transformWeekToFrontend = (week: any) => {
 
   const startDate = new Date(week.dataInicio);
 
+  // Fixed order for Tesouros
+  const tesourosOrder = ['Discurso', 'Jóias Espirituais', 'Leitura da Bíblia'];
+  sectionsMap.tesouros.parts.sort((a: any, b: any) => {
+    const indexA = tesourosOrder.indexOf(a.title);
+    const indexB = tesourosOrder.indexOf(b.title);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return 0;
+  });
+
   // Sort NVC section to ensure Oração Final is last
   sectionsMap.nvc.parts.sort((a: any, b: any) => {
     if (a.title === 'Oração Final') return 1;
@@ -138,6 +149,17 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
         hasTime: tpl.hasTime ?? true,
       });
     }
+  });
+
+  // Fixed order for Tesouros
+  const tesourosOrder = ['Discurso', 'Jóias Espirituais', 'Leitura da Bíblia'];
+  sectionsMap.tesouros.parts.sort((a: any, b: any) => {
+    const indexA = tesourosOrder.indexOf(a.title);
+    const indexB = tesourosOrder.indexOf(b.title);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return 0;
   });
 
   // Sort NVC section to ensure Oração Final is last

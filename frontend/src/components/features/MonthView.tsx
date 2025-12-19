@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Printer, Filter } from 'lucide-react';
-import { useWeeks } from '../../hooks/useWeeks';
+import { useWeeks, useUpdateWeek } from '../../hooks/useWeeks';
 import { useParticipants } from '../../hooks/useParticipants';
 import { transformWeeksToFrontend } from '../../lib/transformers';
 import { WeekPrintCard } from './WeekPrintCard';
@@ -12,6 +12,7 @@ interface MonthViewProps {
 
 export const MonthView = ({ onBack }: MonthViewProps) => {
   const { data: weeksData, isLoading } = useWeeks();
+  const { mutateAsync: updateWeek } = useUpdateWeek(); // Need this hook
   const { data: participants } = useParticipants();
   
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -156,7 +157,16 @@ export const MonthView = ({ onBack }: MonthViewProps) => {
            )}
 
            {filteredWeeks.map(week => (
-               <WeekPrintCard key={week.id} week={week} />
+             <WeekPrintCard
+               key={week.id}
+               week={week}
+               onUpdateDescription={async (newDesc) => {
+                 await updateWeek({
+                   id: week.id,
+                   data: { descricao: newDesc }
+                 });
+               }}
+             />
            ))}
         </div>
       </div>

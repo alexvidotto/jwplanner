@@ -331,6 +331,7 @@ export class WeeksService {
     const weekDataToUpdate: any = {};
     if (data.presidentId !== undefined) weekDataToUpdate.presidenteId = data.presidentId;
     if (data.tipo !== undefined) weekDataToUpdate.tipo = data.tipo;
+    if (data.descricao !== undefined) weekDataToUpdate.descricao = data.descricao;
 
     if (Object.keys(weekDataToUpdate).length > 0) {
       transaction.push(

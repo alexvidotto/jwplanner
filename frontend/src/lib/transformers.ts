@@ -123,7 +123,8 @@ export const transformWeekToFrontend = (week: any) => {
     openingPrayerPartId,
     openingPrayerTemplateId,
     sections: [sectionsMap.tesouros, sectionsMap.fsm, sectionsMap.nvc],
-    isCanceled: week.tipo === 'NO_MEET'
+    isCanceled: week.tipo === 'NO_MEET',
+    description: week.descricao || ''
   };
 };
 

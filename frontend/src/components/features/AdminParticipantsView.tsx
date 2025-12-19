@@ -277,7 +277,7 @@ export const AdminParticipantsView = ({ participants, setParticipants, onBack }:
 
                         let dateFlagClass = "text-gray-500";
                         // Using same colors as Planner for consistency
-                        if (histDate > now && diff < 0) {
+                        if (histDate > now) {
                           // Future -> Green
                           dateFlagClass = "text-green-600 font-medium";
                         } else if (diff === 0) {
@@ -286,13 +286,20 @@ export const AdminParticipantsView = ({ participants, setParticipants, onBack }:
                         } else if (diff === 1) {
                           // Previous Month -> Red
                           dateFlagClass = "text-red-600 font-medium";
+                        } else {
+                          // Older
+                          dateFlagClass = "text-gray-400";
                         }
 
                         return (
                           <div key={h.id} className="flex justify-between items-center text-xs border-b border-gray-100 last:border-0 pb-1">
                             <div className="flex flex-col">
                               <span className="font-medium text-gray-700 truncate max-w-[150px]">{h.parteTemplate?.titulo || h.tituloDoTema || 'Designação'}</span>
-                              <span className={`text-[10px] px-1 rounded w-fit ${roleColor} font-semibold`}>{roleLabel}</span>
+                              <span className={`text-[10px] px-1 rounded w-fit ${roleColor} font-semibold`}>
+                                {roleLabel === 'TITULAR' ? 'TIT' :
+                                  roleLabel === 'AJUDANTE' ? 'AJD' :
+                                    roleLabel === 'LEITOR' ? 'LEI' : roleLabel}
+                              </span>
                             </div>
                             <span className={`${dateFlagClass} whitespace-nowrap`}>
                               {new Date(h.semana.dataInicio).toLocaleDateString('pt-BR')}

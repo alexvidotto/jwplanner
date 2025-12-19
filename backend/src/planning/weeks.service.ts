@@ -131,9 +131,20 @@ export class WeeksService {
           },
           orderBy: { semana: { dataInicio: 'desc' } },
           where: {
-            semana: { dataInicio: { lt: week.dataInicio } } // Only past assignments
+            semana: { id: { not: week.id } } // Exclude current week only
           },
           take: 5 // Get last 5 to show history
+        },
+        ajudas: {
+          include: {
+            semana: true,
+            parteTemplate: true
+          },
+          orderBy: { semana: { dataInicio: 'desc' } },
+          where: {
+            semana: { id: { not: week.id } }
+          },
+          take: 5
         },
         habilidades: true
       }
@@ -147,7 +158,7 @@ export class WeeksService {
       const pastPresidencies = await this.prisma.semana.findMany({
         where: {
           presidenteId: { in: candidateIds },
-          dataInicio: { lt: week.dataInicio }
+          id: { not: week.id }
         },
         orderBy: { dataInicio: 'desc' },
         take: 100 // Enough to cover recent history for everyone
@@ -171,69 +182,91 @@ export class WeeksService {
     const processedCandidates = candidates.map(c => {
       let lastSpecificTs = 0;
       let lastGeneralTs = 0;
-      let history: any[] = [];
 
-      if (partTemplateId === 'president') {
-        const presidencies = presidenciesMap.get(c.id) || [];
-        // Sort presidencies descending
-        presidencies.sort((a, b) => b.date.getTime() - a.date.getTime());
+      // Merge all sources of history: Presidencies + Designacoes (Titular) + Ajudas (Ajudante)
+      // Note: 'ajudas' explicitly means they were the assistant.
 
-        lastSpecificTs = presidencies.length > 0 ? presidencies[0].date.getTime() : 0;
+      const presidentsHistory = (partTemplateId === 'president' ? (presidenciesMap.get(c.id) || []) : []).map(p => ({
+        date: p.date,
+        role: 'PRESIDENTE',
+        title: 'Presidente',
+        isSpecific: true // Always specific for President role
+      }));
 
-        // Merge general assignments for history display
-        history = [
-          ...presidencies.map(p => ({ date: p.date, role: 'PRESIDENTE', title: 'Presidente', isSpecific: true })),
-          ...c.designacoes.map(d => ({
-            date: d.semana.dataInicio,
-            role: d.ajudanteId === c.id ? (d.parteTemplate.requerLeitor ? 'LEITOR' : 'AJUDANTE') : 'TITULAR',
-            title: d.parteTemplate.titulo,
-            isSpecific: false
-          }))
-        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 3);
+      const titularHistory = c.designacoes.map(d => ({
+        date: d.semana.dataInicio,
+        role: 'TITULAR',
+        title: d.parteTemplate.titulo,
+        isSpecific: d.parteTemplateId === partTemplateId
+      }));
 
-        lastGeneralTs = history.length > 0 ? history[0].date.getTime() : 0;
+      const assistantHistory = c.ajudas.map(d => ({
+        date: d.semana.dataInicio,
+        role: d.parteTemplate.requerLeitor ? 'LEITOR' : 'AJUDANTE',
+        title: d.parteTemplate.titulo,
+        isSpecific: d.parteTemplateId === partTemplateId
+      }));
 
-      } else {
-        // Normal parts
-        const specificAssignments = c.designacoes.filter(d => d.parteTemplateId === partTemplateId);
-        lastSpecificTs = specificAssignments.length > 0 ? specificAssignments[0].semana.dataInicio.getTime() : 0;
-        lastGeneralTs = c.designacoes.length > 0 ? c.designacoes[0].semana.dataInicio.getTime() : 0;
+      const allHistory = [
+        ...presidentsHistory,
+        ...titularHistory,
+        ...assistantHistory
+      ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
-        history = c.designacoes.map(d => ({
-          date: d.semana.dataInicio,
-          role: d.ajudanteId === c.id ? (d.parteTemplate.requerLeitor ? 'LEITOR' : 'AJUDANTE') : 'TITULAR',
-          title: d.parteTemplate.titulo,
-          isSpecific: d.parteTemplateId === partTemplateId
-        })).slice(0, 3);
+      // Calculate last assignment timestamps for sorting
+      if (allHistory.length > 0) {
+        lastGeneralTs = allHistory[0].date.getTime();
+
+        // Find most recent SPECIFIC assignment
+        const specific = allHistory.find(h => h.isSpecific);
+        if (specific) {
+          lastSpecificTs = specific.date.getTime();
+        }
       }
 
+      // Slice for display
+      const history = allHistory.slice(0, 3);
+
       return {
-        participant: c,
+        ...c,
         lastAssignmentDate: lastSpecificTs > 0 ? new Date(lastSpecificTs).toISOString() : null,
         lastGeneralAssignmentDate: lastGeneralTs > 0 ? new Date(lastGeneralTs).toISOString() : null,
-        lastSpecificTs,
-        lastGeneralTs,
+        lastSpecificTs, // Keep for sorting
+        lastGeneralTs,  // Keep for sorting
         history
       };
     });
 
     // 4. Sort
     return processedCandidates.sort((a, b) => {
-      // Primary: Specific Part History
+      // Primary: Specific Part History (Ascending: older is better/more available)
+      // If never assigned (0), it's "better" than recently assigned.
+      // But wait, standard logic: Least recently assigned first. 0 means never assigned, so it should be first.
+      
+      // If A has never done it (0) and B has (timestamp), A comes first.
+      // If both have done it, smaller timestamp (older) comes first.
+      
+      // Let's assume 0 is "Long ago" (effectively).
+      
+      // Wait, if I use a.lastSpecificTs - b.lastSpecificTs:
+      // A=0, B=Time. 0 - Time = Negative. A comes first. Correct.
+      // A=OldTime, B=NewTime. Old - New = Negative. A comes first. Correct.
+      
       if (a.lastSpecificTs !== b.lastSpecificTs) {
         return a.lastSpecificTs - b.lastSpecificTs;
       }
+      
       // Secondary: General History
       return a.lastGeneralTs - b.lastGeneralTs;
     }).map(item => {
-      const p = item.participant;
+      // item is the flattened participant with extra fields
       return {
-        id: p.id,
-        name: p.nome,
-        type: p.privilegio,
-        gender: (p.privilegio === 'PUB_MULHER') ? 'PM' : 'PH',
-        active: p.podeDesignar,
-        abilities: p.habilidades ? p.habilidades.map((h: any) => h.isLeitor ? `${h.parteTemplateId}_reader` : h.parteTemplateId) : [],
+        id: item.id,
+        name: item.nome,
+        type: item.privilegio,
+        gender: (item.privilegio === 'PUB_MULHER') ? 'PM' : 'PH',
+        active: item.podeDesignar,
+        abilities: item.habilidades ? item.habilidades.map((h: any) => h.isLeitor ? `${h.parteTemplateId}_reader` : h.parteTemplateId) : [],
         lastAssignmentDate: item.lastAssignmentDate,
         lastGeneralAssignmentDate: item.lastGeneralAssignmentDate,
         history: item.history

@@ -865,18 +865,9 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-gray-800 truncate">{p.name}</p>
                         </div>
-                        {p.lastAssignmentDate ? (
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0">
-                            Última: {new Date(p.lastAssignmentDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                          </span>
-                        ) : (
-                            <span className="text-[10px] text-green-600 font-medium whitespace-nowrap flex-shrink-0">
-                            Disponível
-                          </span>
-                        )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
                         <span className="bg-gray-100 px-1.5 rounded border">{p.type}</span>
                         {isApt &&
                           <span className="text-green-600 flex items-center gap-1"><Check size={10} /> Apto</span>
@@ -886,37 +877,41 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                       {p.history && p.history.length > 0 && (
                         <div className="mt-2 space-y-1 bg-white/50 p-1.5 rounded border border-gray-100">
                           {p.history.map((h: any, idx: number) => {
-                            // Determine color flag based on date relative to CURRENT PLAN DATE (weekData.date)
-                            const planDate = new Date(weekData.date);
+                            // Determine color flag based on date relative to TODAY (Real time)
+                            const now = new Date();
                             const histDate = new Date(h.date);
 
                             // Check months difference
-                            const planMonth = planDate.getMonth() + planDate.getFullYear() * 12;
+                            const nowMonth = now.getMonth() + now.getFullYear() * 12;
                             const histMonth = histDate.getMonth() + histDate.getFullYear() * 12;
-                            const diff = planMonth - histMonth;
+                            const diff = nowMonth - histMonth;
 
                             let flagClass = "bg-gray-100 text-gray-500"; // Default (older)
-                            if (histDate > planDate && diff < 0) {
-                              // Future
+
+                            // Priority: Future (relative to NOW) -> Green
+                            if (histDate > now) {
                               flagClass = "bg-green-100 text-green-700";
                             } else if (diff === 0) {
-                              // Current Month
+                              // Past/Today but Current Month
                               flagClass = "bg-yellow-100 text-yellow-700";
                             } else if (diff === 1) {
                               // Previous Month
                               flagClass = "bg-red-100 text-red-700";
+                            } else {
+                              // Older than previous month
+                              flagClass = "bg-gray-100 text-gray-500";
                             }
 
                             return (
                               <div key={idx} className="flex justify-between items-center text-[10px]">
-                                <span className={`truncate max-w-[150px] ${h.isSpecific ? 'font-medium text-blue-700' : 'text-gray-600'}`}>
+                                <span className="truncate max-w-[150px] text-gray-700 font-medium">
                                   {h.title}
                                 </span>
                                 <div className={`flex items-center gap-2 flex-shrink-0 px-1.5 py-0.5 rounded ${flagClass}`}>
                                   <span className="font-bold uppercase text-[9px]">
-                                    {h.isSpecific && h.role === 'PRESIDENTE' ? 'PRE' :
-                                      h.role === 'TITULAR' ? 'TIT' :
-                                        h.role === 'AJUDANTE' ? 'AJU' :
+                                    {h.role === 'PRESIDENTE' ? 'PRE' :
+                                      h.role === 'TITULAR' ? 'TIT' : 
+                                        h.role === 'AJUDANTE' ? 'AJD' :
                                           h.role === 'LEITOR' ? 'LEI' : h.role.substring(0, 3)}
                                   </span>
                                   <span>{new Date(h.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>

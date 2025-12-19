@@ -23,11 +23,11 @@ export const WeekPrintCard = ({ week }: WeekPrintCardProps) => {
       <div className="px-4 py-2 print:px-2 print:py-1 border-b text-sm print:text-xs flex gap-6 print:gap-4 text-gray-700">
         <div>
           <span className="font-bold text-gray-500 mr-2 uppercase text-xs print:text-[10px]">Presidente:</span>
-          <span className="font-medium">{week.presidentName || '---'}</span>
+          <span className="font-bold text-gray-900">{week.presidentName || '---'}</span>
         </div>
         <div>
           <span className="font-bold text-gray-500 mr-2 uppercase text-xs print:text-[10px]">Oração Inicial:</span>
-          <span className="font-medium">{week.openingPrayerName || '---'}</span>
+          <span className="font-bold text-gray-900">{week.openingPrayerName || '---'}</span>
         </div>
       </div>
 
@@ -35,41 +35,69 @@ export const WeekPrintCard = ({ week }: WeekPrintCardProps) => {
         {/* Tesouros */}
         <div className="space-y-3 print:space-y-1">
           <h4 className="font-bold text-gray-500 text-xs print:text-[10px] uppercase tracking-wider mb-2 print:mb-1">Tesouros</h4>
-          {tesouros?.parts?.map((part: any, idx: number) => (
-            <div key={idx} className="mb-2 print:mb-1">
-              <div className="font-semibold text-gray-800 leading-tight">{part.title}</div>
-              <div className="text-gray-600 text-xs print:text-[10px]">{part.assignedToName || '---'}</div>
-            </div>
-          ))}
+          {tesouros?.parts?.map((part: any, idx: number) => {
+            const partNumber = idx + 1; // 1-based for Tesouros
+            return (
+              <div key={idx} className="mb-2 print:mb-1">
+                <div className="font-medium text-gray-600 leading-tight mb-0.5">{partNumber}. {part.title}</div>
+                <div className="font-bold text-gray-900 text-xs print:text-[10px]">{part.assignedToName || '---'}</div>
+              </div>
+            )
+          })}
           {(!tesouros?.parts || tesouros.parts.length === 0) && <div className="text-gray-400 italic">Sem partes</div>}
         </div>
 
         {/* FSM */}
         <div className="space-y-3 print:space-y-1">
           <h4 className="font-bold text-gray-500 text-xs print:text-[10px] uppercase tracking-wider text-yellow-600 mb-2 print:mb-1">Faça Seu Melhor</h4>
-          {fsm?.parts?.map((part: any, idx: number) => (
-            <div key={idx} className="mb-2 print:mb-1">
-              <div className="font-semibold text-gray-800 leading-tight">{part.title}</div>
-              <div className="text-gray-600 text-xs print:text-[10px]">{part.assignedToName || '---'}</div>
-              {part.assistantName && <div className="text-gray-400 text-[10px] print:text-[9px] italic">Aj: {part.assistantName}</div>}
-            </div>
-          ))}
+          {fsm?.parts?.map((part: any, idx: number) => {
+            const startNumber = (tesouros?.parts?.length || 0) + 1;
+            const partNumber = startNumber + idx;
+
+            return (
+              <div key={idx} className="mb-2 print:mb-1">
+                 <div className="font-medium text-gray-600 leading-tight mb-0.5">{partNumber}. {part.title}</div>
+                 <div className="font-bold text-gray-900 text-xs print:text-[10px]">{part.assignedToName || '---'}</div>
+                 {part.assistantName && <div className="text-gray-600 text-[10px] print:text-[9px]">Aj: <span className="font-bold text-gray-900">{part.assistantName}</span></div>}
+               </div>
+            )
+          })}
           {(!fsm?.parts || fsm.parts.length === 0) && <div className="text-gray-400 italic">Sem partes</div>}
         </div>
 
         {/* NVC */}
         <div className="space-y-3 print:space-y-1">
           <h4 className="font-bold text-gray-500 text-xs print:text-[10px] uppercase tracking-wider text-red-600 mb-2 print:mb-1">Vida Cristã</h4>
-          {nvc?.parts?.map((part: any, idx: number) => (
-            <div key={idx} className="mb-2 print:mb-1">
-              <div className="font-semibold text-gray-800 leading-tight">{part.title}</div>
-              <div className="text-gray-600 text-xs print:text-[10px]">{part.assignedToName || '---'}</div>
-              {part.requiresReader && <div className="text-gray-400 text-[10px] print:text-[9px] italic">Leitor: {part.readerName || '---'}</div>}
-            </div>
-          ))}
+          {nvc?.parts?.map((part: any, idx: number) => {
+            const isFinalPrayer = part.title === 'Oração Final';
+            let partNumberDisplay = '';
+
+            if (!isFinalPrayer) {
+              const tesourosCount = tesouros?.parts?.length || 0;
+              const fsmCount = fsm?.parts?.length || 0;
+              // Calculate previous parts in this section that were NOT final prayer (though typically final prayer is last)
+              // To be safe, we should count all previous parts across sections + previous parts in this section.
+              // But typically NVC has just regular parts + song + prayer.
+              // Songs are not usually in "parts" array here unless modeled.
+              // Assuming simple sequential index for now, but skipping number for Final Prayer.
+              const startNumber = tesourosCount + fsmCount + 1;
+              const partNumber = startNumber + idx;
+              partNumberDisplay = `${partNumber}. `;
+            }
+
+            return (
+              <div key={idx} className="mb-2 print:mb-1">
+                 <div className="font-medium text-gray-600 leading-tight mb-0.5">{partNumberDisplay}{part.title}</div>
+                 <div className="font-bold text-gray-900 text-xs print:text-[10px]">{part.assignedToName || '---'}</div>
+                 {part.requiresReader && <div className="text-gray-600 text-[10px] print:text-[9px]">Leitor: <span className="font-bold text-gray-900">{part.readerName || '---'}</span></div>}
+               </div>
+            )
+          })}
           {(!nvc?.parts || nvc.parts.length === 0) && <div className="text-gray-400 italic">Sem partes</div>}
         </div>
       </div>
     </div>
   );
 };
+
+

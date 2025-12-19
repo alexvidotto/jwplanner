@@ -47,6 +47,7 @@ export const transformWeekToFrontend = (week: any) => {
       id: d.id,
       templateId: template.id,
       title: d.tituloDoTema || template.titulo,
+      templateTitle: template.titulo, // Store original template title for sorting
       time: (d.tempo || template.tempoPadrao || 5) + ' min',
       assignedTo: d.titularId,
       status: d.status,
@@ -81,11 +82,26 @@ export const transformWeekToFrontend = (week: any) => {
   // Fixed order for Tesouros
   const tesourosOrder = ['Discurso', 'Jóias Espirituais', 'Leitura da Bíblia'];
   sectionsMap.tesouros.parts.sort((a: any, b: any) => {
-    const indexA = tesourosOrder.indexOf(a.title);
-    const indexB = tesourosOrder.indexOf(b.title);
+    // Try sorting by templateTitle first (stable), fallback to title
+    const titleA = a.templateTitle || a.title;
+    const titleB = b.templateTitle || b.title;
+
+    const indexA = tesourosOrder.indexOf(titleA);
+    const indexB = tesourosOrder.indexOf(titleB);
+
+    // If both are known, sort by order
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-    if (indexA !== -1) return -1;
-    if (indexB !== -1) return 1;
+
+    // If only one is known, it should be in its place... 
+    // BUT Discurso might have a dynamic title if we missed templateTitle? 
+    // Actually, with templateTitle, 'Discurso' should match index 0.
+
+    // If 'Discurso' was renamed on template side (unlikely), we might have issues.
+    // Assuming 'Discurso' template title IS 'Discurso'.
+
+    if (indexA !== -1) return -1; // A is known, B is unknown (should B be before or after?)
+    if (indexB !== -1) return 1;  // B is known
+
     return 0;
   });
 
@@ -140,6 +156,7 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
         id: `virtual-${tpl.id}-${Date.now()}`,
         templateId: tpl.id,
         title: tpl.title,
+        templateTitle: tpl.title,
         time: tpl.defaultTime,
         assignedTo: null,
         status: 'PENDENTE',
@@ -157,13 +174,18 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
   // Fixed order for Tesouros
   const tesourosOrder = ['Discurso', 'Jóias Espirituais', 'Leitura da Bíblia'];
   sectionsMap.tesouros.parts.sort((a: any, b: any) => {
-    const indexA = tesourosOrder.indexOf(a.title);
-    const indexB = tesourosOrder.indexOf(b.title);
+    const titleA = a.templateTitle || a.title;
+    const titleB = b.templateTitle || b.title;
+
+    const indexA = tesourosOrder.indexOf(titleA);
+    const indexB = tesourosOrder.indexOf(titleB);
+
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
     return 0;
   });
+
 
   // Sort NVC section to ensure Oração Final is last
   sectionsMap.nvc.parts.sort((a: any, b: any) => {

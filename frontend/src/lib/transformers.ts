@@ -52,10 +52,11 @@ export const transformWeekToFrontend = (week: any) => {
       status: d.status,
       assistantId: d.ajudanteId,
       assistantStatus: 'PENDENTE',
-      assistantStatus: 'PENDENTE',
       observation: d.observacao || '',
       requiresAssistant: template.requerAjudante,
       requiresReader: template.requerLeitor || false,
+      hasObservation: template.temObservacao || false,
+      hasTime: template.temTempo ?? true,
     };
 
     // Extract Opening Prayer
@@ -127,6 +128,8 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
         observation: '',
         requiresAssistant: tpl.requiresAssistant,
         requiresReader: tpl.requiresReader,
+        hasObservation: tpl.hasObservation,
+        hasTime: tpl.hasTime ?? true,
       });
     }
   });
@@ -178,6 +181,8 @@ export const transformPartsToFrontend = (parts: any[]) => {
     section: p.secao,
     requiresAssistant: p.requerAjudante,
     requiresReader: p.requerLeitor,
+    hasObservation: p.temObservacao,
+    hasTime: p.temTempo,
     allowedPrivileges: p.generoExclusivo ? [p.generoExclusivo] : ['ANY'] // Approximate logic
   }));
 };

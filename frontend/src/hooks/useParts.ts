@@ -28,6 +28,7 @@ export const useCreatePart = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      queryClient.invalidateQueries({ queryKey: ['week'] });
     },
   });
 };
@@ -45,6 +46,7 @@ export const useUpdatePart = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      queryClient.invalidateQueries({ queryKey: ['week'] });
     },
   });
 };
@@ -61,6 +63,7 @@ export const useDeletePart = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
+      queryClient.invalidateQueries({ queryKey: ['week'] });
     },
   });
 };

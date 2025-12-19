@@ -35,7 +35,20 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
   };
 
   const totalMinutes = weekData.sections.reduce((acc: number, section: any) => {
-    return acc + section.parts.reduce((pAcc: number, part: any) => pAcc + parseTime(part.time), 0);
+    return acc + section.parts.reduce((pAcc: number, part: any) => {
+      if (part.hasTime === false || part.hasTime === null) {
+        // Fallback if not set, assume true unless explicitly false?
+        // Schema default is true, but transformer sets it.
+        // If hasTime is explicitly false, 0.
+        // If undefined, assume true?
+        return pAcc;
+      }
+      // If explicitly false, exclude.
+      // The transformer sets it to true/false.
+      if (part.hasTime === false) return pAcc;
+
+      return pAcc + parseTime(part.time)
+    }, 0);
   }, 0);
 
   const partNumbers = useMemo(() => {
@@ -532,10 +545,12 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                                   </div>
                                 )}
                                 <EditableField value={part.title} onChange={(val) => handleUpdatePart(section.id, part.id, 'title', val)} className="font-bold text-gray-800 truncate" />
-                                <EditableField value={part.time} onChange={(val) => handleUpdatePart(section.id, part.id, 'time', val)} className="text-xs bg-gray-100 text-gray-600 rounded flex-shrink-0" />
+                                {part.hasTime !== false && (
+                                  <EditableField value={part.time} onChange={(val) => handleUpdatePart(section.id, part.id, 'time', val)} className="text-xs bg-gray-100 text-gray-600 rounded flex-shrink-0" />
+                                )}
                               </div>
 
-                              {!isClosingPrayer && (
+                              {part.hasObservation && (
                                 <div className="mb-2 max-w-md">
                                   <EditableDescription value={part.observation} onChange={(val) => handleUpdatePart(section.id, part.id, 'observation', val)} />
                                 </div>

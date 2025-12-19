@@ -48,6 +48,8 @@ model ParteTemplate {
   secao           String
   requerAjudante  Boolean      @default(false)
   requerLeitor    Boolean      @default(false)
+  temObservacao   Boolean      @default(false)
+  temTempo        Boolean      @default(true)
   generoExclusivo Privilegio?
   tempoPadrao     Int?         // Minutes
 

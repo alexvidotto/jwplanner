@@ -11,6 +11,8 @@ interface PartTemplate {
   section: string; // 'tesouros' | 'fsm' | 'nvc'
   requiresAssistant?: boolean;
   requiresReader?: boolean;
+  hasObservation?: boolean;
+  hasTime?: boolean;
 }
 
 interface AdminPartsViewProps {
@@ -22,7 +24,7 @@ interface AdminPartsViewProps {
 export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false });
+  const [formData, setFormData] = useState({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const createPart = useCreatePart();
@@ -41,6 +43,8 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
         tempoPadrao: timeInt,
         requerAjudante: formData.requiresAssistant,
         requerLeitor: formData.requiresReader,
+        temObservacao: formData.hasObservation,
+        temTempo: formData.hasTime,
       };
 
       if (editingId) {
@@ -51,7 +55,7 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
 
       setIsModalOpen(false);
       setEditingId(null);
-      setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false });
+      setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false });
     } catch (error) {
       console.error('Failed to save part:', error);
       alert('Erro ao salvar parte.');
@@ -60,7 +64,7 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
 
   const handleEdit = (p: PartTemplate) => {
     setEditingId(p.id);
-    setFormData({ title: p.title, defaultTime: p.defaultTime, section: p.section, requiresAssistant: p.requiresAssistant || false, requiresReader: p.requiresReader || false });
+    setFormData({ title: p.title, defaultTime: p.defaultTime, section: p.section, requiresAssistant: p.requiresAssistant || false, requiresReader: p.requiresReader || false, hasObservation: p.hasObservation || false, hasTime: p.hasTime ?? true });
     setIsModalOpen(true);
   };
 
@@ -82,7 +86,7 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
             <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
             <h1 className="font-bold text-gray-800 text-lg">Cadastro de Partes</h1>
           </div>
-          <Button onClick={() => { setEditingId(null); setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false }); setIsModalOpen(true); }}>
+          <Button onClick={() => { setEditingId(null); setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false }); setIsModalOpen(true); }}>
             <Plus size={16} /> Nova Parte
           </Button>
         </div>
@@ -106,7 +110,7 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 font-medium text-gray-900">{p.title}</td>
                   <td className="px-6 py-4 text-gray-600 uppercase text-xs">{p.section}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.defaultTime}</td>
+                  <td className="px-6 py-4 text-gray-600">{p.hasTime !== false ? p.defaultTime : '-'}</td>
                   <td className="px-6 py-4 text-gray-600">{p.requiresAssistant ? 'Sim' : '-'}</td>
                   <td className="px-6 py-4 text-gray-600">{p.requiresReader ? <span className="text-blue-600 font-bold flex items-center gap-1"><Book size={14} /> Sim</span> : '-'}</td>
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
@@ -139,9 +143,17 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm text-gray-600 block mb-1">Tempo Padrão</label>
-                  <input className="w-full border rounded p-2" value={formData.defaultTime} onChange={e => setFormData({ ...formData, defaultTime: e.target.value })} placeholder="Ex: 5 min" />
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" checked={formData.hasTime} onChange={e => setFormData({ ...formData, hasTime: e.target.checked })} />
+                    <span className="text-sm text-gray-800">Add tempo</span>
+                  </label>
+                  {formData.hasTime && (
+                    <div>
+                      <label className="text-sm text-gray-600 block mb-1">Tempo Padrão</label>
+                      <input className="w-full border rounded p-2" value={formData.defaultTime} onChange={e => setFormData({ ...formData, defaultTime: e.target.value })} placeholder="Ex: 5 min" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col pt-6 gap-2">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -151,6 +163,10 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={formData.requiresReader} onChange={e => setFormData({ ...formData, requiresReader: e.target.checked })} />
                     <span className="text-sm text-gray-800">Requer Leitor</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={formData.hasObservation} onChange={e => setFormData({ ...formData, hasObservation: e.target.checked })} />
+                    <span className="text-sm text-gray-800">Permitir observação</span>
                   </label>
                 </div>
               </div>

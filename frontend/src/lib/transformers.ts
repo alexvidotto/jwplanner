@@ -60,6 +60,7 @@ export const transformWeekToFrontend = (week: any) => {
       requiresReader: template.requerLeitor || false,
       hasObservation: template.temObservacao || false,
       hasTime: template.temTempo ?? true,
+      token: d.tokenConfirmacao
     };
 
     // Extract Opening Prayer

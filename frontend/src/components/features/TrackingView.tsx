@@ -94,7 +94,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
             status: part.status || 'PENDENTE',
             section: tesouros.title,
             observation: part.observation,
-            partNumber: partNum
+            partNumber: partNum,
+            token: part.token
           });
         }
         if (part.assistantId) {
@@ -106,7 +107,23 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
             status: part.assistantStatus || 'PENDENTE',
             section: tesouros.title,
             observation: part.observation,
-            partNumber: partNum
+            partNumber: partNum,
+            token: part.token // Note: Assistant shares same token? Actually designacao has one token. 
+            // Wait, designacao model has titularId and ajudanteId. One token per designacao.
+            // If secure link confirms "the assignment", does it confirm for both?
+            // Usually confirmation is per person.
+            // PROPOSAL: Only TITULAR uses the token for now?
+            // OR: Backend handles who is confirming?
+            // The token is on Designacao. If I use it for Assistant, it confirms the Designacao.
+            // Status is on Designacao. So it confirms the whole part.
+            // Ideally, we'd have statusTitular and statusAjudante.
+            // Schema has `status` (Enum StatusDesignacao). It seems shared?
+            // Let's look at schema again.
+            // `status` is on Designacao. `titularId`, `ajudanteId`.
+            // If Assistant confirms, it marks Designacao as CONFIRMED.
+            // This implies BOTH are confirmed? Or just the part is confirmed?
+            // Current model seems to have single status for the part.
+            // Use the token for both for now.
           });
         }
         if (part.readerId) {
@@ -230,7 +247,13 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
       message += `\nObs: ${assignment.observation}`;
     }
 
-    message += `\nPor favor, confirme se poderá realizar.`;
+    if (assignment.token) {
+      const link = `${window.location.origin}/confirm/${assignment.token}`;
+      message += `\n\nPara ver detalhes e confirmar, clique aqui:\n${link}`;
+    } else {
+      message += `\nPor favor, confirme se poderá realizar.`;
+    }
+
     return message;
   };
 

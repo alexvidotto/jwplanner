@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class WeeksService {
@@ -37,7 +38,8 @@ export class WeeksService {
                 parteTemplateId: tpl.id,
                 tempo: tpl.tempoPadrao || 5,
                 status: 'PENDENTE',
-                ordem: idx
+                ordem: idx,
+                tokenConfirmacao: crypto.randomUUID()
               }))
             }
           },
@@ -307,7 +309,8 @@ export class WeeksService {
             parteTemplateId: tpl.id,
             tempo: tpl.tempoPadrao || 5,
             status: 'PENDENTE',
-            ordem: idx
+            ordem: idx,
+            tokenConfirmacao: crypto.randomUUID()
           }))
         }
       },
@@ -393,6 +396,7 @@ export class WeeksService {
                 observacao: d.observation,
                 tituloDoTema: d.tituloDoTema,
                 tempo: d.tempo,
+                tokenConfirmacao: crypto.randomUUID()
               }
             })
           );
@@ -432,6 +436,25 @@ export class WeeksService {
           orderBy: { ordem: 'asc' }
         }
       }
+    });
+  }
+
+  async findByToken(token: string) {
+    return this.prisma.designacao.findUnique({
+      where: { tokenConfirmacao: token },
+      include: {
+        semana: true,
+        parteTemplate: true,
+        titular: true,
+        ajudante: true
+      }
+    });
+  }
+
+  async updateStatusByToken(token: string, status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE') {
+    return this.prisma.designacao.update({
+      where: { tokenConfirmacao: token },
+      data: { status }
     });
   }
 }

@@ -15,6 +15,7 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { parseTime } from './lib/utils';
 import { MonthView } from './components/features/MonthView';
 import { TrackingView } from './components/features/TrackingView';
+import { ConfirmationPage } from './pages/ConfirmationPage';
 
 const queryClient = new QueryClient();
 
@@ -340,6 +341,7 @@ const AppContent = () => {
           participants={participants}
         />
       } />
+      <Route path="/confirm/:token" element={<ConfirmationPage />} />
     </Routes>
   );
 };

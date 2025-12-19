@@ -524,18 +524,19 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
 
               <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
                 {/* President Assignee */}
-                <div className="w-full sm:w-[280px]">
+                  <div className="w-full sm:min-w-[280px]">
                   {weekData.presidentId ? (
                     <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: presidentTemplate?.id }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm flex-shrink-0">
                           {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
                         </div>
-                        <span className="text-gray-700 font-medium truncate">
+                          <span className="text-gray-700 font-medium whitespace-nowrap">
                           {participants.find(p => p.id === weekData.presidentId)?.name}
                         </span>
                       </div>
-                      <div onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'president', partId: 'president', role: 'president' })} className="text-gray-400 hover:text-red-500 p-1"><XCircle size={18} /></button>
                         <StatusEditMenu
                           variant="circle"
                           status={weekData.presidentStatus}
@@ -551,34 +552,35 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                 </div>
 
                 {/* Opening Prayer */}
-                  <div className="w-full sm:w-[280px] bg-gray-50 rounded px-2 py-2 flex items-center justify-between border border-transparent hover:border-gray-200 transition-colors">
-                    <div className="flex items-center gap-2 w-full">
-                      <span className="text-gray-400 text-sm font-medium whitespace-nowrap">Oração Inicial:</span>
-                      <div className="flex items-center justify-between mt-2 flex-1">
-                        <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')}>
-                          {weekData.openingPrayerId ? (
-                            <div className="flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-sm font-medium w-full">
-                              <Users size={16} />
-                              <span>{participants.find(p => p.id === weekData.openingPrayerId)?.name || 'Oração Inicial'}</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-gray-400 text-sm px-3 py-1.5 border border-dashed rounded-lg hover:bg-gray-50 w-full bg-white">
-                              <Plus size={16} />
-                              <span>Designar Oração</span>
-                            </div>
+                  <div className="w-full sm:min-w-[280px]">
+                    {weekData.openingPrayerId ? (
+                      <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-500 flex-shrink-0">Oração Inicial:</span>
+                          <span className="text-sm text-gray-700 whitespace-nowrap">
+                            {participants.find(p => p.id === weekData.openingPrayerId)?.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'openingPrayer', partId: 'openingPrayer', role: 'openingPrayer' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
+                          {weekData.openingPrayerId !== weekData.presidentId && (
+                            <StatusEditMenu
+                              variant="circle"
+                              status={weekData.openingPrayerStatus}
+                              onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
+                            />
                           )}
                         </div>
-                        {weekData.openingPrayerId && <button onClick={(e) => { e.stopPropagation(); setShowClearConfirm({ isOpen: true, type: 'openingPrayer', partId: 'openingPrayer', role: 'openingPrayer' }); }} className="text-gray-400 hover:text-red-500 ml-2 p-1"><XCircle size={18} /></button>}
                       </div>
-                    </div>
-
-                  {weekData.openingPrayerId && weekData.openingPrayerId !== weekData.presidentId && (
-                    <div onClick={(e) => e.stopPropagation()} className="ml-2">
-                      <StatusEditMenu
-                        variant="circle"
-                        status={weekData.openingPrayerStatus}
-                        onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
-                      />
+                    ) : (
+                      <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="w-full flex items-center justify-between bg-gray-50 rounded px-2 py-2 border border-transparent hover:border-gray-200 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="text-gray-400 text-sm font-medium whitespace-nowrap flex-shrink-0">Oração Inicial:</span>
+                          <div className="flex items-center gap-2 text-gray-400 text-sm px-3 py-1.5 border border-dashed rounded-lg hover:bg-gray-100 w-full bg-white whitespace-nowrap">
+                            <Plus size={16} className="flex-shrink-0" />
+                            <span>Designar Oração</span>
+                          </div>
+                        </div>
                     </div>
                   )}
                 </div>
@@ -687,15 +689,15 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                               {part.assignedTo ? (
                                 <div onClick={() => handleAssignClick(part, 'main')} className={`flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer`}>
                                   <div className="flex items-center gap-2">
-                                    <div className={`w-6 h-6 text-xs rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700`}>
+                                    <div className={`w-6 h-6 text-xs rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 flex-shrink-0`}>
                                       {participants.find(p => p.id === part.assignedTo)?.name.charAt(0)}
                                     </div>
-                                    <span className="text-sm text-gray-700 truncate max-w-[120px]">
+                                    <span className="text-sm text-gray-700 whitespace-nowrap">
                                       {participants.find(p => p.id === part.assignedTo)?.name}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                    <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'titular' })} className="text-gray-400 hover:text-red-500 p-1"><XCircle size={16} /></button>
+                                    <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'titular' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={16} /></button>
                                     <StatusEditMenu
                                       variant="circle"
                                       status={part.status}
@@ -704,49 +706,50 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                                   </div>
                                 </div>
                               ) : (
-                                <button onClick={() => handleAssignClick(part, 'main')} className={`flex items-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 justify-center`}>
-                                  + Designar Titular
+                                  <button onClick={() => handleAssignClick(part, 'main')} className="flex items-center justify-between p-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded hover:bg-blue-50">
+                                    <span>+ Designar {part.requiresAssistant || part.requiresReader ? 'Titular' : 'Participante'}</span>
                                 </button>
                               )}
 
-                              {(part.requiresAssistant || part.requiresReader) && (
-                                <div className="relative">
-                                  {part.assistantId || part.readerId ? (
-                                    <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className={`flex items-center justify-between bg-gray-50 rounded p-2 border border-transparent hover:bg-gray-100`}>
-                                      <div className="flex items-center justify-between w-full mt-1">
-                                        <div className="flex items-center gap-2 flex-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant'); }}>
-                                          {part.assistantId || part.readerId ? (
-                                            <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm font-medium w-full">
-                                              <Users size={14} />
-                                              <span className="truncate">{participants.find(p => p.id === (part.assistantId || part.readerId))?.name || 'Desconhecido'}</span>
-                                            </div>
-                                          ) : (
-                                            <div className="flex items-center gap-1 text-gray-400 text-sm px-2 py-1 w-full border border-dashed rounded hover:bg-gray-50 bg-white">
-                                              <Plus size={14} />
-                                              <span>Designar {part.requiresReader ? 'Leitor' : 'Ajudante'}</span>
-                                            </div>
-                                          )}
-                                        </div>
-                                        {(part.assistantId || part.readerId) && <button onClick={(e) => { e.stopPropagation(); setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: part.requiresReader ? 'reader' : 'assistant' }); }} className="text-gray-400 hover:text-red-500 ml-1 p-1"><XCircle size={16} /></button>}
+
+                              {part.requiresAssistant && (
+                                <div className="ml-4 border-l-2 border-gray-200 pl-2">
+                                  {part.assistantId ? (
+                                    <div onClick={() => handleAssignClick(part, 'assistant')} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-green-600 flex-shrink-0">Ajudante:</span>
+                                        <span className="text-sm text-gray-700 whitespace-nowrap">{participants.find(p => p.id === part.assistantId)?.name}</span>
                                       </div>
-                                      {/* Status do Ajudante ou Leitor - Círculo Editável */}
-                                      {((section.id === 'fsm' && part.assistantId) || part.readerId) && (
-                                        <StatusEditMenu
-                                          variant="circle"
-                                          status={(part.readerId ? part.readerStatus : part.assistantStatus) || 'PENDENTE'}
-                                          onChange={(s) => handleUpdatePart(section.id, part.id, part.requiresReader ? 'readerStatus' : 'assistantStatus', s)}
-                                        />
-                                      )}
+                                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'assistant' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
+                                        <StatusEditMenu variant="circle" status={part.assistantStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'assistantStatus', s)} />
+                                      </div>
                                     </div>
                                   ) : (
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 flex-1 cursor-pointer" onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')}>
-                                          <div className="flex items-center gap-1 text-gray-400 text-sm px-2 py-1 w-full border border-dashed rounded hover:bg-gray-50 bg-white">
-                                            <Plus size={14} />
-                                            <span>Designar {part.requiresReader ? 'Leitor' : 'Ajudante'}</span>
-                                          </div>
-                                        </div>
+                                    <button onClick={() => handleAssignClick(part, 'assistant')} className="w-full text-left text-xs text-green-600 hover:underline pl-2">
+                                      + Ajudante
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+
+                              {part.requiresReader && (
+                                <div className="ml-4 border-l-2 border-gray-200 pl-2">
+                                  {part.readerId ? (
+                                    <div onClick={() => handleAssignClick(part, 'reader')} className="flex items-center justify-between p-2 bg-purple-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-purple-600 flex-shrink-0">Leitor:</span>
+                                        <span className="text-sm text-gray-700 whitespace-nowrap">{participants.find(p => p.id === part.readerId)?.name}</span>
                                       </div>
+                                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'reader' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
+                                        <StatusEditMenu variant="circle" status={part.readerStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'readerStatus', s)} />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                      <button onClick={() => handleAssignClick(part, 'reader')} className="w-full text-left text-xs text-purple-600 hover:underline pl-2">
+                                        + Leitor
+                                      </button>
                                   )}
                                 </div>
                               )}

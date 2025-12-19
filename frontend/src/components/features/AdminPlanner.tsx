@@ -199,7 +199,82 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
   };
 
   const handleSelectParticipant = (participantId: string) => {
-    if (selectedPart.id === 'president') {
+    // 0. Check for conflicts (Double Assignment)
+    const findConflicts = () => {
+      const conflicts: string[] = [];
+
+      // Helper to format conflict message
+      const addConflict = (role: string, context: string) => {
+        conflicts.push(`${role} em "${context}"`);
+      };
+
+      // Check President
+      if (weekData.presidentId === participantId) {
+        // Exception: Allowed if assigning Opening Prayer
+        if (selectedPart.id !== 'president' && selectedPart.id !== 'openingPrayer') {
+          addConflict('Presidente', 'Reunião');
+        } else if (selectedPart.id === 'president') {
+          // Assigning president to president? No conflict (same slot), but we are effectively swapping/setting.
+        }
+      }
+
+      // Check Opening Prayer
+      if (weekData.openingPrayerId === participantId) {
+        // Exception: Allowed if assigning President
+        if (selectedPart.id !== 'president' && selectedPart.id !== 'openingPrayer') {
+          addConflict('Oração Inicial', 'Reunião');
+        }
+      }
+
+      // Check Parts
+      weekData.sections.forEach((section: any) => {
+        section.parts.forEach((p: any) => {
+          // Skip checking against the exact same slot we are assigning to (id + role)
+          // But here we just check if person is in part p
+
+          if (p.assignedTo === participantId) {
+            // If we are assigning to THIS part as TITULAR, it's just a replace, not a conflict.
+            if (p.id !== selectedPart.id || selectedPart.roleTarget !== 'main') {
+              addConflict('Titular', p.title);
+            }
+          }
+          if (p.assistantId === participantId) {
+            if (p.id !== selectedPart.id || selectedPart.roleTarget !== 'assistant') {
+              addConflict('Ajudante', p.title);
+            }
+          }
+          if (p.readerId === participantId) {
+            if (p.id !== selectedPart.id || selectedPart.roleTarget !== 'reader') {
+              addConflict('Leitor', p.title);
+            }
+          }
+        });
+      });
+
+      return conflicts;
+    };
+
+    const conflicts = findConflicts();
+
+    if (conflicts.length > 0) {
+      setConfirmDialog({
+        isOpen: true,
+        data: {
+          action: () => executeAssignment(participantId),
+          isWarning: true,
+          message: `Este participante já está designado como: ${conflicts.join(', ')}. Deseja repetir a designação?`
+        }
+      });
+      setIsModalOpen(false);
+      return;
+    }
+
+    executeAssignment(participantId);
+    setIsModalOpen(false);
+  };
+
+  const executeAssignment = (participantId: string) => {
+  if (selectedPart.id === 'president') {
       const isPrayerEmpty = !weekData.openingPrayerId;
       const isPrayerSameAsPresident = weekData.openingPrayerId === weekData.presidentId;
 
@@ -210,7 +285,6 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
         openingPrayerId: (isPrayerEmpty || isPrayerSameAsPresident) ? participantId : weekData.openingPrayerId,
         openingPrayerStatus: (isPrayerEmpty || isPrayerSameAsPresident) ? 'PENDENTE' : weekData.openingPrayerStatus
       });
-      setIsModalOpen(false);
       return;
     }
 
@@ -220,7 +294,6 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
         openingPrayerId: participantId,
         openingPrayerStatus: 'PENDENTE'
       });
-      setIsModalOpen(false);
       return;
     }
 
@@ -232,17 +305,6 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
           if (selectedPart.roleTarget === 'reader') return { ...p, readerId: participantId };
 
           const newPart = { ...p, assignedTo: participantId, status: 'PENDENTE' };
-
-          // Auto-assign logic: If this is President, try to assign Initial Prayer
-          if (p.title === 'Presidente') {
-            // Find Initial Prayer part in the same section (or globally if needed, but usually same section 'geral')
-            // Actually we operate on 'p', but we need to update OTHER parts in the same section.
-            // This map is inner, so we need to be careful. 
-            // Better strategy: We can't easily update sibling parts inside this map cleanly without side effects or complex logic.
-            // We should do it in the outer map or second pass? 
-            // Or update the state AFTER this map.
-            // Let's keep it simple for now: We return the updated part here.
-          }
           return newPart;
         }
         return p;
@@ -251,24 +313,14 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
 
     // Post-process for auto-assignment
     if (selectedPart.title === 'Presidente') {
-      updatedSections.forEach((section: any) => {
-        const presidentPart = section.parts.find((p: any) => p.id === selectedPart.id);
-        if (presidentPart) {
-          // Found the section with President
-          const prayerPart = section.parts.find((p: any) => p.title === 'Oração Inicial');
-          if (prayerPart && (!prayerPart.assignedTo || prayerPart.assignedTo === weekData.lastPresidentId)) {
-            // Logic: if empty or same as "previous" (which we might not track well here depending on state).
-            // Simpler: If empty, assign. If same as OLD participantId (which we don't have easy access to here), assign.
-            // Let's just say: If empty, assign to new president.
-            prayerPart.assignedTo = participantId;
-            prayerPart.status = 'PENDENTE';
-          }
-        }
-      });
+      // ... existing logic but unreachable as handled above in if(selectedPart.id === 'president') block? 
+      // standard parts usually don't have title 'Presidente' unless it's a part template named Presidente treated as standard?
+      // The 'Presidente' handled above uses ID 'president'.
+      // If there is a PART with title 'Presidente' in sections, it's treated here.
+      // But assuming 'Presidente' is the top card with ID 'president'.
     }
 
-    setWeekData({ ...weekData, sections: updatedSections });
-    setIsModalOpen(false);
+  setWeekData({ ...weekData, sections: updatedSections });
   };
 
   const handleAddPart = (sectionId: string, template: any) => {
@@ -726,9 +778,17 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
       {/* Modais... */}
       <ConfirmModal
         isOpen={confirmDialog.isOpen}
-        title="Remover Parte"
-        message="Tem certeza que deseja remover esta parte? Esta ação não pode ser desfeita."
-        onConfirm={executeRemovePart}
+        title={confirmDialog.data?.isWarning ? "Aviso de Duplicidade" : "Remover Parte"}
+        message={confirmDialog.data?.message || "Tem certeza que deseja remover esta parte? Esta ação não pode ser desfeita."}
+        onConfirm={() => {
+          if (confirmDialog.data?.action) {
+            confirmDialog.data.action();
+            setConfirmDialog({ isOpen: false, data: null });
+          } else {
+            executeRemovePart();
+          }
+        }}
+        confirmLabel={confirmDialog.data?.isWarning ? "Sim, designar mesmo assim" : "Confirmar"}
         onClose={() => setConfirmDialog({ isOpen: false, data: null })}
       />
 

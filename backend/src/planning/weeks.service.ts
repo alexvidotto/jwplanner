@@ -99,7 +99,6 @@ export class WeeksService {
     if (!week) return [];
 
     // 1. Find candidates with the skill
-    // 1. Find candidates with the skill
     let whereClause: any = {
       podeDesignar: true,
       indisponibilidades: {
@@ -111,14 +110,9 @@ export class WeeksService {
     };
 
     if (partTemplateId === 'president') {
-      whereClause.privilegio = { in: ['ANCIAO', 'SERVO'] };
+      whereClause.privilegio = { in: ['ANCIAO'] }; // Usually only Elders
     } else if (partTemplateId === 'openingPrayer') {
-      // Assuming any brother can do opening prayer if active
-      // Or specifically PH? Usually any baptized brother.
-      // Front-end filters by 'PH', so let's filter by gender related privileges if needed, 
-      // or just trust the 'podeDesignar' + gender check on frontend.
-      // But let's filter purely by gender implication if we can.
-      // Actually, let's just NOT filter by 'habilidades' for these special roles.
+      whereClause.privilegio = { in: ['ANCIAO', 'SERVO', 'PUB_HOMEM'] };
     } else {
       whereClause.habilidades = {
         some: {
@@ -131,61 +125,120 @@ export class WeeksService {
       where: whereClause,
       include: {
         designacoes: {
-          include: { semana: true },
+          include: {
+            semana: true,
+            parteTemplate: true
+          },
           orderBy: { semana: { dataInicio: 'desc' } },
-          // Fetch more history to analyze better
-          take: 20
+          where: {
+            semana: { dataInicio: { lt: week.dataInicio } } // Only past assignments
+          },
+          take: 5 // Get last 5 to show history
         },
         habilidades: true
       }
     });
 
+    // Handle President History specially since it's on Semana model
+    let presidenciesMap = new Map<string, any[]>();
+    if (partTemplateId === 'president') {
+      const candidateIds = candidates.map(c => c.id);
+
+      const pastPresidencies = await this.prisma.semana.findMany({
+        where: {
+          presidenteId: { in: candidateIds },
+          dataInicio: { lt: week.dataInicio }
+        },
+        orderBy: { dataInicio: 'desc' },
+        take: 100 // Enough to cover recent history for everyone
+      });
+
+      pastPresidencies.forEach(p => {
+        if (p.presidenteId) {
+          if (!presidenciesMap.has(p.presidenteId)) {
+            presidenciesMap.set(p.presidenteId, []);
+          }
+          presidenciesMap.get(p.presidenteId)?.push({
+            date: p.dataInicio,
+            role: 'Pre',
+            title: 'Presidente'
+          });
+        }
+      });
+    }
+
     // 3. Process candidates to find specific history
     const processedCandidates = candidates.map(c => {
-      // Find last time they did THIS specific part
-      const lastSpecificAssignment = c.designacoes.find(d => d.parteTemplateId === partTemplateId);
+      let lastSpecificTs = 0;
+      let lastGeneralTs = 0;
+      let history: any[] = [];
 
-      // Find last time they did ANY assignment
-      const lastGeneralAssignment = c.designacoes[0];
+      if (partTemplateId === 'president') {
+        const presidencies = presidenciesMap.get(c.id) || [];
+        // Sort presidencies descending
+        presidencies.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        lastSpecificTs = presidencies.length > 0 ? presidencies[0].date.getTime() : 0;
+
+        // Merge general assignments for history display
+        history = [
+          ...presidencies.map(p => ({ date: p.date, role: 'PRESIDENTE', title: 'Presidente', isSpecific: true })),
+          ...c.designacoes.map(d => ({
+            date: d.semana.dataInicio,
+            role: d.ajudanteId === c.id ? (d.parteTemplate.requerLeitor ? 'LEITOR' : 'AJUDANTE') : 'TITULAR',
+            title: d.parteTemplate.titulo,
+            isSpecific: false
+          }))
+        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 3);
+
+        lastGeneralTs = history.length > 0 ? history[0].date.getTime() : 0;
+
+      } else {
+        // Normal parts
+        const specificAssignments = c.designacoes.filter(d => d.parteTemplateId === partTemplateId);
+        lastSpecificTs = specificAssignments.length > 0 ? specificAssignments[0].semana.dataInicio.getTime() : 0;
+        lastGeneralTs = c.designacoes.length > 0 ? c.designacoes[0].semana.dataInicio.getTime() : 0;
+
+        history = c.designacoes.map(d => ({
+          date: d.semana.dataInicio,
+          role: d.ajudanteId === c.id ? (d.parteTemplate.requerLeitor ? 'LEITOR' : 'AJUDANTE') : 'TITULAR',
+          title: d.parteTemplate.titulo,
+          isSpecific: d.parteTemplateId === partTemplateId
+        })).slice(0, 3);
+      }
 
       return {
         participant: c,
-        lastAssignmentDate: lastSpecificAssignment?.semana?.dataInicio || null,
-        lastGeneralAssignmentDate: lastGeneralAssignment?.semana?.dataInicio || null,
-        // Helper for sorting: timestamp (0 if never)
-        lastSpecificTs: lastSpecificAssignment?.semana?.dataInicio?.getTime() || 0,
-        lastGeneralTs: lastGeneralAssignment?.semana?.dataInicio?.getTime() || 0
+        lastAssignmentDate: lastSpecificTs > 0 ? new Date(lastSpecificTs).toISOString() : null,
+        lastGeneralAssignmentDate: lastGeneralTs > 0 ? new Date(lastGeneralTs).toISOString() : null,
+        lastSpecificTs,
+        lastGeneralTs,
+        history
       };
     });
 
-    // 4. Sort by last specific assignment (Oldest date first => smaller timestamp first? No, we want those who haven't done it for a long time.
-    // So distinct logic: 
-    // - Never done (ts=0) -> Priority 1
-    // - Done long ago (small ts) -> Priority 2
-    // - Done recently (large ts) -> Priority 3
-    // So Ascending order of timestamp works! 0 comes first (never). Then 2020. Then 2024.
-
+    // 4. Sort
     return processedCandidates.sort((a, b) => {
       // Primary: Specific Part History
       if (a.lastSpecificTs !== b.lastSpecificTs) {
         return a.lastSpecificTs - b.lastSpecificTs;
       }
-      // Secondary: General History (If tie on specific, prefer who hasn't worked recently at all)
+      // Secondary: General History
       return a.lastGeneralTs - b.lastGeneralTs;
     }).map(item => {
-      const p = item.participant as any;
+      const p = item.participant;
       return {
         id: p.id,
         name: p.nome,
         type: p.privilegio,
-        gender: (p.privilegio === 'PUB_MULHER') ? 'PM' : 'PH', // Basic inference
+        gender: (p.privilegio === 'PUB_MULHER') ? 'PM' : 'PH',
         active: p.podeDesignar,
         abilities: p.habilidades ? p.habilidades.map((h: any) => h.isLeitor ? `${h.parteTemplateId}_reader` : h.parteTemplateId) : [],
         lastAssignmentDate: item.lastAssignmentDate,
-        lastGeneralAssignmentDate: item.lastGeneralAssignmentDate
+        lastGeneralAssignmentDate: item.lastGeneralAssignmentDate,
+        history: item.history
       };
     });
-
   }
 
   async findByDate(date: string) {
@@ -304,7 +357,7 @@ export class WeeksService {
             })
           );
         } else {
-        // Update
+          // Update
           transaction.push(
             this.prisma.designacao.update({
               where: { id: d.id },

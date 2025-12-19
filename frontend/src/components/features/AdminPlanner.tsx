@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, X, Star } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 import { EditableField } from '../ui/EditableField';
@@ -423,22 +423,34 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
       }
 
       // 2. Filtro de Habilidade (Refinement)
+      // 2. Filter by Ability
       if (selectedPart?.templateId) {
-      // ... existing ability logic ...
+        // President: Special handling (no ability check, just type)
+        if (selectedPart.templateId === 'president') {
+          if (p.type !== 'ANCIAO') return false;
+          return true;
+        }
+
+        // Opening Prayer: Special handling
+        if (selectedPart.templateId === 'openingPrayer') {
+          // Helper for gender check if needed, but backend handles it mostly.
+          // Frontend strict check:
+          if (p.type === 'PUB_MULHER') return false;
+          return true;
+        }
+
+        // Reader: Check reader ability
         if (selectedPart.roleTarget === 'reader') {
-          if (!p.abilities?.includes(`${selectedPart.templateId}_reader`) && !p.abilities?.includes(selectedPart.templateId)) return false;
-          // Allow generic ability too if specific reader ability missing? Maybe strict for now.
+          const readerAbility = `${selectedPart.templateId}_reader`;
+          // Check specific reader ability
+          if (!p.abilities?.includes(readerAbility)) {
+            // Optional: Fail if strict
+            return false;
+          }
         } else {
+          // Normal Assignment: Check standard ability
           if (!p.abilities?.includes(selectedPart.templateId)) return false;
         }
-      }
-
-      // 3. Special Filters
-      if (selectedPart?.id === 'president') {
-        if (p.type !== 'ANCIAO' && p.type !== 'SERVO') return false;
-      }
-      if (selectedPart?.id === 'openingPrayer') {
-        if (p.gender !== 'PH') return false;
       }
 
       return true;
@@ -523,10 +535,10 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
               <h2 className="text-lg font-bold text-gray-800">Presidente da Reunião</h2>
 
               <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
-                {/* President Assignee */}
+                  {/* President Assignee */}
                   <div className="w-full sm:min-w-[280px]">
                   {weekData.presidentId ? (
-                    <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: presidentTemplate?.id }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
+                      <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm flex-shrink-0">
                           {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
@@ -545,7 +557,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: presidentTemplate?.id }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
+                        <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
                       + Designar Presidente
                     </button>
                   )}
@@ -845,29 +857,75 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
 
                 return (
                   <button key={p.id} onClick={() => handleSelectParticipant(p.id)} className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg transition-colors text-left group border-b border-transparent hover:border-blue-100">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold group-hover:bg-blue-200 group-hover:text-blue-700 relative">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold group-hover:bg-blue-200 group-hover:text-blue-700 relative flex-shrink-0">
                       {p.name.charAt(0)}
-                      {index === 0 && <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 border-2 border-white"><Check size={8} className="text-white" /></div>}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
-                        <p className="font-medium text-gray-800">{p.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-800 truncate">{p.name}</p>
+                        </div>
                         {p.lastAssignmentDate ? (
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                            {new Date(p.lastAssignmentDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap flex-shrink-0">
+                            Última: {new Date(p.lastAssignmentDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-green-600 font-medium whitespace-nowrap">
+                            <span className="text-[10px] text-green-600 font-medium whitespace-nowrap flex-shrink-0">
                             Disponível
                           </span>
                         )}
                       </div>
+
                       <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                         <span className="bg-gray-100 px-1.5 rounded border">{p.type}</span>
                         {isApt &&
                           <span className="text-green-600 flex items-center gap-1"><Check size={10} /> Apto</span>
                         }
                       </div>
+
+                      {p.history && p.history.length > 0 && (
+                        <div className="mt-2 space-y-1 bg-white/50 p-1.5 rounded border border-gray-100">
+                          {p.history.map((h: any, idx: number) => {
+                            // Determine color flag based on date relative to CURRENT PLAN DATE (weekData.date)
+                            const planDate = new Date(weekData.date);
+                            const histDate = new Date(h.date);
+
+                            // Check months difference
+                            const planMonth = planDate.getMonth() + planDate.getFullYear() * 12;
+                            const histMonth = histDate.getMonth() + histDate.getFullYear() * 12;
+                            const diff = planMonth - histMonth;
+
+                            let flagClass = "bg-gray-100 text-gray-500"; // Default (older)
+                            if (histDate > planDate && diff < 0) {
+                              // Future
+                              flagClass = "bg-green-100 text-green-700";
+                            } else if (diff === 0) {
+                              // Current Month
+                              flagClass = "bg-yellow-100 text-yellow-700";
+                            } else if (diff === 1) {
+                              // Previous Month
+                              flagClass = "bg-red-100 text-red-700";
+                            }
+
+                            return (
+                              <div key={idx} className="flex justify-between items-center text-[10px]">
+                                <span className={`truncate max-w-[150px] ${h.isSpecific ? 'font-medium text-blue-700' : 'text-gray-600'}`}>
+                                  {h.title}
+                                </span>
+                                <div className={`flex items-center gap-2 flex-shrink-0 px-1.5 py-0.5 rounded ${flagClass}`}>
+                                  <span className="font-bold uppercase text-[9px]">
+                                    {h.isSpecific && h.role === 'PRESIDENTE' ? 'PRE' :
+                                      h.role === 'TITULAR' ? 'TIT' :
+                                        h.role === 'AJUDANTE' ? 'AJU' :
+                                          h.role === 'LEITOR' ? 'LEI' : h.role.substring(0, 3)}
+                                  </span>
+                                  <span>{new Date(h.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   </button>
                 )

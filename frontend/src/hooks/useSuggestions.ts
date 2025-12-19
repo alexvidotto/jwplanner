@@ -12,6 +12,7 @@ export interface Suggestion {
   abilities: string[];
   lastAssignmentDate: string | null;
   lastGeneralAssignmentDate: string | null;
+  history?: { date: string; role: string; title: string; isSpecific: boolean }[];
 }
 
 export const useSuggestions = (weekId: string, partTemplateId: string | null) => {

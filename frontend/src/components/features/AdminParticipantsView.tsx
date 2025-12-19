@@ -267,13 +267,34 @@ export const AdminParticipantsView = ({ participants, setParticipants, onBack }:
                           }
                         }
 
+                        // Color Logic relative to NOW
+                        const now = new Date();
+                        const histDate = new Date(h.semana.dataInicio);
+
+                        const nowMonth = now.getMonth() + now.getFullYear() * 12;
+                        const histMonth = histDate.getMonth() + histDate.getFullYear() * 12;
+                        const diff = nowMonth - histMonth;
+
+                        let dateFlagClass = "text-gray-500";
+                        // Using same colors as Planner for consistency
+                        if (histDate > now && diff < 0) {
+                          // Future -> Green
+                          dateFlagClass = "text-green-600 font-medium";
+                        } else if (diff === 0) {
+                          // Current Month -> Yellow
+                          dateFlagClass = "text-yellow-600 font-medium";
+                        } else if (diff === 1) {
+                          // Previous Month -> Red
+                          dateFlagClass = "text-red-600 font-medium";
+                        }
+
                         return (
                           <div key={h.id} className="flex justify-between items-center text-xs border-b border-gray-100 last:border-0 pb-1">
                             <div className="flex flex-col">
                               <span className="font-medium text-gray-700 truncate max-w-[150px]">{h.parteTemplate?.titulo || h.tituloDoTema || 'Designação'}</span>
                               <span className={`text-[10px] px-1 rounded w-fit ${roleColor} font-semibold`}>{roleLabel}</span>
                             </div>
-                            <span className="text-gray-500 whitespace-nowrap">
+                            <span className={`${dateFlagClass} whitespace-nowrap`}>
                               {new Date(h.semana.dataInicio).toLocaleDateString('pt-BR')}
                             </span>
                           </div>

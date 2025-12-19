@@ -132,6 +132,8 @@ const AppContent = () => {
 
         const updates: any[] = [];
 
+        const usedMatchIds = new Set<string>();
+
         // Handle Opening Prayer
         if (weekToSave.openingPrayerId) {
           const match = newWeek.designacoes.find((d: any) => d.parteTemplateId === weekToSave.openingPrayerTemplateId);
@@ -142,22 +144,39 @@ const AppContent = () => {
               assistantId: null,
               status: weekToSave.openingPrayerStatus
             });
+            usedMatchIds.add(match.id);
           }
         }
 
         weekToSave.sections.forEach((s: any) => s.parts.forEach((p: any) => {
-            const match = newWeek.designacoes.find((d: any) => d.parteTemplateId === p.templateId);
-            if (match) {
-              updates.push({
-                id: match.id,
-                assignedTo: p.assignedTo,
-                assistantId: p.readerId || p.assistantId, // Use readerId if present, otherwise assistantId (simplification, assuming no overlap)
-                status: p.status || 'PENDENTE',
-                observation: p.observation,
-                tituloDoTema: p.title,
-                tempo: parseTime(p.time)
-              });
-            }
+          // Find a match that hasn't been used yet
+          const match = newWeek.designacoes.find((d: any) => d.parteTemplateId === p.templateId && !usedMatchIds.has(d.id));
+
+          if (match) {
+            // Update existing auto-created part
+            updates.push({
+              id: match.id,
+              assignedTo: p.assignedTo,
+              assistantId: p.readerId || p.assistantId,
+              status: p.status || 'PENDENTE',
+              observation: p.observation,
+              tituloDoTema: p.title,
+              tempo: parseTime(p.time)
+            });
+            usedMatchIds.add(match.id);
+          } else {
+            // Treat as NEW added part
+            updates.push({
+              id: p.id, // Use the virtual/new ID
+              parteTemplateId: p.templateId, // Ensure template ID is passed for creation
+              assignedTo: p.assignedTo,
+              assistantId: p.readerId || p.assistantId,
+              status: p.status || 'PENDENTE',
+              observation: p.observation,
+              tituloDoTema: p.title,
+              tempo: parseTime(p.time)
+            });
+          }
         }));
 
         if (updates.length > 0 || weekToSave.presidentId || weekToSave.isCanceled !== undefined) {

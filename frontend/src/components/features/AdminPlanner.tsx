@@ -246,6 +246,10 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
       assignedTo: null,
       status: 'PENDENTE',
       description: '',
+      requiresAssistant: template.requiresAssistant,
+      requiresReader: template.requiresReader,
+      hasObservation: template.hasObservation,
+      hasTime: template.hasTime,
       ...(template.requiresAssistant ? { assistantId: null, assistantStatus: 'PENDENTE' } : {}),
       ...(template.requiresReader ? { readerId: null, readerStatus: 'PENDENTE' } : {})
     };

@@ -70,13 +70,7 @@ export const MonthView = ({ onBack }: MonthViewProps) => {
             setSelectedMonths(selectedMonths.filter(m => m !== monthIndex));
         }
     } else {
-        if (selectedMonths.length < 2) {
-            setSelectedMonths([...selectedMonths, monthIndex].sort());
-        } else {
-            // If already 2, replace the last one? Or just don't add. 
-            // Better UX: limit to 2.
-            // Let's create a specialized UI for this.
-        }
+      setSelectedMonths([...selectedMonths, monthIndex].sort((a, b) => a - b));
     }
   };
 
@@ -140,8 +134,7 @@ export const MonthView = ({ onBack }: MonthViewProps) => {
                         {m.slice(0, 3)}
                     </button>
                  ))}
-             </div>
-             <span className="text-xs text-gray-400 ml-auto">Selecione até 2 meses</span>
+          </div>
          </div>
       </div>
 

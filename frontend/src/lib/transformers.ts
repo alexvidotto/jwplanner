@@ -76,6 +76,13 @@ export const transformWeekToFrontend = (week: any) => {
 
   const startDate = new Date(week.dataInicio);
 
+  // Sort NVC section to ensure Oração Final is last
+  sectionsMap.nvc.parts.sort((a: any, b: any) => {
+    if (a.title === 'Oração Final') return 1;
+    if (b.title === 'Oração Final') return -1;
+    return 0;
+  });
+
   return {
     id: week.id,
     dateLabel: formatDateRange(startDate),
@@ -124,7 +131,6 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
         assignedTo: null,
         status: 'PENDENTE',
         assistantId: null,
-        assistantId: null,
         observation: '',
         requiresAssistant: tpl.requiresAssistant,
         requiresReader: tpl.requiresReader,
@@ -132,6 +138,13 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
         hasTime: tpl.hasTime ?? true,
       });
     }
+  });
+
+  // Sort NVC section to ensure Oração Final is last
+  sectionsMap.nvc.parts.sort((a: any, b: any) => {
+    if (a.title === 'Oração Final') return 1;
+    if (b.title === 'Oração Final') return -1;
+    return 0;
   });
 
   return {

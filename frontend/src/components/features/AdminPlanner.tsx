@@ -368,68 +368,68 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
           </div>
         ) : (
           <>
-              {/* PRESIDENT CARD */}
-              <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <h2 className="text-lg font-bold text-gray-800">Presidente da Reunião</h2>
+            {/* PRESIDENT CARD */}
+            <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <h2 className="text-lg font-bold text-gray-800">Presidente da Reunião</h2>
 
-                <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
-                  {/* President Assignee */}
-                  <div className="w-full sm:w-[280px]">
-                    {weekData.presidentId ? (
-                      <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm">
-                            {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
-                          </div>
-                          <span className="text-gray-700 font-medium truncate">
-                            {participants.find(p => p.id === weekData.presidentId)?.name}
-                          </span>
+              <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
+                {/* President Assignee */}
+                <div className="w-full sm:w-[280px]">
+                  {weekData.presidentId ? (
+                    <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm">
+                          {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
                         </div>
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <StatusEditMenu
-                            variant="circle"
-                            status={weekData.presidentStatus}
-                            onChange={(s) => setWeekData({ ...weekData, presidentStatus: s })}
-                          />
-                        </div>
+                        <span className="text-gray-700 font-medium truncate">
+                          {participants.find(p => p.id === weekData.presidentId)?.name}
+                        </span>
                       </div>
-                    ) : (
-                      <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
-                        + Designar Presidente
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Opening Prayer */}
-                  <div className="w-full sm:w-[280px] bg-gray-50 rounded px-3 py-2 flex items-center justify-between border border-transparent hover:border-gray-200 transition-colors">
-                    {weekData.openingPrayerId ? (
-                      <div className="flex items-center gap-2 w-full">
-                        <span className="text-gray-400 text-sm font-medium whitespace-nowrap">Oração Inicial:</span>
-                        <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-gray-700 font-medium text-sm hover:text-blue-600 truncate flex-1 text-right">
-                          {participants.find(p => p.id === weekData.openingPrayerId)?.name}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 w-full justify-between">
-                        <span className="text-gray-400 text-sm font-medium">Oração Inicial:</span>
-                        <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-blue-600 text-sm hover:underline">
-                          Definir
-                        </button>
-                      </div>
-                    )}
-
-                    {weekData.openingPrayerId && (
-                      <div onClick={(e) => e.stopPropagation()} className="ml-2">
+                      <div onClick={(e) => e.stopPropagation()}>
                         <StatusEditMenu
                           variant="circle"
-                          status={weekData.openingPrayerStatus}
-                          onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
+                          status={weekData.presidentStatus}
+                          onChange={(s) => setWeekData({ ...weekData, presidentStatus: s })}
                         />
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
+                      + Designar Presidente
+                    </button>
+                  )}
+                </div>
+
+                {/* Opening Prayer */}
+                <div className="w-full sm:w-[280px] bg-gray-50 rounded px-2 py-2 flex items-center justify-between border border-transparent hover:border-gray-200 transition-colors">
+                  {weekData.openingPrayerId ? (
+                    <div className="flex items-center gap-2 w-full">
+                      <span className="text-gray-400 text-sm font-medium whitespace-nowrap">Oração Inicial:</span>
+                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-gray-700 font-medium text-sm hover:text-blue-600 truncate flex-1 text-right">
+                        {participants.find(p => p.id === weekData.openingPrayerId)?.name}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 w-full justify-between">
+                      <span className="text-gray-400 text-sm font-medium">Oração Inicial:</span>
+                      <button onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial' }, 'main')} className="text-blue-600 text-sm hover:underline">
+                        Definir
+                      </button>
+                    </div>
+                  )}
+
+                  {weekData.openingPrayerId && weekData.openingPrayerId !== weekData.presidentId && (
+                    <div onClick={(e) => e.stopPropagation()} className="ml-2">
+                      <StatusEditMenu
+                        variant="circle"
+                        status={weekData.openingPrayerStatus}
+                        onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
 
             {/* SEÇÕES DINÂMICAS */}
             {weekData.sections.map((section: any) => {
@@ -542,12 +542,12 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                                 </button>
                               )}
 
-                              {(part.hasOwnProperty('assistantId') || part.hasOwnProperty('readerId')) && (
+                              {(part.requiresAssistant || part.requiresReader) && (
                                 <div className="relative">
                                   {part.assistantId || part.readerId ? (
-                                    <div onClick={() => handleAssignClick(part, part.readerId !== undefined ? 'reader' : 'assistant')} className={`flex items-center justify-between bg-gray-50 rounded p-2 border border-transparent hover:bg-gray-100`}>
-                                      <div onClick={() => handleAssignClick(part, part.readerId !== undefined ? 'reader' : 'assistant')} className="flex items-center gap-2 cursor-pointer">
-                                        <span className="text-xs text-gray-400">{part.readerId !== undefined ? 'Leitor:' : 'Ajudante:'}</span>
+                                    <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className={`flex items-center justify-between bg-gray-50 rounded p-2 border border-transparent hover:bg-gray-100`}>
+                                      <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className="flex items-center gap-2 cursor-pointer">
+                                        <span className="text-xs text-gray-400">{part.requiresReader ? 'Leitor:' : 'Ajudante:'}</span>
                                         <span className="text-sm text-gray-600 truncate max-w-[100px]">
                                           {participants.find(p => p.id === (part.assistantId || part.readerId))?.name}
                                         </span>
@@ -558,13 +558,13 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                                         <StatusEditMenu
                                           variant="circle"
                                           status={(part.readerId ? part.readerStatus : part.assistantStatus) || 'PENDENTE'}
-                                          onChange={(s) => handleUpdatePart(section.id, part.id, part.readerId ? 'readerStatus' : 'assistantStatus', s)}
+                                          onChange={(s) => handleUpdatePart(section.id, part.id, part.requiresReader ? 'readerStatus' : 'assistantStatus', s)}
                                         />
                                       )}
                                     </div>
                                   ) : (
-                                    <button onClick={() => handleAssignClick(part, part.readerId !== undefined ? 'reader' : 'assistant')} className="text-xs text-gray-400 hover:text-blue-600 flex items-center gap-1">
-                                      + {part.readerId !== undefined ? 'Leitor' : 'Ajudante'}
+                                    <button onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className="text-xs text-gray-400 hover:text-blue-600 flex items-center gap-1">
+                                      + {part.requiresReader ? 'Leitor' : 'Ajudante'}
                                     </button>
                                   )}
                                 </div>

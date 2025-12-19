@@ -8,7 +8,7 @@ import { ConfirmModal } from '../ui/ConfirmModal';
 import { Toast } from '../ui/Toast';
 import { parseTime, formatTotalTime } from '../../lib/utils';
 import { useSuggestions } from '../../hooks/useSuggestions';
-// Note: Using absolute paths or relative paths as needed. Assuming strict file structure.
+import { WeekPicker } from '../ui/WeekPicker';
 
 interface AdminPlannerProps {
   weekData: any; // Type accurately if possible
@@ -16,12 +16,13 @@ interface AdminPlannerProps {
   onBack: () => void;
   onNavigateWeek: (direction: number) => void;
   onJumpToCurrentWeek: () => void;
+  onSelectDate: (date: Date) => void;
   partTemplates: any[];
   onSave?: (weekData: any) => Promise<void>;
   participants: any[];
 }
 
-export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, onJumpToCurrentWeek, participants, partTemplates, onSave }: AdminPlannerProps) => {
+export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, onJumpToCurrentWeek, onSelectDate, participants, partTemplates, onSave }: AdminPlannerProps) => {
   // ... existing state ...
 
   // ... render ...
@@ -480,8 +481,16 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
     return partTemplates.filter(pt => pt.section === sectionId);
   };
 
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
+      <WeekPicker
+        currentDate={weekData.date}
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSelectDate={onSelectDate}
+      />
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between relative">
           <div className="flex items-center gap-3 z-10">
@@ -492,8 +501,11 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
             <button onClick={() => onNavigateWeek(-1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
               <ChevronLeft size={20} />
             </button>
-            <div className="text-center">
-              <h1 className="font-bold text-gray-800 text-lg leading-tight">Planejamento</h1>
+            <div className="text-center group cursor-pointer" onClick={() => setIsPickerOpen(true)} title="Selecionar Data">
+              <h1 className="font-bold text-gray-800 text-lg leading-tight flex items-center justify-center gap-2">
+                Planejamento
+                <Calendar size={16} className="text-blue-500" />
+              </h1>
               <p className="text-xs text-gray-500 whitespace-nowrap">{weekData.dateLabel}</p>
             </div>
             <button onClick={() => onNavigateWeek(1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-white transition-colors">

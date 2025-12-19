@@ -116,6 +116,18 @@ const AppContent = () => {
     setActiveWeek(null);
   };
 
+  const handleDateSelect = (date: Date) => {
+    // Format as YYYY-MM-DD (local time)
+    // Avoid UTC conversion issues by using local year/month/day
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+
+    setSearchParams({ date: dateStr });
+    setActiveWeek(null); // Force reload
+  };
+
   const handleUpdateWeek = (updatedWeek: any) => {
     setActiveWeek(updatedWeek);
   };
@@ -297,6 +309,7 @@ const AppContent = () => {
             onBack={() => navigate('/')}
             onNavigateWeek={handleNavigateWeek}
             onJumpToCurrentWeek={handleJumpToCurrentWeek}
+            onSelectDate={handleDateSelect}
             participants={participants}
             partTemplates={parts}
             onSave={handleSaveWeek}

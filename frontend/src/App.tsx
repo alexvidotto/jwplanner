@@ -146,7 +146,6 @@ const AppContent = () => {
         }
 
         weekToSave.sections.forEach((s: any) => s.parts.forEach((p: any) => {
-          if (p.assignedTo || p.assistantId || p.readerId) {
             const match = newWeek.designacoes.find((d: any) => d.parteTemplateId === p.templateId);
             if (match) {
               updates.push({
@@ -159,7 +158,6 @@ const AppContent = () => {
                 tempo: parseTime(p.time)
               });
             }
-          }
         }));
 
         if (updates.length > 0 || weekToSave.presidentId || weekToSave.isCanceled !== undefined) {

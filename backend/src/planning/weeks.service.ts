@@ -33,10 +33,11 @@ export class WeeksService {
             descricao: descricao,
             tipo: 'NORMAL',
             designacoes: {
-              create: templates.map(tpl => ({
+              create: templates.map((tpl, idx) => ({
                 parteTemplateId: tpl.id,
                 tempo: tpl.tempoPadrao || 5,
                 status: 'PENDENTE',
+                ordem: idx
               }))
             }
           },
@@ -61,7 +62,7 @@ export class WeeksService {
             titular: true,
             ajudante: true
           },
-          orderBy: { parteTemplate: { secao: 'asc' } } // Sort by section or something?
+          orderBy: { ordem: 'asc' } // Sort by custom order
         }
       }
     });
@@ -136,7 +137,7 @@ export class WeeksService {
             titular: true,
             ajudante: true
           },
-          orderBy: { parteTemplate: { secao: 'asc' } }
+          orderBy: { ordem: 'asc' }
         }
       }
     });
@@ -153,10 +154,11 @@ export class WeeksService {
         descricao,
         tipo: 'NORMAL',
         designacoes: {
-          create: templates.map(tpl => ({
+          create: templates.map((tpl, idx) => ({
             parteTemplateId: tpl.id,
             tempo: tpl.tempoPadrao || 5,
             status: 'PENDENTE',
+            ordem: idx
           }))
         }
       },
@@ -197,6 +199,10 @@ export class WeeksService {
               titularId: d.assignedTo || null,
               ajudanteId: d.assistantId || null,
               status: d.status,
+              ordem: d.ordem !== undefined ? d.ordem : undefined,
+              observacao: d.observation,
+              tituloDoTema: d.tituloDoTema,
+              tempo: d.tempo,
             }
           })
         );
@@ -216,7 +222,7 @@ export class WeeksService {
             titular: true,
             ajudante: true
           },
-          orderBy: { parteTemplate: { secao: 'asc' } }
+          orderBy: { ordem: 'asc' }
         }
       }
     });

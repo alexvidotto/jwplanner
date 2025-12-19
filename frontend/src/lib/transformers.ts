@@ -52,7 +52,8 @@ export const transformWeekToFrontend = (week: any) => {
       status: d.status,
       assistantId: d.ajudanteId,
       assistantStatus: 'PENDENTE',
-      description: '',
+      assistantStatus: 'PENDENTE',
+      observation: d.observacao || '',
       requiresAssistant: template.requerAjudante,
       requiresReader: template.requerLeitor || false,
     };
@@ -122,7 +123,8 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
         assignedTo: null,
         status: 'PENDENTE',
         assistantId: null,
-        description: '',
+        assistantId: null,
+        observation: '',
         requiresAssistant: tpl.requiresAssistant,
         requiresReader: tpl.requiresReader,
       });

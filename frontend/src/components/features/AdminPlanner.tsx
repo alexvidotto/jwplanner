@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
@@ -37,6 +37,23 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
   const totalMinutes = weekData.sections.reduce((acc: number, section: any) => {
     return acc + section.parts.reduce((pAcc: number, part: any) => pAcc + parseTime(part.time), 0);
   }, 0);
+
+  const partNumbers = useMemo(() => {
+    const map = new Map<string, number>();
+    const orderedSectionIds = ['tesouros', 'fsm', 'nvc'];
+    let count = 0;
+
+    orderedSectionIds.forEach(id => {
+      const section = weekData.sections.find((s: any) => s.id === id);
+      if (section && section.parts) {
+        section.parts.forEach((p: any) => {
+          if (p.title === 'Oração Final' || p.id.includes('n_prayer')) return;
+          map.set(p.id, ++count);
+        });
+      }
+    });
+    return map;
+  }, [weekData.sections]);
 
   const presidentTemplate = partTemplates.find(pt => pt.title === 'Presidente');
 
@@ -501,16 +518,26 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                           )}
 
                           <div className={`flex flex-col sm:flex-row sm:items-start gap-4`}>
+                            {partNumbers.has(part.id) && (
+                              <div className="hidden sm:flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-500 font-bold text-xs flex-shrink-0 mt-0.5">
+                                {partNumbers.get(part.id)}
+                              </div>
+                            )}
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
+                                {partNumbers.has(part.id) && (
+                                  <div className="sm:hidden flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-500 font-bold text-[10px] flex-shrink-0 mr-1">
+                                    {partNumbers.get(part.id)}
+                                  </div>
+                                )}
                                 <EditableField value={part.title} onChange={(val) => handleUpdatePart(section.id, part.id, 'title', val)} className="font-bold text-gray-800 truncate" />
                                 <EditableField value={part.time} onChange={(val) => handleUpdatePart(section.id, part.id, 'time', val)} className="text-xs bg-gray-100 text-gray-600 rounded flex-shrink-0" />
                               </div>
 
                               {!isClosingPrayer && (
                                 <div className="mb-2 max-w-md">
-                                  <EditableDescription value={part.description} onChange={(val) => handleUpdatePart(section.id, part.id, 'description', val)} />
+                                  <EditableDescription value={part.observation} onChange={(val) => handleUpdatePart(section.id, part.id, 'observation', val)} />
                                 </div>
                               )}
 

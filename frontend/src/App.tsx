@@ -13,6 +13,7 @@ import { useParts } from './hooks/useParts';
 import { useWeekByDate, useCreateWeek, useUpdateWeek } from './hooks/useWeeks';
 import { transformWeekToFrontend, generateVirtualWeek, transformParticipantsToFrontend, transformPartsToFrontend } from './lib/transformers';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import { parseTime } from './lib/utils'; // Added import
 
 const queryClient = new QueryClient();
 
@@ -133,7 +134,10 @@ const AppContent = () => {
                 id: match.id,
                 assignedTo: p.assignedTo,
                 assistantId: p.assistantId,
-                status: p.status || 'PENDENTE'
+                status: p.status || 'PENDENTE',
+                observation: p.observation,
+                tituloDoTema: p.title,
+                tempo: parseTime(p.time)
               });
             }
           }
@@ -145,6 +149,7 @@ const AppContent = () => {
       } else {
         // 2. Standard Update
         const updates: any[] = [];
+        let orderCounter = 1;
 
         // Handle Opening Prayer
         if (weekToSave.openingPrayerPartId) {
@@ -152,7 +157,8 @@ const AppContent = () => {
             id: weekToSave.openingPrayerPartId,
             assignedTo: weekToSave.openingPrayerId,
             assistantId: null,
-            status: weekToSave.openingPrayerStatus
+            status: weekToSave.openingPrayerStatus,
+            ordem: 0
           });
         }
 
@@ -161,7 +167,11 @@ const AppContent = () => {
             id: p.id,
             assignedTo: p.assignedTo,
             assistantId: p.assistantId,
-            status: p.status
+            status: p.status,
+            observation: p.observation,
+            tituloDoTema: p.title,
+            tempo: parseTime(p.time),
+            ordem: orderCounter++
           });
         }));
         await updateWeek({ id: savedWeekId, data: { designacoes: updates, presidentId: weekToSave.presidentId } });

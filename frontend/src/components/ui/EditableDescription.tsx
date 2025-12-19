@@ -26,7 +26,7 @@ export const EditableDescription = ({ value, onChange }: EditableDescriptionProp
   if (!value) {
     return (
       <div onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="mt-1 text-xs text-gray-400 hover:text-blue-500 cursor-pointer flex items-center gap-1 w-fit px-1 rounded hover:bg-gray-50">
-        <Plus size={12} /> descrição
+        <Plus size={12} /> observação
       </div>
     );
   }

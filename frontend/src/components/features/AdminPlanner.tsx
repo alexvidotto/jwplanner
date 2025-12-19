@@ -392,7 +392,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <div className="max-w-4xl mx-auto p-2 space-y-3">
         {weekData.isCanceled ? (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 opacity-100 transition-opacity">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-2">
@@ -405,7 +405,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
         ) : (
           <>
             {/* PRESIDENT CARD */}
-            <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-3 flex flex-col sm:flex-row justify-between items-center gap-3">
               <h2 className="text-lg font-bold text-gray-800">Presidente da Reunião</h2>
 
               <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
@@ -511,7 +511,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                       return (
                         <div
                           key={part.id}
-                          className={`p-4 pt-7 hover:bg-gray-50 transition-colors group relative ${draggedPart?.partId === part.id ? 'opacity-50 bg-gray-100' : ''}`}
+                          className={`px-3 py-2 hover:bg-gray-50 transition-colors group relative ${draggedPart?.partId === part.id ? 'opacity-50 bg-gray-100' : ''}`}
                           draggable={isDraggable}
                           onDragStart={(e) => handleDragStart(e, part.id, section.id)}
                           onDragOver={handleDragOver}
@@ -534,7 +534,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                             </div>
                           )}
 
-                          <div className={`flex flex-col sm:flex-row sm:items-start gap-4`}>
+                          <div className={`flex flex-col sm:flex-row sm:items-center gap-2`}>
                             {partNumbers.has(part.id) && (
                               <div className="hidden sm:flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-500 font-bold text-xs flex-shrink-0 mt-0.5">
                                 {partNumbers.get(part.id)}
@@ -567,7 +567,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
 
                             <div className="flex flex-col gap-2 min-w-[200px] flex-shrink-0">
                               {part.assignedTo ? (
-                                <div onClick={() => handleAssignClick(part, 'main')} className={`flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer`}>
+                                <div onClick={() => handleAssignClick(part, 'main')} className={`flex items-center justify-between py-1 px-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer`}>
                                   <div className="flex items-center gap-2">
                                     <div className={`w-6 h-6 text-xs rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700`}>
                                       {participants.find(p => p.id === part.assignedTo)?.name.charAt(0)}
@@ -593,7 +593,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, pa
                               {(part.requiresAssistant || part.requiresReader) && (
                                 <div className="relative">
                                   {part.assistantId || part.readerId ? (
-                                    <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className={`flex items-center justify-between bg-gray-50 rounded p-2 border border-transparent hover:bg-gray-100`}>
+                                    <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className={`flex items-center justify-between bg-gray-50 rounded py-1 px-2 border border-transparent hover:bg-gray-100`}>
                                       <div onClick={() => handleAssignClick(part, part.requiresReader ? 'reader' : 'assistant')} className="flex items-center gap-2 cursor-pointer">
                                         <span className="text-xs text-gray-400">{part.requiresReader ? 'Leitor:' : 'Ajudante:'}</span>
                                         <span className="text-sm text-gray-600 truncate max-w-[100px]">

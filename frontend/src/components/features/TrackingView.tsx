@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, MessageCircle, Smartphone, Copy, Check } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, MessageCircle, Smartphone, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 
@@ -15,6 +15,19 @@ interface TrackingViewProps {
 export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, onJumpToCurrentWeek, onStatusChange }: TrackingViewProps) => {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedObsIds, setExpandedObsIds] = useState<Set<string>>(new Set());
+
+  const toggleObs = (id: string) => {
+    setExpandedObsIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // Helper to find participant phone
   const getParticipantPhone = (id: string) => {
@@ -63,43 +76,124 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
       });
     }
 
-    if (weekData.sections) {
-      weekData.sections.forEach((section: any) => {
-        section.parts.forEach((part: any) => {
-          if (part.assignedTo) {
-            all.push({
-              id: part.id,
-              role: 'TITULAR',
-              partTitle: part.title,
-              assigneeId: part.assignedTo,
-              status: part.status || 'PENDENTE',
-              section: section.title,
-              observation: part.observation
-            });
-          }
-          if (part.assistantId) {
-            all.push({
-              id: `${part.id}-ass`,
-              role: 'AJUDANTE',
-              partTitle: part.title, // Or "Ajudante em..."
-              assigneeId: part.assistantId,
-              status: part.assistantStatus || 'PENDENTE',
-              section: section.title,
-              observation: part.observation // Assistant shares observation? Usually yes for main part
-            });
-          }
-          if (part.readerId) {
-            all.push({
-              id: `${part.id}-read`,
-              role: 'LEITOR',
-              partTitle: part.title,
-              assigneeId: part.readerId,
-              status: part.readerStatus || 'PENDENTE',
-              section: section.title,
-              observation: part.observation
-            });
-          }
-        });
+    // Tesouros
+    let globalPartCounter = 0;
+
+    const tesouros = weekData.sections?.find((s: any) => s.id === 'tesouros');
+    if (tesouros) {
+      tesouros.parts?.forEach((part: any, idx: number) => {
+        globalPartCounter++;
+        const partNum = globalPartCounter;
+
+        if (part.assignedTo) {
+          all.push({
+            id: part.id,
+            role: 'TITULAR',
+            partTitle: part.title,
+            assigneeId: part.assignedTo,
+            status: part.status || 'PENDENTE',
+            section: tesouros.title,
+            observation: part.observation,
+            partNumber: partNum
+          });
+        }
+        if (part.assistantId) {
+          all.push({
+            id: `${part.id}-ass`,
+            role: 'AJUDANTE',
+            partTitle: part.title,
+            assigneeId: part.assistantId,
+            status: part.assistantStatus || 'PENDENTE',
+            section: tesouros.title,
+            observation: part.observation,
+            partNumber: partNum
+          });
+        }
+        if (part.readerId) {
+          all.push({
+            id: `${part.id}-read`,
+            role: 'LEITOR',
+            partTitle: part.title,
+            assigneeId: part.readerId,
+            status: part.readerStatus || 'PENDENTE',
+            section: tesouros.title,
+            observation: part.observation,
+            partNumber: partNum
+          });
+        }
+      });
+    }
+
+    // FSM
+    const fsm = weekData.sections?.find((s: any) => s.id === 'fsm');
+    if (fsm) {
+      fsm.parts?.forEach((part: any) => {
+        globalPartCounter++;
+        const partNum = globalPartCounter;
+
+        if (part.assignedTo) {
+          all.push({
+            id: part.id,
+            role: 'TITULAR',
+            partTitle: part.title,
+            assigneeId: part.assignedTo,
+            status: part.status || 'PENDENTE',
+            section: fsm.title,
+            observation: part.observation,
+            partNumber: partNum
+          });
+        }
+        if (part.assistantId) {
+          all.push({
+            id: `${part.id}-ass`,
+            role: 'AJUDANTE',
+            partTitle: part.title,
+            assigneeId: part.assistantId,
+            status: part.assistantStatus || 'PENDENTE',
+            section: fsm.title,
+            observation: part.observation,
+            partNumber: partNum
+          });
+        }
+      });
+    }
+
+    // NVC
+    const nvc = weekData.sections?.find((s: any) => s.id === 'nvc');
+    if (nvc) {
+      nvc.parts?.forEach((part: any) => {
+        const isFinalPrayer = part.title === 'Oração Final';
+        let partNum = undefined;
+
+        if (!isFinalPrayer) {
+          globalPartCounter++;
+          partNum = globalPartCounter;
+        }
+
+        if (part.assignedTo) {
+          all.push({
+            id: part.id,
+            role: 'TITULAR',
+            partTitle: part.title,
+            assigneeId: part.assignedTo,
+            status: part.status || 'PENDENTE',
+            section: nvc.title,
+            observation: part.observation,
+            partNumber: partNum
+          });
+        }
+        if (part.readerId) {
+          all.push({
+            id: `${part.id}-read`,
+            role: 'LEITOR',
+            partTitle: part.title,
+            assigneeId: part.readerId,
+            status: part.readerStatus || 'PENDENTE',
+            section: nvc.title,
+            observation: part.observation,
+            partNumber: partNum
+          });
+        }
       });
     }
 
@@ -119,7 +213,18 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
   const getMessageText = (assignment: any) => {
     const name = getParticipantName(assignment.assigneeId);
     const date = weekData.dateLabel || 'esta semana';
-    let message = `Olá ${name}, tudo bem? Lembrete de sua designação (${assignment.partTitle}) para a semana de ${date}.`;
+
+    let partInfo = assignment.partTitle;
+    if (assignment.partNumber) {
+      partInfo = `Parte ${assignment.partNumber}: ${partInfo}`;
+    }
+
+    let sectionInfo = '';
+    if (assignment.section && assignment.section !== 'Geral') {
+      sectionInfo = ` em ${assignment.section}`;
+    }
+
+    let message = `Olá ${name}, tudo bem? Lembrete de sua designação${sectionInfo} (${partInfo}) para a semana de ${date}.`;
 
     if (assignment.observation) {
       message += `\nObs: ${assignment.observation}`;
@@ -172,7 +277,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
     <div className="bg-gray-100 min-h-screen pb-20 font-sans">
       {/* HEADER */}
       <header className="bg-[#0f172a] text-white sticky top-0 z-10 shadow-md">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between relative">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between relative">
           <Button variant="ghost" size="icon" onClick={onBack} className="text-gray-400 hover:text-white hover:bg-white/10">
             <ArrowLeft size={20} />
           </Button>
@@ -194,7 +299,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         </div>
       </header>
 
-      <div className="max-w-md w-full mx-auto p-4 space-y-4">
+      <div className="max-w-4xl w-full mx-auto p-4 space-y-4">
         {/* SUMMARY BANNER */}
         <div className="bg-[#1e293b] rounded-lg p-4 flex items-center gap-3 shadow-sm select-none">
           <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-[#1e293b] font-bold text-sm">
@@ -236,14 +341,43 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
                             <span className="font-bold text-gray-900 text-sm truncate">
                               {getParticipantName(a.assigneeId)}
                             </span>
-                            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${a.role === 'TITULAR' ? 'bg-blue-100 text-blue-700' :
+                              a.role === 'AJUDANTE' ? 'bg-purple-100 text-purple-700' :
+                                a.role === 'LEITOR' ? 'bg-indigo-100 text-indigo-700' :
+                                  'bg-gray-100 text-gray-700'
+                              }`}>
                               {a.role === 'TITULAR' ? 'Titular' : a.role}
                             </span>
+                            {a.section && a.section !== 'Geral' && (
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${a.section.toLowerCase().includes('tesouros') ? 'bg-slate-100 text-slate-700' :
+                                a.section.toLowerCase().includes('faça') || a.section.toLowerCase().includes('fsm') ? 'bg-amber-100 text-amber-700' :
+                                  a.section.toLowerCase().includes('vida') || a.section.toLowerCase().includes('nvc') ? 'bg-red-100 text-red-700' :
+                                    'bg-gray-100 text-gray-600'
+                                }`}>
+                                {a.section}
+                              </span>
+                            )}
                           </div>
 
-                          <span className="text-xs text-gray-500 truncate">{a.partTitle}</span>
+                          <span className="text-xs text-gray-500 truncate">
+                            {a.partNumber ? <span className="font-bold text-gray-700 mr-1">Parte {a.partNumber}:</span> : ''}{a.partTitle}
+                          </span>
                           {a.observation && (
-                            <span className="text-xs text-gray-400 italic truncate mt-0.5 block">Obs: {a.observation}</span>
+                            <div className="flex items-start gap-1 mt-0.5">
+                              <span
+                                className={`text-xs text-gray-400 italic flex-1 ${expandedObsIds.has(a.id) ? 'break-words' : 'truncate'}`}
+                                onClick={() => toggleObs(a.id)}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                Obs: {a.observation}
+                              </span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); toggleObs(a.id); }}
+                                className="text-gray-400 hover:text-gray-600 p-0.5"
+                              >
+                                {expandedObsIds.has(a.id) ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                              </button>
+                            </div>
                           )}
 
                           <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">

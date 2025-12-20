@@ -94,7 +94,7 @@ model Designacao {
   observacao      String?
   ordem           Int              @default(0)
   status          StatusDesignacao @default(PENDENTE)
-  tokenConfirmacao String?         @unique
+
   
   semana          Semana           @relation(fields: [semanaId], references: [id])
   parteTemplate   ParteTemplate    @relation(fields: [parteTemplateId], references: [id])

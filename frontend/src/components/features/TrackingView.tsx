@@ -53,7 +53,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
     // President
     if (weekData.presidentId) {
       all.push({
-        id: 'president',
+        id: `week-${weekData.id}-president`,
+        realId: `week-${weekData.id}-president`,
         role: 'PRESIDENTE',
         partTitle: 'Presidente',
         assigneeId: weekData.presidentId,
@@ -65,8 +66,11 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
 
     // Opening Prayer
     if (weekData.openingPrayerId) {
+      // Use the real Designacao ID if available
+      const prayerId = weekData.openingPrayerPartId || `week-${weekData.id}-prayer`;
       all.push({
-        id: 'openingPrayer',
+        id: prayerId,
+        realId: prayerId,
         role: 'ORAÇÃO',
         partTitle: 'Oração Inicial',
         assigneeId: weekData.openingPrayerId,
@@ -88,6 +92,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         if (part.assignedTo) {
           all.push({
             id: part.id,
+            realId: part.id,
             role: 'TITULAR',
             partTitle: part.title,
             assigneeId: part.assignedTo,
@@ -101,6 +106,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         if (part.assistantId) {
           all.push({
             id: `${part.id}-ass`,
+            realId: part.id,
             role: 'AJUDANTE',
             partTitle: part.title,
             assigneeId: part.assistantId,
@@ -108,27 +114,13 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
             section: tesouros.title,
             observation: part.observation,
             partNumber: partNum,
-            token: part.token // Note: Assistant shares same token? Actually designacao has one token. 
-            // Wait, designacao model has titularId and ajudanteId. One token per designacao.
-            // If secure link confirms "the assignment", does it confirm for both?
-            // Usually confirmation is per person.
-            // PROPOSAL: Only TITULAR uses the token for now?
-            // OR: Backend handles who is confirming?
-            // The token is on Designacao. If I use it for Assistant, it confirms the Designacao.
-            // Status is on Designacao. So it confirms the whole part.
-            // Ideally, we'd have statusTitular and statusAjudante.
-            // Schema has `status` (Enum StatusDesignacao). It seems shared?
-            // Let's look at schema again.
-            // `status` is on Designacao. `titularId`, `ajudanteId`.
-            // If Assistant confirms, it marks Designacao as CONFIRMED.
-            // This implies BOTH are confirmed? Or just the part is confirmed?
-            // Current model seems to have single status for the part.
-            // Use the token for both for now.
+            token: part.token
           });
         }
         if (part.readerId) {
           all.push({
             id: `${part.id}-read`,
+            realId: part.id,
             role: 'LEITOR',
             partTitle: part.title,
             assigneeId: part.readerId,
@@ -151,6 +143,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         if (part.assignedTo) {
           all.push({
             id: part.id,
+            realId: part.id,
             role: 'TITULAR',
             partTitle: part.title,
             assigneeId: part.assignedTo,
@@ -163,6 +156,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         if (part.assistantId) {
           all.push({
             id: `${part.id}-ass`,
+            realId: part.id,
             role: 'AJUDANTE',
             partTitle: part.title,
             assigneeId: part.assistantId,
@@ -190,6 +184,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         if (part.assignedTo) {
           all.push({
             id: part.id,
+            realId: part.id,
             role: 'TITULAR',
             partTitle: part.title,
             assigneeId: part.assignedTo,
@@ -202,6 +197,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
         if (part.readerId) {
           all.push({
             id: `${part.id}-read`,
+            realId: part.id,
             role: 'LEITOR',
             partTitle: part.title,
             assigneeId: part.readerId,
@@ -247,8 +243,15 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
       message += `\nObs: ${assignment.observation}`;
     }
 
-    if (assignment.token) {
-      const link = `${window.location.origin}/confirm/${assignment.token}`;
+    // Generate link using Real Assignment ID (UUID)
+    const targetId = assignment.realId || assignment.id;
+    // Check if it's a UUID (real assignment) not 'president' or 'openingPrayer'
+    if (targetId && targetId.length > 20) {
+      let link = `${window.location.origin}/confirm/${targetId}`;
+      // Append person ID for personalized view if available
+      if (assignment.assigneeId && ['TITULAR', 'AJUDANTE', 'LEITOR', 'PRESIDENTE', 'ORAÇÃO'].includes(assignment.role)) {
+        link += `/${assignment.assigneeId}`;
+      }
       message += `\n\nPara ver detalhes e confirmar, clique aqui:\n${link}`;
     } else {
       message += `\nPor favor, confirme se poderá realizar.`;

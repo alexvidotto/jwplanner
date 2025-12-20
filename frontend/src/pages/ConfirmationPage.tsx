@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Check, X, Clock, User, ChevronLeft, AlertCircle, MoreVertical, RotateCcw } from 'lucide-react';
+import { Calendar, Check, X, Clock, User, ChevronLeft, AlertCircle, MoreVertical, RotateCcw, Users } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
 interface Assignment {
@@ -10,20 +10,22 @@ interface Assignment {
   parteTemplate: {
     titulo: string;
     secao: string;
+    requerLeitor: boolean;
   };
   semana: {
     dataInicio: string;
     descricao: string;
   };
-  titular?: { nome: string };
-  ajudante?: { nome: string };
+  titular?: { nome: string; id: string };
+  ajudante?: { nome: string; id: string };
   observacao?: string;
   tempo?: number;
   tituloDoTema?: string;
 }
 
+
 export const ConfirmationPage = () => {
-  const { token } = useParams();
+  const { assignmentId, personId } = useParams();
   const navigate = useNavigate();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,12 +34,14 @@ export const ConfirmationPage = () => {
   const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
-    fetchAssignment();
-  }, [token]);
+    if (assignmentId) {
+      fetchAssignment();
+    }
+  }, [assignmentId]);
 
   const fetchAssignment = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/planning/assignments/token/${token}`);
+      const response = await fetch(`http://localhost:3000/planning/assignments/${assignmentId}`);
       if (!response.ok) {
         throw new Error('Designação não encontrada ou link inválido.');
       }
@@ -51,10 +55,10 @@ export const ConfirmationPage = () => {
   };
 
   const updateStatus = async (status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE') => {
-    if (!token) return;
+    if (!assignmentId) return;
     setActionLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/planning/assignments/token/${token}/status`, {
+      const response = await fetch(`http://localhost:3000/planning/assignments/${assignmentId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -99,6 +103,70 @@ export const ConfirmationPage = () => {
   const dateFormatted = date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
   const isConfirmed = assignment.status === 'CONFIRMADO';
   const isDeclined = assignment.status === 'RECUSADO';
+  const requiresReader = assignment.parteTemplate.requerLeitor;
+
+  // Role Determination
+  let viewerRole = 'TITULAR';
+  let myName = '';
+
+  if (personId) {
+    if (assignment.titular?.id === personId) {
+      viewerRole = 'TITULAR';
+      myName = assignment.titular.nome;
+    } else if (assignment.ajudante?.id === personId) {
+      // If it requires a reader, this person is the reader
+      viewerRole = requiresReader ? 'LEITOR' : 'AJUDANTE';
+      myName = assignment.ajudante.nome;
+    }
+  }
+
+  // Refine role for special parts
+  if (assignment.parteTemplate.titulo === 'Presidente') viewerRole = 'PRESIDENTE';
+  if (assignment.parteTemplate.titulo === 'Oração Inicial') viewerRole = 'ORAÇÃO';
+
+  const isStudentPart = assignment.parteTemplate.secao === 'fsm' || assignment.parteTemplate.secao === 'vida_crista'; // Assuming these are student parts, mostly FSM
+
+  // Theme Configuration based on Role
+  const theme = {
+    TITULAR: {
+      bg: 'bg-blue-50',
+      text: 'text-blue-900',
+      iconBg: 'bg-blue-100',
+      iconText: 'text-blue-600',
+    },
+    AJUDANTE: {
+      bg: 'bg-purple-50',
+      text: 'text-purple-900',
+      iconBg: 'bg-purple-100',
+      iconText: 'text-purple-600',
+    },
+    LEITOR: {
+      bg: 'bg-rose-50',
+      text: 'text-rose-900',
+      iconBg: 'bg-rose-100',
+      iconText: 'text-rose-600',
+    },
+    PRESIDENTE: {
+      bg: 'bg-indigo-50',
+      text: 'text-indigo-900',
+      iconBg: 'bg-indigo-100',
+      iconText: 'text-indigo-600',
+    },
+    ORAÇÃO: {
+      bg: 'bg-amber-50',
+      text: 'text-amber-900',
+      iconBg: 'bg-amber-100',
+      iconText: 'text-amber-600',
+    },
+    DEFAULT: {
+      bg: 'bg-blue-50',
+      text: 'text-blue-900',
+      iconBg: 'bg-blue-100',
+      iconText: 'text-blue-600',
+    }
+  };
+
+  const currentTheme = theme[viewerRole as keyof typeof theme] || theme.DEFAULT;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4">
@@ -120,14 +188,14 @@ export const ConfirmationPage = () => {
                   className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 whitespace-nowrap"
                 >
                   <X size={16} />
-                  Informar Ausência
+                  Informar Ausência ({myName || 'Você'})
                 </button>
               </div>
             )}
           </div>
         )}
         {/* Header */}
-        <div className={`p-6 text-center ${isConfirmed ? 'bg-green-50' : isDeclined ? 'bg-red-50' : 'bg-blue-50'}`}>
+        <div className={`p-6 text-center ${isConfirmed ? 'bg-green-50' : isDeclined ? 'bg-red-50' : currentTheme.bg}`}>
           <div className="mb-4 flex justify-center">
             {isConfirmed ? (
               <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -138,11 +206,13 @@ export const ConfirmationPage = () => {
                 <X className="h-8 w-8 text-red-600" />
               </div>
             ) : (
-              <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-blue-600" />
+                  <div className={`h-16 w-16 ${currentTheme.iconBg} rounded-full flex items-center justify-center`}>
+                    <User className={`h-8 w-8 ${currentTheme.iconText}`} />
               </div>
             )}
           </div>
+
+          {myName && <p className="text-sm font-medium text-gray-500 mb-1">Olá, {myName}</p>}
 
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
             {isConfirmed ? 'Confirmado!' : isDeclined ? 'Ausência Informada' : 'Sua Designação'}
@@ -168,11 +238,53 @@ export const ConfirmationPage = () => {
             <div>
               <p className="text-xs text-gray-500 uppercase font-bold">Parte</p>
               <p className="text-sm font-medium text-gray-900">{assignment.parteTemplate.titulo}</p>
-              {assignment.tituloDoTema && (
+              {assignment.tituloDoTema && assignment.tituloDoTema !== assignment.parteTemplate.titulo && (
                 <p className="text-xs text-gray-600 mt-1 italic">"{assignment.tituloDoTema}"</p>
               )}
             </div>
           </div>
+
+          {/* Specialized Participants Card for Student Parts */}
+          {assignment.ajudante && (
+            <div className={`rounded-lg border overflow-hidden ${requiresReader ? 'bg-rose-50 border-rose-100' : 'bg-yellow-50 border-yellow-100'}`}>
+              <div className={`px-4 py-2 flex items-center gap-2 ${requiresReader ? 'bg-rose-100' : 'bg-yellow-100'}`}>
+                <Users className={requiresReader ? 'text-rose-700' : 'text-yellow-700'} size={16} />
+                <span className={`text-xs font-bold uppercase tracking-wide ${requiresReader ? 'text-rose-800' : 'text-yellow-800'}`}>Participantes</span>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-medium ${requiresReader ? 'text-rose-900' : 'text-yellow-900'}`}>Titular</span>
+                    {viewerRole === 'TITULAR' && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full w-fit font-bold ${requiresReader ? 'bg-rose-200 text-rose-800' : 'bg-yellow-200 text-yellow-800'}`}>VOCÊ</span>
+                    )}
+                  </div>
+                  <span className={`text-sm ${viewerRole === 'TITULAR' ? 'text-gray-900 font-bold' : 'text-gray-600'}`}>
+                    {assignment.titular?.nome || '-'}
+                  </span>
+                </div>
+                {assignment.ajudante && (
+                  <>
+                    <div className={`h-px ${requiresReader ? 'bg-rose-100' : 'bg-yellow-100'}`} />
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-medium ${requiresReader ? 'text-rose-900' : 'text-yellow-900'}`}>
+                          {requiresReader ? 'Leitor' : 'Ajudante'}
+                        </span>
+                        {(viewerRole === 'AJUDANTE' || viewerRole === 'LEITOR') && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full w-fit font-bold ${requiresReader ? 'bg-rose-200 text-rose-800' : 'bg-yellow-200 text-yellow-800'}`}>VOCÊ</span>
+                        )}
+                      </div>
+                      <span className={`text-sm ${(viewerRole === 'AJUDANTE' || viewerRole === 'LEITOR') ? 'text-gray-900 font-bold' : 'text-gray-600'}`}>
+                        {assignment.ajudante.nome}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
 
           {assignment.tempo && (
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -218,8 +330,6 @@ export const ConfirmationPage = () => {
                 Desfazer {isConfirmed ? 'confirmação' : 'ação'}
               </button>
             )}
-
-
           </div>
         </div>
       </div>

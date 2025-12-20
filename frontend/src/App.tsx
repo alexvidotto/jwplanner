@@ -341,7 +341,8 @@ const AppContent = () => {
           participants={participants}
         />
       } />
-      <Route path="/confirm/:token" element={<ConfirmationPage />} />
+      <Route path="/confirm/:assignmentId" element={<ConfirmationPage />} />
+      <Route path="/confirm/:assignmentId/:personId" element={<ConfirmationPage />} />
     </Routes>
   );
 };

@@ -6,24 +6,24 @@ import { WeeksService } from './weeks.service';
 export class AssignmentsController {
   constructor(private readonly weeksService: WeeksService) {}
 
-  @Get('token/:token')
-  async getByToken(@Param('token') token: string) {
-    const assignment = await this.weeksService.findByToken(token);
+  @Get(':id')
+  async getById(@Param('id') id: string) {
+    const assignment = await this.weeksService.findAssignmentById(id);
     if (!assignment) {
       throw new NotFoundException('Assignment not found');
     }
     return assignment;
   }
 
-  @Patch('token/:token/status')
+  @Patch(':id/status')
   async updateStatus(
-    @Param('token') token: string,
+    @Param('id') id: string,
     @Body('status') status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE'
   ) {
-    const assignment = await this.weeksService.findByToken(token);
+    const assignment = await this.weeksService.findAssignmentById(id);
     if (!assignment) {
       throw new NotFoundException('Assignment not found');
     }
-    return this.weeksService.updateStatusByToken(token, status);
+    return this.weeksService.updateAssignmentStatus(id, status);
   }
 }

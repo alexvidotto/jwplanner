@@ -39,7 +39,7 @@ export class WeeksService {
                 tempo: tpl.tempoPadrao || 5,
                 status: 'PENDENTE',
                 ordem: idx,
-                tokenConfirmacao: crypto.randomUUID()
+
               }))
             }
           },
@@ -310,7 +310,7 @@ export class WeeksService {
             tempo: tpl.tempoPadrao || 5,
             status: 'PENDENTE',
             ordem: idx,
-            tokenConfirmacao: crypto.randomUUID()
+
           }))
         }
       },
@@ -396,7 +396,7 @@ export class WeeksService {
                 observacao: d.observation,
                 tituloDoTema: d.tituloDoTema,
                 tempo: d.tempo,
-                tokenConfirmacao: crypto.randomUUID()
+
               }
             })
           );
@@ -439,9 +439,59 @@ export class WeeksService {
     });
   }
 
-  async findByToken(token: string) {
+  async findAssignmentById(id: string) {
+    // Check for special Week assignments (President, Prayer)
+    if (id.startsWith('week-')) {
+      // Regex to match week-<UUID>-<role>
+      // UUID is roughly 36 chars. Role is president or prayer.
+      const match = id.match(/^week-(.+)-(president|prayer)$/);
+
+      if (match) {
+        const weekId = match[1];
+        const role = match[2]; // 'president' or 'prayer'
+
+        const week = await this.prisma.semana.findUnique({ where: { id: weekId } });
+        if (!week) return null;
+
+        let participantId = null;
+        let status = 'PENDENTE';
+        let title = '';
+
+        if (role === 'president') {
+          participantId = week.presidenteId;
+          status = week.statusPresidente;
+          title = 'Presidente';
+        } else if (role === 'prayer') {
+          participantId = week.oracaoId;
+          status = week.statusOracao;
+          title = 'Oração Inicial';
+        }
+
+        if (!participantId) return null;
+
+        const participant = await this.prisma.participante.findUnique({ where: { id: participantId } });
+
+        // Construct a virtual Assignment object
+        return {
+          id: id,
+          semana: week,
+          status: status,
+          parteTemplate: {
+            titulo: title,
+            secao: 'Geral',
+            tempoPadrao: role === 'prayer' ? 5 : null
+          },
+          titular: participant,
+          ajudante: null,
+          observacao: null,
+          tempo: role === 'prayer' ? 5 : null,
+          tituloDoTema: null
+        };
+      }
+    }
+
     return this.prisma.designacao.findUnique({
-      where: { tokenConfirmacao: token },
+      where: { id },
       include: {
         semana: true,
         parteTemplate: true,
@@ -451,9 +501,30 @@ export class WeeksService {
     });
   }
 
-  async updateStatusByToken(token: string, status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE') {
+  async updateAssignmentStatus(id: string, status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE') {
+    // Check for special Week assignments
+    if (id.startsWith('week-')) {
+      const match = id.match(/^week-(.+)-(president|prayer)$/);
+      if (match) {
+        const weekId = match[1];
+        const role = match[2];
+
+        const data: any = {};
+        if (role === 'president') {
+          data.statusPresidente = status;
+        } else if (role === 'prayer') {
+          data.statusOracao = status;
+        }
+
+        return this.prisma.semana.update({
+          where: { id: weekId },
+          data: data
+        });
+      }
+    }
+
     return this.prisma.designacao.update({
-      where: { tokenConfirmacao: token },
+      where: { id },
       data: { status }
     });
   }

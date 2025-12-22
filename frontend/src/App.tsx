@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Dashboard } from './components/features/Dashboard';
+import { Navigate } from 'react-router-dom';
+import { AppLayout } from './components/layout/AppLayout';
 import { AdminParticipantsView } from './components/features/AdminParticipantsView';
 import { AdminPartsView } from './components/features/AdminPartsView';
 import { AdminSkillsView } from './components/features/AdminSkillsView';
@@ -300,47 +301,49 @@ const AppContent = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Dashboard onNavigate={navigate} />} />
-      <Route path="/participants" element={<AdminParticipantsView participants={participants} setParticipants={setParticipants} onBack={() => navigate('/')} />} />
-      <Route path="/parts" element={<AdminPartsView parts={parts} setParts={setParts} onBack={() => navigate('/')} />} />
-      <Route path="/skills" element={<AdminSkillsView participants={participants} setParticipants={setParticipants} parts={parts} onBack={() => navigate('/')} />} />
-      <Route path="/planner" element={
-        activeWeek ? (
-          <AdminPlanner
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Navigate to="/planner" replace />} />
+        <Route path="/planner" element={
+          activeWeek ? (
+            <AdminPlanner
+              weekData={activeWeek}
+              setWeekData={handleUpdateWeek}
+              onBack={() => navigate('/')}
+              onNavigateWeek={handleNavigateWeek}
+              onJumpToCurrentWeek={handleJumpToCurrentWeek}
+              onSelectDate={handleDateSelect}
+              participants={participants}
+              partTemplates={parts}
+              onSave={handleSaveWeek}
+            />
+          ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
+        } />
+        <Route path="/participants" element={<AdminParticipantsView participants={participants} setParticipants={setParticipants} onBack={() => navigate('/')} />} />
+        <Route path="/parts" element={<AdminPartsView parts={parts} setParts={setParts} onBack={() => navigate('/')} />} />
+        <Route path="/skills" element={<AdminSkillsView participants={participants} setParticipants={setParticipants} parts={parts} onBack={() => navigate('/')} />} />
+        <Route path="/tracking" element={
+          activeWeek ? (
+            <TrackingView
+              weekData={activeWeek}
+              participants={participants}
+              onBack={() => navigate('/')}
+              onNavigateWeek={handleNavigateWeek}
+              onJumpToCurrentWeek={handleJumpToCurrentWeek}
+              onStatusChange={handleStatusChange}
+            />
+          ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
+        } />
+        <Route path="/month" element={<MonthView onBack={() => navigate('/')} />} />
+        <Route path="/my-assignments" element={
+          <ParticipantView
             weekData={activeWeek}
             setWeekData={handleUpdateWeek}
+            currentUser={participants[0]} // Mock current user for now
             onBack={() => navigate('/')}
-            onNavigateWeek={handleNavigateWeek}
-            onJumpToCurrentWeek={handleJumpToCurrentWeek}
-            onSelectDate={handleDateSelect}
             participants={participants}
-            partTemplates={parts}
-            onSave={handleSaveWeek}
           />
-        ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
-      } />
-      <Route path="/month" element={<MonthView onBack={() => navigate('/')} />} />
-      <Route path="/tracking" element={
-        activeWeek ? (
-          <TrackingView
-            weekData={activeWeek}
-            participants={participants}
-            onBack={() => navigate('/')}
-            onNavigateWeek={handleNavigateWeek}
-            onJumpToCurrentWeek={handleJumpToCurrentWeek}
-            onStatusChange={handleStatusChange}
-          />
-        ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
-      } />
-      <Route path="/my-assignments" element={
-        <ParticipantView
-          weekData={activeWeek}
-          setWeekData={handleUpdateWeek}
-          currentUser={participants[0]} // Mock current user for now
-          onBack={() => navigate('/')}
-          participants={participants}
-        />
-      } />
+        } />
+      </Route>
       <Route path="/confirm/:assignmentId" element={<ConfirmationPage />} />
       <Route path="/confirm/:assignmentId/:personId" element={<ConfirmationPage />} />
     </Routes>

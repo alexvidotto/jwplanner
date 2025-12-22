@@ -20,11 +20,11 @@ export const AppLayout = () => {
   };
 
   const navItems = [
-    { to: '/planner', icon: Calendar, label: 'Weeks' }, // Weeks
-    { to: '/participants', icon: Users, label: 'Users' }, // Users
-    { to: '/parts', icon: List, label: 'Parts' }, // Parts
-    { to: '/skills', icon: Grid, label: 'Matrix' }, // Matrix
-    { to: '/tracking', icon: MessageCircle, label: 'Tracking' },
+    { to: '/planner', icon: Calendar, label: 'Semanas' },
+    { to: '/participants', icon: Users, label: 'Publicadores' },
+    { to: '/parts', icon: List, label: 'Partes' },
+    { to: '/skills', icon: Grid, label: 'Matriz' },
+    { to: '/tracking', icon: MessageCircle, label: 'Acompanhamento' },
   ];
 
   return (

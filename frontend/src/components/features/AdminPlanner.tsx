@@ -51,6 +51,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
 
   const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean, data: any }>({ isOpen: false, data: null });
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' as 'success' | 'error' });
+  const [searchTerm, setSearchTerm] = useState('');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ isVisible: true, message, type });
@@ -451,34 +452,34 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
           if (p.type !== 'ANCIAO') return false;
           // Also check if they have the specific President ability (tpl_presidente)
           if (!p.abilities?.includes('tpl_presidente')) return false;
-          return true;
-        }
-
-        // Opening Prayer: Special handling
-        if (selectedPart.templateId === 'openingPrayer') {
+          // match continue to search
+        } else if (selectedPart.templateId === 'openingPrayer') {
+          // Opening Prayer: Special handling
           // Helper for gender check if needed, but backend handles it mostly.
           // Frontend strict check:
           if (p.type === 'PUB_MULHER') return false;
-          return true;
-        }
-
-        // Reader: Check reader ability
-        if (selectedPart.roleTarget === 'reader') {
+          // match continue
+        } else if (selectedPart.roleTarget === 'reader') {
+          // Reader
           const readerAbility = `${selectedPart.templateId}_reader`;
-          // Check specific reader ability
           if (!p.abilities?.includes(readerAbility)) {
-            // Optional: Fail if strict
             return false;
           }
         } else {
-          // Normal Assignment: Check standard ability
+          // Normal Assignment
           if (!p.abilities?.includes(selectedPart.templateId)) return false;
         }
       }
 
+      // 3. Search Term
+      if (searchTerm) {
+        const lower = searchTerm.toLowerCase();
+        if (!p.name.toLowerCase().includes(lower)) return false;
+      }
+
       return true;
     });
-  }, [suggestions, isLoadingSuggestions, selectedPart, weekData, participants]);
+  }, [suggestions, isLoadingSuggestions, selectedPart, weekData, participants, searchTerm]);
 
   const getAvailablePartsForSection = (sectionId: string) => {
     return partTemplates.filter(pt => pt.section === sectionId);
@@ -864,12 +865,18 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
               <h3 className="font-semibold text-gray-800">Selecionar Participante</h3>
-              <button onClick={() => setIsModalOpen(false)}><XCircle size={20} className="text-gray-400" /></button>
+              <button onClick={() => { setIsModalOpen(false); setSearchTerm(''); }}><XCircle size={20} className="text-gray-400" /></button>
             </div>
             <div className="p-2 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                <input type="text" placeholder="Buscar nome..." className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar nome..."
+                  className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
             </div>
             <div className="overflow-y-auto flex-1 p-2 space-y-1">

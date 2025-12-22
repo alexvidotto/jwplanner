@@ -1,5 +1,5 @@
 import { useState, useMemo as useMemo2 } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2, Book } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Book, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { useCreatePart, useUpdatePart, useDeletePart, usePartHistory } from '../../hooks/useParts';
@@ -28,6 +28,8 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
   const { data: history, isLoading: isLoadingHistory } = usePartHistory(editingId);
   const [formData, setFormData] = useState({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: keyof PartTemplate; direction: 'asc' | 'desc' } | null>(null);
 
   const createPart = useCreatePart();
   const updatePart = useUpdatePart();
@@ -99,17 +101,76 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
     );
   }, [formData, editingId, parts]);
 
+  const handleSort = (key: keyof PartTemplate) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const filteredAndSortedParts = useMemo2(() => {
+    let result = [...parts];
+
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      result = result.filter(p =>
+        p.title.toLowerCase().includes(lowerTerm) ||
+        p.section.toLowerCase().includes(lowerTerm)
+      );
+    }
+
+    if (sortConfig) {
+      result.sort((a, b) => {
+        let aValue: any = a[sortConfig.key];
+        let bValue: any = b[sortConfig.key];
+
+        // Handle potentially undefined/missing values if necessary, though strict type suggests they exist
+        // For strings compare via localeCompare for better accuracy
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'asc'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [parts, searchTerm, sortConfig]);
+
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (sortConfig?.key !== columnKey) return <ArrowUpDown size={14} className="ml-1 text-gray-400 opacity-0 group-hover:opacity-50" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} className="ml-1 text-blue-600" /> : <ArrowDown size={14} className="ml-1 text-blue-600" />;
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
-            <h1 className="font-bold text-gray-800 text-lg">Cadastro de Partes</h1>
+        <div className="max-w-4xl mx-auto px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
+              <h1 className="font-bold text-gray-800 text-lg">Cadastro de Partes</h1>
+            </div>
+            <Button onClick={() => { setEditingId(null); setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false }); setIsModalOpen(true); }}>
+              <Plus size={16} /> Nova Parte
+            </Button>
           </div>
-          <Button onClick={() => { setEditingId(null); setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false }); setIsModalOpen(true); }}>
-            <Plus size={16} /> Nova Parte
-          </Button>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Buscar por título ou seção..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </header>
 
@@ -118,16 +179,31 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-3 text-gray-500 font-medium">Título</th>
-                <th className="px-6 py-3 text-gray-500 font-medium">Seção</th>
-                <th className="px-6 py-3 text-gray-500 font-medium">Tempo Padrão</th>
+                <th
+                  className="px-6 py-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort('title')}
+                >
+                  <div className="flex items-center">Título <SortIcon columnKey="title" /></div>
+                </th>
+                <th
+                  className="px-6 py-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort('section')}
+                >
+                  <div className="flex items-center">Seção <SortIcon columnKey="section" /></div>
+                </th>
+                <th
+                  className="px-6 py-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort('defaultTime')}
+                >
+                  <div className="flex items-center">Tempo Padrão <SortIcon columnKey="defaultTime" /></div>
+                </th>
                 <th className="px-6 py-3 text-gray-500 font-medium">Ajudante?</th>
                 <th className="px-6 py-3 text-gray-500 font-medium">Leitor?</th>
                 <th className="px-6 py-3 text-gray-500 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {parts.map(p => (
+              {filteredAndSortedParts.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleEdit(p)}>
                   <td className="px-6 py-4 font-medium text-gray-900">{p.title}</td>
                   <td className="px-6 py-4 text-gray-600 uppercase text-xs">{p.section}</td>

@@ -266,6 +266,6 @@ export const transformPartsToFrontend = (parts: any[]) => {
     requiresReader: p.requerLeitor,
     hasObservation: p.temObservacao,
     hasTime: p.temTempo,
-    allowedPrivileges: p.generoExclusivo ? [p.generoExclusivo] : ['ANY'] // Approximate logic
+    allowedPrivileges: ['ANY']
   }));
 };

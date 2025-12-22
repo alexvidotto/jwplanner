@@ -51,7 +51,6 @@ model ParteTemplate {
   requerLeitor    Boolean      @default(false)
   temObservacao   Boolean      @default(false)
   temTempo        Boolean      @default(true)
-  generoExclusivo Privilegio?
   tempoPadrao     Int?         // Minutes
 
   habilidades     Habilidade[]

@@ -149,17 +149,25 @@ const AppContent = () => {
         const usedMatchIds = new Set<string>();
 
         // Handle Opening Prayer
-        if (weekToSave.openingPrayerId) {
-          const match = newWeek.designacoes.find((d: any) => d.parteTemplateId === weekToSave.openingPrayerTemplateId);
-          if (match) {
+        const openingPrayerTemplateId = weekToSave.openingPrayerTemplateId;
+        const openingPrayerId = weekToSave.openingPrayerId;
+
+        // Try to find the Opening Prayer part in the new week
+        let prayerMatch = newWeek.designacoes.find((d: any) =>
+          d.parteTemplateId === openingPrayerTemplateId ||
+          d.parteTemplate.titulo === 'Oração Inicial' // Fallback
+        );
+
+        if (prayerMatch) {
+          if (openingPrayerId) {
             updates.push({
-              id: match.id,
-              assignedTo: weekToSave.openingPrayerId,
+              id: prayerMatch.id,
+              assignedTo: openingPrayerId,
               assistantId: null,
-              status: weekToSave.openingPrayerStatus
+              status: weekToSave.openingPrayerStatus || 'PENDENTE'
             });
-            usedMatchIds.add(match.id);
           }
+          usedMatchIds.add(prayerMatch.id);
         }
 
         weekToSave.sections.forEach((s: any) => s.parts.forEach((p: any) => {
@@ -182,7 +190,7 @@ const AppContent = () => {
             // Treat as NEW added part
             updates.push({
               id: p.id, // Use the virtual/new ID
-              parteTemplateId: p.templateId, // Ensure template ID is passed for creation
+              parteTemplateId: p.templateId, // Ensure template ID is passed for creating
               assignedTo: p.assignedTo,
               assistantId: p.readerId || p.assistantId,
               status: p.status || 'PENDENTE',
@@ -217,6 +225,17 @@ const AppContent = () => {
             assignedTo: weekToSave.openingPrayerId,
             assistantId: null,
             status: weekToSave.openingPrayerStatus,
+            ordem: 0
+          });
+        } else if (weekToSave.openingPrayerId) {
+          // Opening Prayer assigned but Part doesn't exist yet -> CREATE IT
+          // We use the known fixed ID for the template
+          updates.push({
+            id: `new-op-${Date.now()}`,
+            parteTemplateId: weekToSave.openingPrayerTemplateId || 'tpl_oracao_inicial',
+            assignedTo: weekToSave.openingPrayerId,
+            assistantId: null,
+            status: weekToSave.openingPrayerStatus || 'PENDENTE',
             ordem: 0
           });
         }

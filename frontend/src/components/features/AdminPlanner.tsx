@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, X, Star, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 import { EditableField } from '../ui/EditableField';
@@ -90,8 +90,6 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
     return map;
   }, [weekData.sections]);
 
-  const presidentTemplate = partTemplates.find(pt => pt.title === 'Presidente');
-
   const MAX_MINUTES = 105;
   const isOverTime = totalMinutes > MAX_MINUTES;
 
@@ -100,7 +98,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       e.preventDefault();
       return;
     }
-    if (partId.includes('n_prayer') || partId.includes('n2-')) {
+    if (partId.includes('n_prayer') || partId.includes('n2-') || weekData.sections.find((s: any) => s.id === sectionId)?.parts.find((p: any) => p.id === partId)?.title.includes('Estudo')) {
       e.preventDefault();
       return;
     }
@@ -135,11 +133,14 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       parts.splice(toIndex, 0, movedPart);
 
       if (section.id === 'nvc') {
-        const study = parts.find(p => p.id.includes('n2-'));
-        const prayer = parts.find(p => p.id.includes('n_prayer'));
+        const study = parts.find(p => p.id.includes('n2-') || p.id.includes('n_prayer') === false && (p.title.includes('Estudo') || (p.templateTitle && p.templateTitle.includes('Estudo'))));
+        const prayer = parts.find(p => p.title === 'Oração Final' || p.id.includes('n_prayer'));
 
-        const dynamicParts = parts.filter(p => !p.id.includes('n2-') && !p.id.includes('n_prayer'));
+        // Identify other parts
+        // Filter out Study and Prayer from the "Moveable" pool first
+        const dynamicParts = parts.filter(p => p !== study && p !== prayer);
 
+        // Re-construct with strict order: [Dynamic Parts] -> [Study] -> [Prayer]
         const reconstructedParts = [...dynamicParts];
         if (study) reconstructedParts.push(study);
         if (prayer) reconstructedParts.push(prayer);
@@ -364,7 +365,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       if (section.id !== sectionId) return section;
       let newParts = [...section.parts];
       if (section.id === 'nvc') {
-        const fixedPartIndex = newParts.findIndex((p: any) => p.id.includes('n2-') || p.id.includes('n_prayer'));
+        const fixedPartIndex = newParts.findIndex((p: any) => p.id.includes('n2-') || p.id.includes('n_prayer') || p.title.includes('Estudo'));
         if (fixedPartIndex !== -1) {
           newParts.splice(fixedPartIndex, 0, newPart);
         } else {
@@ -445,9 +446,11 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       // 2. Filtro de Habilidade (Refinement)
       // 2. Filter by Ability
       if (selectedPart?.templateId) {
-        // President: Special handling (no ability check, just type)
+        // President: Special handling
         if (selectedPart.templateId === 'president') {
           if (p.type !== 'ANCIAO') return false;
+          // Also check if they have the specific President ability (tpl_presidente)
+          if (!p.abilities?.includes('tpl_presidente')) return false;
           return true;
         }
 
@@ -668,9 +671,9 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                   </div>
 
                   <div className="bg-white border-x border-b rounded-b-lg divide-y">
-                    {section.parts.map((part: any, _index: number) => {
-                      const isClosingPrayer = part.id.includes('n_prayer');
-                      const isBibleStudy = part.id.includes('n2-');
+                    {section.parts.map((part: any) => {
+                      const isClosingPrayer = part.id.includes('n_prayer') || part.title === 'Oração Final';
+                      const isBibleStudy = part.id.includes('n2-') || part.title.includes('Estudo');
                       const isDraggable = (section.id === 'fsm' || (section.id === 'nvc' && !isClosingPrayer && !isBibleStudy));
                       const isFixedPart = isClosingPrayer || isBibleStudy;
 

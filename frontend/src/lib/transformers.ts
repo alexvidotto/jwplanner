@@ -81,24 +81,19 @@ export const transformWeekToFrontend = (week: any) => {
   const startDate = new Date(week.dataInicio);
 
   // Fixed order for Tesouros
-  const tesourosOrder = ['Discurso', 'Jóias Espirituais', 'Leitura da Bíblia'];
+  const tesourosOrder = ['discurso', 'joias espirituais', 'leitura da biblia'];
+  const normalizeTitle = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
   sectionsMap.tesouros.parts.sort((a: any, b: any) => {
     // Try sorting by templateTitle first (stable), fallback to title
-    const titleA = a.templateTitle || a.title;
-    const titleB = b.templateTitle || b.title;
+    const titleA = normalizeTitle(a.templateTitle || a.title);
+    const titleB = normalizeTitle(b.templateTitle || b.title);
 
-    const indexA = tesourosOrder.indexOf(titleA);
-    const indexB = tesourosOrder.indexOf(titleB);
+    const indexA = tesourosOrder.findIndex(t => titleA.includes(t));
+    const indexB = tesourosOrder.findIndex(t => titleB.includes(t));
 
     // If both are known, sort by order
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-
-    // If only one is known, it should be in its place... 
-    // BUT Discurso might have a dynamic title if we missed templateTitle? 
-    // Actually, with templateTitle, 'Discurso' should match index 0.
-
-    // If 'Discurso' was renamed on template side (unlikely), we might have issues.
-    // Assuming 'Discurso' template title IS 'Discurso'.
 
     if (indexA !== -1) return -1; // A is known, B is unknown (should B be before or after?)
     if (indexB !== -1) return 1;  // B is known
@@ -106,10 +101,22 @@ export const transformWeekToFrontend = (week: any) => {
     return 0;
   });
 
-  // Sort NVC section to ensure Oração Final is last
+  // Sort NVC section to ensure Oração Final is last and Bible Study is second to last
   sectionsMap.nvc.parts.sort((a: any, b: any) => {
-    if (a.title === 'Oração Final') return 1;
-    if (b.title === 'Oração Final') return -1;
+    const isFinalPrayerA = a.title === 'Oração Final';
+    const isFinalPrayerB = b.title === 'Oração Final';
+
+    if (isFinalPrayerA) return 1;
+    if (isFinalPrayerB) return -1;
+
+    // Check for Bible Study (Estudo Bíblico)
+    const isBibleStudyA = a.templateTitle?.includes('Estudo') || a.title.includes('Estudo');
+    const isBibleStudyB = b.templateTitle?.includes('Estudo') || b.title.includes('Estudo');
+
+    if (isBibleStudyA && isBibleStudyB) return 0;
+    if (isBibleStudyA) return 1; // Bible Study goes after normal parts (but before Prayer)
+    if (isBibleStudyB) return -1;
+
     return 0;
   });
 
@@ -174,13 +181,15 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
   });
 
   // Fixed order for Tesouros
-  const tesourosOrder = ['Discurso', 'Jóias Espirituais', 'Leitura da Bíblia'];
-  sectionsMap.tesouros.parts.sort((a: any, b: any) => {
-    const titleA = a.templateTitle || a.title;
-    const titleB = b.templateTitle || b.title;
+  const tesourosOrder = ['discurso', 'joias espirituais', 'leitura da biblia'];
+  const normalizeTitle = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    const indexA = tesourosOrder.indexOf(titleA);
-    const indexB = tesourosOrder.indexOf(titleB);
+  sectionsMap.tesouros.parts.sort((a: any, b: any) => {
+    const titleA = normalizeTitle(a.templateTitle || a.title);
+    const titleB = normalizeTitle(b.templateTitle || b.title);
+
+    const indexA = tesourosOrder.findIndex(t => titleA.includes(t));
+    const indexB = tesourosOrder.findIndex(t => titleB.includes(t));
 
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
     if (indexA !== -1) return -1;
@@ -191,8 +200,20 @@ export const generateVirtualWeek = (date: Date, partTemplates: any[]) => {
 
   // Sort NVC section to ensure Oração Final is last
   sectionsMap.nvc.parts.sort((a: any, b: any) => {
-    if (a.title === 'Oração Final') return 1;
-    if (b.title === 'Oração Final') return -1;
+    const isFinalPrayerA = a.title === 'Oração Final';
+    const isFinalPrayerB = b.title === 'Oração Final';
+
+    if (isFinalPrayerA) return 1;
+    if (isFinalPrayerB) return -1;
+
+    // Check for Bible Study (Estudo Bíblico)
+    const isBibleStudyA = a.templateTitle?.includes('Estudo') || a.title.includes('Estudo');
+    const isBibleStudyB = b.templateTitle?.includes('Estudo') || b.title.includes('Estudo');
+
+    if (isBibleStudyA && isBibleStudyB) return 0;
+    if (isBibleStudyA) return 1;
+    if (isBibleStudyB) return -1;
+
     return 0;
   });
 

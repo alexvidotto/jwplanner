@@ -277,11 +277,11 @@ export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps)
                   </div>
                 ) : (
                   <div className="max-h-40 overflow-y-auto space-y-2">
-                    {history && history.length > 0 ? (
-                      history.map((h: any, i: number) => (
+                      {history && history.filter((h: any) => h.titular).length > 0 ? (
+                        history.filter((h: any) => h.titular).map((h: any, i: number) => (
                         <div key={i} className="text-sm bg-gray-50 p-2 rounded flex flex-col gap-1">
                           <div className="flex justify-between">
-                            <span className="font-medium text-gray-800">{h.titular?.nome || 'Sem Titular'}</span>
+                            <span className="font-medium text-gray-800">{h.titular?.nome}</span>
                             <span className="text-gray-500 text-xs">
                               {new Date(h.semana.dataInicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                             </span>

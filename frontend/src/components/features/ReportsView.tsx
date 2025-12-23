@@ -5,7 +5,6 @@ import { format, addDays, subDays, isMonday, endOfMonth } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
-import { MultiSelect } from '../ui/MultiSelect';
 import { formatDateRange } from '../../lib/transformers';
 
 type FilterType = 'this_cycle' | 'past_cycle' | 'next_cycle' | 'last_6_months' | 'this_year' | 'all_time' | 'custom';
@@ -375,7 +374,7 @@ export const ReportsView = () => {
   const FilterButton = ({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) => (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all border ${active
+      className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${active
         ? "bg-blue-600 text-white border-blue-600 shadow-sm"
         : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
         }`}
@@ -389,7 +388,7 @@ export const ReportsView = () => {
     return (
       <button
         onClick={() => togglePrivilege(type)}
-        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all border ${isActive
+        className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${isActive
           ? "bg-purple-600 text-white border-purple-600 shadow-sm"
           : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
           }`}
@@ -402,7 +401,7 @@ export const ReportsView = () => {
   const RoleTypeButton = ({ type, label }: { type: RoleType, label: string }) => (
     <button
       onClick={() => setAssignmentType(type)}
-      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all border ${assignmentType === type
+      className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${assignmentType === type
         ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
         : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
         }`}
@@ -410,6 +409,24 @@ export const ReportsView = () => {
       {label}
     </button>
   );
+
+  const PartFilterButton = ({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) => (
+    <button
+      onClick={onClick}
+      className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${active
+        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+        : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+        }`}
+    >
+      {label}
+    </button>
+  );
+
+  const toggleTemplate = (id: string) => {
+    setSelectedTemplateIds(prev =>
+      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+    );
+  };
 
   // Generate options for MultiSelect
   const filterOptions = templates.flatMap((t: any) => {
@@ -442,7 +459,7 @@ export const ReportsView = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 print:p-0 print:max-w-none">
+    <div className="p-6 max-w-[1600px] mx-auto space-y-8 print:p-0 print:max-w-none">
       {/* Header */}
       <div className="flex justify-between items-center print:hidden">
         <div>
@@ -458,211 +475,297 @@ export const ReportsView = () => {
         </button>
       </div>
 
-      {/* Filters Container */}
-      <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-6 print:hidden">
+      <div className="flex flex-col md:flex-row gap-8 items-start">
+        {/* Sidebar Filters */}
+        <aside className="w-full md:w-[320px] shrink-0 space-y-4 sticky top-6 md:h-[calc(100vh-120px)] md:overflow-y-auto pr-2 custom-scrollbar">
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200 space-y-4 print:hidden">
 
-        {/* Row 1: Period & Type */}
-        <div className="flex flex-col md:flex-row gap-6 pb-6 border-b border-gray-100">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              <Calendar size={14} /> Período
+            {/* Period Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <Calendar size={14} /> Período
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <FilterButton active={activeFilter === 'this_cycle'} onClick={() => setRange('this_cycle')} label="Ciclo Atual" />
+                <FilterButton active={activeFilter === 'next_cycle'} onClick={() => setRange('next_cycle')} label="Próximo Ciclo" />
+                <FilterButton active={activeFilter === 'past_cycle'} onClick={() => setRange('past_cycle')} label="Ciclo Anterior" />
+                <FilterButton active={activeFilter === 'last_6_months'} onClick={() => setRange('last_6_months')} label="Últimos 6 Meses" />
+                <FilterButton active={activeFilter === 'this_year'} onClick={() => setRange('this_year')} label="Este Ano" />
+                <FilterButton active={activeFilter === 'all_time'} onClick={() => setRange('all_time')} label="Todo o Período" />
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <FilterButton active={activeFilter === 'this_cycle'} onClick={() => setRange('this_cycle')} label="Ciclo Atual" />
-              <FilterButton active={activeFilter === 'next_cycle'} onClick={() => setRange('next_cycle')} label="Próximo Ciclo" />
-              <FilterButton active={activeFilter === 'past_cycle'} onClick={() => setRange('past_cycle')} label="Ciclo Anterior" />
-              <FilterButton active={activeFilter === 'last_6_months'} onClick={() => setRange('last_6_months')} label="Últimos 6 Meses" />
-              <FilterButton active={activeFilter === 'this_year'} onClick={() => setRange('this_year')} label="Este Ano" />
-              <FilterButton active={activeFilter === 'all_time'} onClick={() => setRange('all_time')} label="Todo o Período" />
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              <Filter size={14} /> Tipo
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <RoleTypeButton type="ALL" label="Ambos" />
-              <RoleTypeButton type="TITULAR" label="Titular" />
-              <RoleTypeButton type="AJUDANTE" label="Ajudante" />
-            </div>
-          </div>
-        </div>
-
-        {/* Row 2: Privilege & Custom Date */}
-        <div className="flex flex-col md:flex-row gap-6 items-end">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              <Filter size={14} /> Privilégio
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <PrivilegeButton type="ALL" label="Todos" />
-              <PrivilegeButton type="ANCIAO" label="Ancião" />
-              <PrivilegeButton type="SERVO" label="Servo" />
-              <PrivilegeButton type="PUB_HOMEM" label="Publicador" />
-              <PrivilegeButton type="PUB_MULHER" label="Publicadora" />
-            </div>
-          </div>
-
-          <div className="space-y-1">
             {/* Custom Date Picker */}
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Intervalo Personalizado</div>
-            <div className="flex gap-4 items-center">
-              <MonthRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onChange={(start, end) => {
-                  const adjustedStart = getFirstMonday(start.getFullYear(), start.getMonth());
-                  const adjustedEnd = endOfMonth(end);
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Intervalo Personalizado</div>
+              <div className="w-full">
+                <MonthRangePicker
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={(start, end) => {
+                    const adjustedStart = getFirstMonday(start.getFullYear(), start.getMonth());
+                    const adjustedEnd = endOfMonth(end);
+                    setStartDate(adjustedStart);
+                    setEndDate(adjustedEnd);
+                    setActiveFilter('custom');
+                  }}
+                />
+              </div>
+            </div>
 
-                  setStartDate(adjustedStart);
-                  setEndDate(adjustedEnd);
-                  setActiveFilter('custom');
-                }}
-              />
+            {/* Privilege Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <Filter size={14} /> Privilégio
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <PrivilegeButton type="ALL" label="Todos" />
+                <PrivilegeButton type="ANCIAO" label="Ancião" />
+                <PrivilegeButton type="SERVO" label="Servo" />
+                <PrivilegeButton type="PUB_HOMEM" label="Publicador" />
+                <PrivilegeButton type="PUB_MULHER" label="Publicadora" />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 my-4"></div>
+
+            {/* Part Filters Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <Filter size={14} /> Filtar Partes
+                </div>
+                <button
+                  onClick={() => setSelectedTemplateIds([])}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                >
+                  Limpar
+                </button>
+              </div>
+
+              {/* Tesouros */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Tesouros</h4>
+                <div className="flex flex-wrap gap-2">
+                  {filterOptions.filter((o: any) => {
+                    const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
+                    return t?.secao === 'tesouros';
+                  }).map((option: any) => (
+                    <PartFilterButton
+                      key={option.value}
+                      active={selectedTemplateIds.includes(option.value)}
+                      onClick={() => toggleTemplate(option.value)}
+                      label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* FSM with Role Type */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Faça Seu Melhor</h4>
+
+                {/* Role Type Filter Nested in FSM */}
+                <div className="bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Tipo de Designação</div>
+                  <div className="flex flex-wrap gap-2">
+                    <RoleTypeButton type="ALL" label="Ambos" />
+                    <RoleTypeButton type="TITULAR" label="Titular" />
+                    <RoleTypeButton type="AJUDANTE" label="Ajudante" />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {filterOptions.filter((o: any) => {
+                    const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
+                    return t?.secao === 'fsm';
+                  }).map((option: any) => (
+                    <PartFilterButton
+                      key={option.value}
+                      active={selectedTemplateIds.includes(option.value)}
+                      onClick={() => toggleTemplate(option.value)}
+                      label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* NVC */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Nossa Vida Cristã</h4>
+                <div className="flex flex-wrap gap-2">
+                  {filterOptions.filter((o: any) => {
+                    const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
+                    return t?.secao === 'nvc';
+                  }).map((option: any) => (
+                    <PartFilterButton
+                      key={option.value}
+                      active={selectedTemplateIds.includes(option.value)}
+                      onClick={() => toggleTemplate(option.value)}
+                      label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Outros */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Outros</h4>
+                <div className="flex flex-wrap gap-2">
+                  <PartFilterButton
+                    active={selectedTemplateIds.includes('tpl_presidente')}
+                    onClick={() => toggleTemplate('tpl_presidente')}
+                    label="Presidente"
+                  />
+                  {filterOptions.filter((o: any) => {
+                    const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
+                    return !['tesouros', 'fsm', 'nvc'].includes(t?.secao || '') && o.value !== 'tpl_presidente';
+                  }).map((option: any) => (
+                    <PartFilterButton
+                      key={option.value}
+                      active={selectedTemplateIds.includes(option.value)}
+                      onClick={() => toggleTemplate(option.value)}
+                      label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-gray-100">
+              <button
+                onClick={() => refetch()}
+                disabled={isLoading}
+                className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 font-semibold shadow-sm transition-all active:scale-95 text-sm"
+              >
+                {isLoading ? <Loader2 className="animate-spin" size={16} /> : 'Atualizar Relatório'}
+              </button>
             </div>
           </div>
-        </div>
+        </aside>
 
-        {/* Row 3: Part Select & Refresh */}
-        <div className="pt-4 border-t border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-end">
-          <div className="w-full md:w-1/2">
-            <MultiSelect
-              label="Filtrar por Partes Específicas"
-              options={filterOptions}
-              selectedValues={selectedTemplateIds}
-              onChange={setSelectedTemplateIds}
-              placeholder="Todas as partes selecionadas"
-            />
-          </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isLoading}
-            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-sm transition-colors"
-          >
-            {isLoading ? <Loader2 className="animate-spin" size={18} /> : 'Atualizar Relatório'}
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <BarChart3 size={48} className="text-blue-600" />
-          </div>
-          <h3 className="text-blue-600 font-medium mb-1 text-sm uppercase tracking-wider">Total de Designações</h3>
-          <p className="text-3xl font-bold text-gray-900">{data.totalDesignations}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Filter size={48} className="text-emerald-600" />
-          </div>
-          <h3 className="text-emerald-600 font-medium mb-1 text-sm uppercase tracking-wider">Participantes Ativos</h3>
-          <p className="text-3xl font-bold text-gray-900">{data.count}</p>
-        </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Calendar size={48} className="text-purple-600" />
-          </div>
-          <h3 className="text-purple-600 font-medium mb-1 text-sm uppercase tracking-wider">Período Selecionado</h3>
-          <p className="text-base font-medium text-gray-900 mt-2">
-            {formatDateRange(startDate)}
-            <span className="mx-2 text-gray-400">até</span>
-            {formatDateRange(endDate)}
-          </p>
-        </div>
-      </div>
-
-      {/* Charts with Toggle */}
-      <div className="grid grid-cols-1 gap-8 print:break-inside-avoid">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-              <BarChart3 size={18} className="text-gray-500" /> Participantes por Volume
-            </h3>
-            <button
-              onClick={() => setShowChart(!showChart)}
-              className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-2"
-            >
-              {showChart ? <><EyeOff size={16} /> Ocultar Gráfico</> : <><Eye size={16} /> Ver Gráfico</>}
-            </button>
+        {/* Main Content */}
+        <div className="flex-1 min-w-0 space-y-8">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <BarChart3 size={48} className="text-blue-600" />
+              </div>
+              <h3 className="text-blue-600 font-medium mb-1 text-sm uppercase tracking-wider">Total de Designações</h3>
+              <p className="text-3xl font-bold text-gray-900">{data.totalDesignations}</p>
+            </div>
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Filter size={48} className="text-emerald-600" />
+              </div>
+              <h3 className="text-emerald-600 font-medium mb-1 text-sm uppercase tracking-wider">Participantes Ativos</h3>
+              <p className="text-3xl font-bold text-gray-900">{data.count}</p>
+            </div>
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Calendar size={48} className="text-purple-600" />
+              </div>
+              <h3 className="text-purple-600 font-medium mb-1 text-sm uppercase tracking-wider">Período Selecionado</h3>
+              <p className="text-base font-medium text-gray-900 mt-2">
+                {formatDateRange(startDate)}
+                <span className="mx-2 text-gray-400">até</span>
+                {formatDateRange(endDate)}
+              </p>
+            </div>
           </div>
 
-          {showChart && (
-            <ResponsiveContainer width="100%" height={Math.max(400, data.byParticipant.length * 40)}>
-              <BarChart
-                data={data.byParticipant}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} />
-                <XAxis type="number" allowDecimals={false} />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={150}
-                  interval={0}
-                  tick={{ fontSize: 12 }}
+          {/* Charts with Toggle */}
+          <div className="grid grid-cols-1 gap-8 print:break-inside-avoid">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <BarChart3 size={18} className="text-gray-500" /> Participantes por Volume
+                </h3>
+                <button
+                  onClick={() => setShowChart(!showChart)}
+                  className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {showChart ? <><EyeOff size={16} /> Ocultar Gráfico</> : <><Eye size={16} /> Ver Gráfico</>}
+                </button>
+              </div>
+
+              {showChart && (
+                <ResponsiveContainer width="100%" height={Math.max(400, data.byParticipant.length * 40)}>
+                  <BarChart
+                    data={data.byParticipant}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} />
+                    <XAxis type="number" allowDecimals={false} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={150}
+                      interval={0}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      cursor={{ fill: '#f3f4f6' }}
+                    />
+                    <Bar dataKey="total" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Designações" barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Detailed Table */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden print:border-none print:shadow-none">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50 print:bg-transparent print:border-b-2 print:border-black flex justify-between items-center">
+              <h3 className="font-semibold text-gray-800">Detalhamento por Participante</h3>
+              <div className="relative print:hidden">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="Buscar participante..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
                 />
-                <Tooltip
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  cursor={{ fill: '#f3f4f6' }}
-                />
-                <Bar dataKey="total" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Designações" barSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Detailed Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden print:border-none print:shadow-none">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50 print:bg-transparent print:border-b-2 print:border-black flex justify-between items-center">
-          <h3 className="font-semibold text-gray-800">Detalhamento por Participante</h3>
-          <div className="relative print:hidden">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Buscar participante..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-            />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-semibold print:bg-transparent">
+                  <tr>
+                    <SortableHeader label="Nome" sortKey="name" />
+                    <SortableHeader label="Total" sortKey="total" center />
+                    <SortableHeader label="Titular" sortKey="TITULAR" center />
+                    <SortableHeader label="Ajudante" sortKey="AJUDANTE" center />
+                    <SortableHeader label="Leitor" sortKey="LEITOR" center />
+                    <SortableHeader label="Oração" sortKey="ORACAO" center />
+                    <th className="px-6 py-3">Partes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {processedList.map((p: any) => (
+                    <tr key={p.name} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-3 font-medium text-gray-900">{p.name}</td>
+                      <td className="px-6 py-3 text-center font-bold text-blue-600 bg-blue-50/30">{p.total}</td>
+                      <td className="px-6 py-3 text-center text-gray-600">{p.roles['TITULAR'] || '-'}</td>
+                      <td className="px-6 py-3 text-center text-gray-600">{p.roles['AJUDANTE'] || '-'}</td>
+                      <td className="px-6 py-3 text-center text-gray-600">{p.roles['LEITOR'] || '-'}</td>
+                      <td className="px-6 py-3 text-center text-gray-600">{p.roles['ORACAO'] || '-'}</td>
+                      <td className="px-6 py-3 text-gray-500 text-xs">
+                        {Object.entries(p.templates)
+                          .sort(([, a]: any, [, b]: any) => b - a)
+                          .map(([k, v]) => `${k} (${v})`)
+                          .join(', ')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-semibold print:bg-transparent">
-              <tr>
-                <SortableHeader label="Nome" sortKey="name" />
-                <SortableHeader label="Total" sortKey="total" center />
-                <SortableHeader label="Titular" sortKey="TITULAR" center />
-                <SortableHeader label="Ajudante" sortKey="AJUDANTE" center />
-                <SortableHeader label="Leitor" sortKey="LEITOR" center />
-                <SortableHeader label="Oração" sortKey="ORACAO" center />
-                <th className="px-6 py-3">Partes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {processedList.map((p: any) => (
-                <tr key={p.name} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-3 font-medium text-gray-900">{p.name}</td>
-                  <td className="px-6 py-3 text-center font-bold text-blue-600 bg-blue-50/30">{p.total}</td>
-                  <td className="px-6 py-3 text-center text-gray-600">{p.roles['TITULAR'] || '-'}</td>
-                  <td className="px-6 py-3 text-center text-gray-600">{p.roles['AJUDANTE'] || '-'}</td>
-                  <td className="px-6 py-3 text-center text-gray-600">{p.roles['LEITOR'] || '-'}</td>
-                  <td className="px-6 py-3 text-center text-gray-600">{p.roles['ORACAO'] || '-'}</td>
-                  <td className="px-6 py-3 text-gray-500 text-xs">
-                    {Object.entries(p.templates)
-                      .sort(([, a]: any, [, b]: any) => b - a)
-                      .map(([k, v]) => `${k} (${v})`)
-                      .join(', ')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, X, Calendar } from 'lucide-react';
+import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, X, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import { MultiSelect } from '../ui/MultiSelect';
 
@@ -31,6 +31,8 @@ export const ReportsView = () => {
   const [assignmentType, setAssignmentType] = useState<RoleType>('ALL');
   const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
   const [showChart, setShowChart] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'total', direction: 'desc' });
 
   // Format for API
   const startStr = format(startDate, 'yyyy-MM-dd');
@@ -268,6 +270,55 @@ export const ReportsView = () => {
 
   const data = processData();
 
+  // Sorting Handler
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Filter and Sort Data
+  const filteredAndSortedData = () => {
+    let result = [...data.byParticipant];
+
+    // Filter by Search Term
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      result = result.filter((p: any) =>
+        p.name.toLowerCase().includes(lowerTerm)
+      );
+    }
+
+    // Sort
+    if (sortConfig) {
+      result.sort((a: any, b: any) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Handle nested role properties
+        if (['TITULAR', 'AJUDANTE', 'LEITOR', 'ORACAO'].includes(sortConfig.key)) {
+          aValue = a.roles[sortConfig.key] || 0;
+          bValue = b.roles[sortConfig.key] || 0;
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return result;
+  };
+
+  const processedList = filteredAndSortedData();
+
+
   // Helper Components for Styles
   const FilterButton = ({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) => (
     <button
@@ -318,6 +369,25 @@ export const ReportsView = () => {
     }
     return [{ value: t.id, label: t.titulo }];
   });
+
+  const SortableHeader = ({ label, sortKey, center = false }: { label: string, sortKey: string, center?: boolean }) => {
+    const isActive = sortConfig?.key === sortKey;
+    return (
+      <th
+        className={`px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors ${center ? 'text-center' : 'text-left'}`}
+        onClick={() => handleSort(sortKey)}
+      >
+        <div className={`flex items-center gap-2 ${center ? 'justify-center' : 'justify-start'}`}>
+          {label}
+          {isActive ? (
+            sortConfig?.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600" /> : <ArrowDown size={14} className="text-blue-600" />
+          ) : (
+            <ArrowUpDown size={14} className="text-gray-400 opacity-0 group-hover:opacity-50" />
+          )}
+        </div>
+      </th>
+    );
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 print:p-0 print:max-w-none">
@@ -493,24 +563,34 @@ export const ReportsView = () => {
 
       {/* Detailed Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden print:border-none print:shadow-none">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50 print:bg-transparent print:border-b-2 print:border-black">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 print:bg-transparent print:border-b-2 print:border-black flex justify-between items-center">
           <h3 className="font-semibold text-gray-800">Detalhamento por Participante</h3>
+          <div className="relative print:hidden">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Buscar participante..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+            />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-semibold print:bg-transparent">
               <tr>
-                <th className="px-6 py-3">Nome</th>
-                <th className="px-6 py-3 text-center">Total</th>
-                <th className="px-6 py-3 text-center">Titular</th>
-                <th className="px-6 py-3 text-center">Ajudante</th>
-                <th className="px-6 py-3 text-center">Leitor</th>
-                <th className="px-6 py-3 text-center">Oração</th>
-                <th className="px-6 py-3">Partes Mais Comuns</th>
+                <SortableHeader label="Nome" sortKey="name" />
+                <SortableHeader label="Total" sortKey="total" center />
+                <SortableHeader label="Titular" sortKey="TITULAR" center />
+                <SortableHeader label="Ajudante" sortKey="AJUDANTE" center />
+                <SortableHeader label="Leitor" sortKey="LEITOR" center />
+                <SortableHeader label="Oração" sortKey="ORACAO" center />
+                <th className="px-6 py-3">Partes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {data.byParticipant.map((p: any) => (
+              {processedList.map((p: any) => (
                 <tr key={p.name} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-3 font-medium text-gray-900">{p.name}</td>
                   <td className="px-6 py-3 text-center font-bold text-blue-600 bg-blue-50/30">{p.total}</td>
@@ -521,7 +601,6 @@ export const ReportsView = () => {
                   <td className="px-6 py-3 text-gray-500 text-xs">
                     {Object.entries(p.templates)
                       .sort(([, a]: any, [, b]: any) => b - a)
-                      .slice(0, 3)
                       .map(([k, v]) => `${k} (${v})`)
                       .join(', ')}
                   </td>

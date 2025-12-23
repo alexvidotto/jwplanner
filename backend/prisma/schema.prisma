@@ -41,7 +41,6 @@ model Participante {
   designacoes       Designacao[]      @relation("Titular")
   ajudas            Designacao[]      @relation("Ajudante")
   presidencias      Semana[]          @relation("Presidente")
-  indisponibilidades Indisponibilidade[]
 }
 
 model ParteTemplate {
@@ -103,12 +102,4 @@ model Designacao {
   ajudante        Participante?    @relation("Ajudante", fields: [ajudanteId], references: [id])
 }
 
-model Indisponibilidade {
-  id             String       @id @default(uuid())
-  participanteId String
-  dataInicio     DateTime
-  dataFim        DateTime
-  motivo         String?
-  
-  participante   Participante @relation(fields: [participanteId], references: [id])
-}
+

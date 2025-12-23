@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
@@ -52,6 +52,9 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean, data: any }>({ isOpen: false, data: null });
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'success' as 'success' | 'error' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const itemsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ isVisible: true, message, type });
@@ -61,8 +64,19 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   useEffect(() => {
     if (isModalOpen) {
       setSearchTerm('');
+      setSelectedIndex(0);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
     }
   }, [isModalOpen]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (itemsRef.current[selectedIndex]) {
+      itemsRef.current[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex]);
 
   const totalMinutes = weekData.sections.reduce((acc: number, section: any) => {
     return acc + section.parts.reduce((pAcc: number, part: any) => {
@@ -303,7 +317,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   };
 
   const executeAssignment = (participantId: string) => {
-  if (selectedPart.id === 'president') {
+    if (selectedPart.id === 'president') {
       const isPrayerEmpty = !weekData.openingPrayerId;
       const isPrayerSameAsPresident = weekData.openingPrayerId === weekData.presidentId;
 
@@ -349,7 +363,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       // But assuming 'Presidente' is the top card with ID 'president'.
     }
 
-  setWeekData({ ...weekData, sections: updatedSections });
+    setWeekData({ ...weekData, sections: updatedSections });
   };
 
   const handleAddPart = (sectionId: string, template: any) => {
@@ -435,7 +449,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
     const source = suggestions;
 
     return source.filter((p: any) => {
-    // 0. Filtro de Ativo
+      // 0. Filtro de Ativo
       if (p.active === false) return false;
 
       // 1. Filtro de Ajudante (Gênero)
@@ -580,20 +594,20 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
               <h2 className="text-lg font-bold text-gray-800">Presidente da Reunião</h2>
 
               <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
-                  {/* President Assignee */}
-                  <div className="w-full sm:min-w-[280px]">
+                {/* President Assignee */}
+                <div className="w-full sm:min-w-[280px]">
                   {weekData.presidentId ? (
-                      <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm flex-shrink-0">
+                    <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm flex-shrink-0">
                           {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
                         </div>
-                          <span className="text-gray-700 font-medium whitespace-nowrap">
+                        <span className="text-gray-700 font-medium whitespace-nowrap">
                           {participants.find(p => p.id === weekData.presidentId)?.name}
                         </span>
                       </div>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'president', partId: 'president', role: 'president' })} className="text-gray-400 hover:text-red-500 p-1"><XCircle size={18} /></button>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'president', partId: 'president', role: 'president' })} className="text-gray-400 hover:text-red-500 p-1"><XCircle size={18} /></button>
                         <StatusEditMenu
                           variant="circle"
                           status={weekData.presidentStatus}
@@ -602,42 +616,42 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                       </div>
                     </div>
                   ) : (
-                        <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
+                    <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
                       + Designar Presidente
                     </button>
                   )}
                 </div>
 
                 {/* Opening Prayer */}
-                  <div className="w-full sm:min-w-[280px]">
-                    {weekData.openingPrayerId ? (
-                      <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gray-500 flex-shrink-0">Oração Inicial:</span>
-                          <span className="text-sm text-gray-700 whitespace-nowrap">
-                            {participants.find(p => p.id === weekData.openingPrayerId)?.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'openingPrayer', partId: 'openingPrayer', role: 'openingPrayer' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
-                          {weekData.openingPrayerId !== weekData.presidentId && (
-                            <StatusEditMenu
-                              variant="circle"
-                              status={weekData.openingPrayerStatus}
-                              onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
-                            />
-                          )}
+                <div className="w-full sm:min-w-[280px]">
+                  {weekData.openingPrayerId ? (
+                    <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-500 flex-shrink-0">Oração Inicial:</span>
+                        <span className="text-sm text-gray-700 whitespace-nowrap">
+                          {participants.find(p => p.id === weekData.openingPrayerId)?.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'openingPrayer', partId: 'openingPrayer', role: 'openingPrayer' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
+                        {weekData.openingPrayerId !== weekData.presidentId && (
+                          <StatusEditMenu
+                            variant="circle"
+                            status={weekData.openingPrayerStatus}
+                            onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="w-full flex items-center justify-between bg-gray-50 rounded px-2 py-2 border border-transparent hover:border-gray-200 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="text-gray-400 text-sm font-medium whitespace-nowrap flex-shrink-0">Oração Inicial:</span>
+                        <div className="flex items-center gap-2 text-gray-400 text-sm px-3 py-1.5 border border-dashed rounded-lg hover:bg-gray-100 w-full bg-white whitespace-nowrap">
+                          <Plus size={16} className="flex-shrink-0" />
+                          <span>Designar Oração</span>
                         </div>
                       </div>
-                    ) : (
-                      <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="w-full flex items-center justify-between bg-gray-50 rounded px-2 py-2 border border-transparent hover:border-gray-200 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-2 w-full">
-                          <span className="text-gray-400 text-sm font-medium whitespace-nowrap flex-shrink-0">Oração Inicial:</span>
-                          <div className="flex items-center gap-2 text-gray-400 text-sm px-3 py-1.5 border border-dashed rounded-lg hover:bg-gray-100 w-full bg-white whitespace-nowrap">
-                            <Plus size={16} className="flex-shrink-0" />
-                            <span>Designar Oração</span>
-                          </div>
-                        </div>
                     </div>
                   )}
                 </div>
@@ -763,8 +777,8 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                                   </div>
                                 </div>
                               ) : (
-                                  <button onClick={() => handleAssignClick(part, 'main')} className="flex items-center justify-between p-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded hover:bg-blue-50">
-                                    <span>+ Designar {part.requiresAssistant || part.requiresReader ? 'Titular' : 'Participante'}</span>
+                                <button onClick={() => handleAssignClick(part, 'main')} className="flex items-center justify-between p-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded hover:bg-blue-50">
+                                  <span>+ Designar {part.requiresAssistant || part.requiresReader ? 'Titular' : 'Participante'}</span>
                                 </button>
                               )}
 
@@ -804,9 +818,9 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                                       </div>
                                     </div>
                                   ) : (
-                                      <button onClick={() => handleAssignClick(part, 'reader')} className="w-full text-left text-xs text-purple-600 hover:underline pl-2">
-                                        + Leitor
-                                      </button>
+                                    <button onClick={() => handleAssignClick(part, 'reader')} className="w-full text-left text-xs text-purple-600 hover:underline pl-2">
+                                      + Leitor
+                                    </button>
                                   )}
                                 </div>
                               )}
@@ -882,7 +896,29 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                   placeholder="Buscar nome..."
                   className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setSelectedIndex(0);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setSelectedIndex(prev => Math.min(prev + 1, filteredSuggestions.length - 1));
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setSelectedIndex(prev => Math.max(prev - 1, 0));
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (filteredSuggestions.length > 0 && filteredSuggestions[selectedIndex]) {
+                        handleSelectParticipant(filteredSuggestions[selectedIndex].id);
+                      }
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setIsModalOpen(false);
+                      setSearchTerm('');
+                    }
+                  }}
+                  ref={inputRef}
                 />
               </div>
             </div>
@@ -894,88 +930,93 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                 </div>
               ) : filteredSuggestions.length > 0 ? (
                 filteredSuggestions.map((p: any, index: number) => {
-                // Determine if user has the SPECIFIC ability required (Reader or Main)
-                let isApt = false;
-                if (selectedPart?.templateId) {
-                  if (selectedPart.roleTarget === 'reader') {
-                    isApt = p.abilities?.includes(`${selectedPart.templateId}_reader`);
-                  } else {
-                    isApt = p.abilities?.includes(selectedPart.templateId);
+                  // Determine if user has the SPECIFIC ability required (Reader or Main)
+                  let isApt = false;
+                  if (selectedPart?.templateId) {
+                    if (selectedPart.roleTarget === 'reader') {
+                      isApt = p.abilities?.includes(`${selectedPart.templateId}_reader`);
+                    } else {
+                      isApt = p.abilities?.includes(selectedPart.templateId);
+                    }
                   }
-                }
 
-              // Actually the sorting already puts best first. Let's just highlight top 1 as "Best" or just show history.
+                  // Actually the sorting already puts best first. Let's just highlight top 1 as "Best" or just show history.
 
-                return (
-                  <button key={p.id} onClick={() => handleSelectParticipant(p.id)} className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg transition-colors text-left group border-b border-transparent hover:border-blue-100">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold group-hover:bg-blue-200 group-hover:text-blue-700 relative flex-shrink-0">
-                      {p.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-800 truncate">{p.name}</p>
+                  return (
+                    <button
+                      key={p.id}
+                      ref={el => { itemsRef.current[index] = el; }}
+                      onClick={() => handleSelectParticipant(p.id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group border-b border-transparent ${index === selectedIndex ? 'bg-blue-100 border-blue-200' : 'hover:bg-blue-50 hover:border-blue-100'}`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold group-hover:bg-blue-200 group-hover:text-blue-700 relative flex-shrink-0">
+                        {p.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-800 truncate">{p.name}</p>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
-                        <span className="bg-gray-100 px-1.5 rounded border">{p.type}</span>
-                        {isApt &&
-                          <span className="text-green-600 flex items-center gap-1"><Check size={10} /> Apto</span>
-                        }
-                      </div>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
+                          <span className="bg-gray-100 px-1.5 rounded border">{p.type}</span>
+                          {isApt &&
+                            <span className="text-green-600 flex items-center gap-1"><Check size={10} /> Apto</span>
+                          }
+                        </div>
 
-                      {p.history && p.history.length > 0 && (
-                        <div className="mt-2 space-y-1 bg-white/50 p-1.5 rounded border border-gray-100">
-                          {p.history.map((h: any, idx: number) => {
-                            // Determine color flag based on date relative to TODAY (Real time)
-                            const now = new Date();
-                            const histDate = new Date(h.date);
+                        {p.history && p.history.length > 0 && (
+                          <div className="mt-2 space-y-1 bg-white/50 p-1.5 rounded border border-gray-100">
+                            {p.history.map((h: any, idx: number) => {
+                              // Determine color flag based on date relative to TODAY (Real time)
+                              const now = new Date();
+                              const histDate = new Date(h.date);
 
-                            // Check months difference
-                            const nowMonth = now.getMonth() + now.getFullYear() * 12;
-                            const histMonth = histDate.getMonth() + histDate.getFullYear() * 12;
-                            const diff = nowMonth - histMonth;
+                              // Check months difference
+                              const nowMonth = now.getMonth() + now.getFullYear() * 12;
+                              const histMonth = histDate.getMonth() + histDate.getFullYear() * 12;
+                              const diff = nowMonth - histMonth;
 
-                            let flagClass = "bg-gray-100 text-gray-500"; // Default (older)
+                              let flagClass = "bg-gray-100 text-gray-500"; // Default (older)
 
-                            // Priority: Future (relative to NOW) -> Green
-                            if (histDate > now) {
-                              flagClass = "bg-green-100 text-green-700";
-                            } else if (diff === 0) {
-                              // Past/Today but Current Month
-                              flagClass = "bg-yellow-100 text-yellow-700";
-                            } else if (diff === 1) {
-                              // Previous Month
-                              flagClass = "bg-red-100 text-red-700";
-                            } else {
-                              // Older than previous month
-                              flagClass = "bg-gray-100 text-gray-500";
-                            }
+                              // Priority: Future (relative to NOW) -> Green
+                              if (histDate > now) {
+                                flagClass = "bg-green-100 text-green-700";
+                              } else if (diff === 0) {
+                                // Past/Today but Current Month
+                                flagClass = "bg-yellow-100 text-yellow-700";
+                              } else if (diff === 1) {
+                                // Previous Month
+                                flagClass = "bg-red-100 text-red-700";
+                              } else {
+                                // Older than previous month
+                                flagClass = "bg-gray-100 text-gray-500";
+                              }
 
-                            return (
-                              <div key={idx} className="flex justify-between items-center text-[10px]">
-                                <span className="truncate max-w-[150px] text-gray-700 font-medium">
-                                  {h.title}
-                                </span>
-                                <div className={`flex items-center gap-2 flex-shrink-0 px-1.5 py-0.5 rounded ${flagClass}`}>
-                                  <span className="font-bold uppercase text-[9px]">
-                                    {h.role === 'PRESIDENTE' ? 'PRE' :
-                                      h.role === 'TITULAR' ? 'TIT' : 
-                                        h.role === 'AJUDANTE' ? 'AJD' :
-                                          h.role === 'LEITOR' ? 'LEI' : h.role.substring(0, 3)}
+                              return (
+                                <div key={idx} className="flex justify-between items-center text-[10px]">
+                                  <span className="truncate max-w-[150px] text-gray-700 font-medium">
+                                    {h.title}
                                   </span>
-                                  <span>{new Date(h.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                                  <div className={`flex items-center gap-2 flex-shrink-0 px-1.5 py-0.5 rounded ${flagClass}`}>
+                                    <span className="font-bold uppercase text-[9px]">
+                                      {h.role === 'PRESIDENTE' ? 'PRE' :
+                                        h.role === 'TITULAR' ? 'TIT' :
+                                          h.role === 'AJUDANTE' ? 'AJD' :
+                                            h.role === 'LEITOR' ? 'LEI' : h.role.substring(0, 3)}
+                                    </span>
+                                    <span>{new Date(h.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
+                                  </div>
                                 </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                )
-            })) : (
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })) : (
                 <div className="p-8 text-center text-gray-500">
                   Nenhum participante elegível encontrado.<br />
                   <span className="text-xs">Verifique as habilidades ou gênero.</span>

@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { format, addDays, subDays, isMonday, endOfMonth } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown, Sparkles, LayoutGrid } from 'lucide-react';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import { formatDateRange } from '../../lib/transformers';
+import { SmartSuggestions } from './SmartSuggestions';
 
 type FilterType = 'this_cycle' | 'past_cycle' | 'next_cycle' | 'last_6_months' | 'this_year' | 'all_time' | 'custom';
 type RoleType = 'ALL' | 'TITULAR' | 'AJUDANTE';
+type ViewMode = 'REPORTS' | 'SUGGESTIONS';
 
 export const ReportsView = () => {
   // Helper: Find the first Monday of a given month
@@ -77,6 +79,7 @@ export const ReportsView = () => {
   const [startDate, setStartDate] = useState(initialCycle.start);
   const [endDate, setEndDate] = useState(initialCycle.end);
   const [activeFilter, setActiveFilter] = useState<FilterType>('this_cycle');
+  const [viewMode, setViewMode] = useState<ViewMode>('REPORTS');
 
   // State
   const [selectedPrivileges, setSelectedPrivileges] = useState<string[]>([]);
@@ -91,14 +94,15 @@ export const ReportsView = () => {
   const endStr = format(endDate, 'yyyy-MM-dd');
 
   // Queries
-  const { data: weeks, isLoading, refetch } = useQuery({
+  const { data: weeks, isLoading: isLoadingReports, refetch } = useQuery({
     queryKey: ['reports', startStr, endStr],
     queryFn: async () => {
       const response = await axios.get('http://localhost:3000/planning/weeks/reports', {
         params: { start: startStr, end: endStr }
       });
       return response.data;
-    }
+    },
+    enabled: viewMode === 'REPORTS' // Only fetch reports if in reports mode
   });
 
   const { data: templates = [] } = useQuery({
@@ -465,16 +469,45 @@ export const ReportsView = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900">
             <BarChart3 className="text-blue-600" />
-            Relatórios Estatísticos
+            Relatórios
           </h1>
           <p className="text-gray-500 text-sm mt-1">Análise detalhada de designações e participação</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
-          <Printer size={18} />
-          Imprimir
-        </button>
+
+        <div className="flex gap-2">
+          <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-4">
+            <button
+              onClick={() => setViewMode('REPORTS')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'REPORTS'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              <BarChart3 size={16} />
+              Relatórios
+            </button>
+            <button
+              onClick={() => setViewMode('SUGGESTIONS')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'SUGGESTIONS'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              <Sparkles size={16} />
+              Sugestões
+            </button>
+          </div>
+
+          <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+            <Printer size={18} />
+            Imprimir
+          </button>
+        </div>
       </div>
 
+      {viewMode === 'SUGGESTIONS' ? (
+        <SmartSuggestions templates={templates} />
+      ) : (
       <div className="flex flex-col md:flex-row gap-8 items-start">
         {/* Sidebar Filters */}
         <aside className="w-full md:w-[320px] shrink-0 space-y-4 sticky top-6 md:h-[calc(100vh-120px)] md:overflow-y-auto pr-2 custom-scrollbar">
@@ -635,10 +668,10 @@ export const ReportsView = () => {
             <div className="pt-4 border-t border-gray-100">
               <button
                 onClick={() => refetch()}
-                disabled={isLoading}
+                    disabled={isLoadingReports}
                 className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 font-semibold shadow-sm transition-all active:scale-95 text-sm"
               >
-                {isLoading ? <Loader2 className="animate-spin" size={16} /> : 'Atualizar Relatório'}
+                    {isLoadingReports ? <Loader2 className="animate-spin" size={16} /> : 'Atualizar Relatório'}
               </button>
             </div>
           </div>
@@ -768,6 +801,7 @@ export const ReportsView = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

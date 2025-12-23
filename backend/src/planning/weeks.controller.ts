@@ -50,4 +50,9 @@ export class WeeksController {
   ) {
     return this.weeksService.getSuggestions(date, partTemplateId);
   }
+
+  @Get('smart-suggestions')
+  getSmartSuggestions() {
+    return this.weeksService.getSmartSuggestionsData();
+  }
 }

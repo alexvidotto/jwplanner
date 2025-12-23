@@ -552,4 +552,94 @@ export class WeeksService {
       data: { status }
     });
   }
+
+  async getSmartSuggestionsData() {
+    // 1. Fetch all participants with their skills
+    const users = await this.prisma.participante.findMany({
+      include: { habilidades: true },
+      where: { podeDesignar: true } // Only active users
+    });
+
+    // 2. Fetch all historical assignments
+    const assignments = await this.prisma.designacao.findMany({
+      where: {
+        status: { not: 'RECUSADO' } // Ignore refused assignments
+      },
+      include: {
+        semana: true,
+        parteTemplate: true
+      },
+      orderBy: { semana: { dataInicio: 'desc' } }
+    });
+
+    // Also fetch presidencies
+    const presidencies = await this.prisma.semana.findMany({
+      where: {
+        presidenteId: { not: null },
+        statusPresidente: { not: 'RECUSADO' }
+      },
+      orderBy: { dataInicio: 'desc' },
+      select: {
+        presidenteId: true,
+        dataInicio: true
+      }
+    });
+
+    // 3. Compute Map: UserId -> { PartId -> LastDate }
+    const historyMap = new Map<string, Map<string, string>>();
+
+    // Helper to set date
+    const setLastDate = (userId: string, partId: string, date: Date) => {
+      if (!historyMap.has(userId)) {
+        historyMap.set(userId, new Map());
+      }
+      const userHistory = historyMap.get(userId)!;
+      // Since we iterate DESC, first time we see a pair is the latest
+      if (!userHistory.has(partId)) {
+        userHistory.set(partId, date.toISOString());
+      }
+    };
+
+    // Process Presidencies
+    presidencies.forEach(p => {
+      if (p.presidenteId) {
+        setLastDate(p.presidenteId, 'president', p.dataInicio);
+      }
+    });
+
+    // Process Assignments
+    assignments.forEach(a => {
+      if (a.titularId) {
+        setLastDate(a.titularId, a.parteTemplateId, a.semana.dataInicio);
+      }
+      if (a.ajudanteId) {
+        if (a.parteTemplate.requerLeitor) {
+          setLastDate(a.ajudanteId, `${a.parteTemplateId}_reader`, a.semana.dataInicio);
+        } else {
+          // Generic assistant (for FSM parts mostly)
+          setLastDate(a.ajudanteId, `${a.parteTemplateId}_assistant`, a.semana.dataInicio);
+        }
+      }
+    });
+
+    // 4. Build Result
+    return users.map(u => {
+      const userHistory = historyMap.get(u.id);
+      const historyObj: any = {};
+
+      if (userHistory) {
+        userHistory.forEach((date, partId) => {
+          historyObj[partId] = date;
+        });
+      }
+
+      return {
+        id: u.id,
+        name: u.nome,
+        privilege: u.privilegio,
+        skills: u.habilidades.map(h => h.isLeitor ? `${h.parteTemplateId}_reader` : h.parteTemplateId),
+        history: historyObj
+      };
+    });
+  }
 }

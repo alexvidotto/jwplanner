@@ -16,6 +16,7 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { parseTime } from './lib/utils';
 import { MonthView } from './components/features/MonthView';
 import { TrackingView } from './components/features/TrackingView';
+import { ReportsView } from './components/features/ReportsView';
 import { ConfirmationPage } from './pages/ConfirmationPage';
 
 const queryClient = new QueryClient();
@@ -366,6 +367,7 @@ const AppContent = () => {
             participants={participants}
           />
         } />
+        <Route path="/reports" element={<ReportsView />} />
       </Route>
       <Route path="/confirm/:assignmentId" element={<ConfirmationPage />} />
       <Route path="/confirm/:assignmentId/:personId" element={<ConfirmationPage />} />

@@ -40,6 +40,7 @@ model Participante {
   habilidades       Habilidade[]
   designacoes       Designacao[]      @relation("Titular")
   ajudas            Designacao[]      @relation("Ajudante")
+  presidencias      Semana[]          @relation("Presidente")
   indisponibilidades Indisponibilidade[]
 }
 
@@ -73,6 +74,7 @@ model Semana {
   descricao    String
   tipo         TipoSemana  @default(NORMAL)
   presidenteId String?
+  presidente   Participante? @relation("Presidente", fields: [presidenteId], references: [id])
   statusPresidente StatusDesignacao @default(PENDENTE)
   
   // Optional: direct week assignments (legacy/simple)

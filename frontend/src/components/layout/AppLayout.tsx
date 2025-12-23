@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut } from 'lucide-react';
+import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3 } from 'lucide-react';
 
 export const AppLayout = () => {
 
@@ -25,6 +25,7 @@ export const AppLayout = () => {
     { to: '/parts', icon: List, label: 'Partes' },
     { to: '/skills', icon: Grid, label: 'Matriz' },
     { to: '/tracking', icon: MessageCircle, label: 'Acompanhamento' },
+    { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   ];
 
   return (

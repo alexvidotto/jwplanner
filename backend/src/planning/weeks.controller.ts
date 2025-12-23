@@ -15,6 +15,11 @@ export class WeeksController {
     return this.weeksService.findAll();
   }
 
+  @Get('reports')
+  getReports(@Query('start') start: string, @Query('end') end: string) {
+    return this.weeksService.findByRange(start, end);
+  }
+
   @Get('by-date')
   findByDate(@Query('date') date: string) {
     return this.weeksService.findByDate(date);

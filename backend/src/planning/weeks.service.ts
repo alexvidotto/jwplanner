@@ -294,6 +294,30 @@ export class WeeksService {
     });
   }
 
+  async findByRange(startDate: string, endDate: string) {
+    return this.prisma.semana.findMany({
+      where: {
+        dataInicio: {
+          gte: new Date(startDate),
+          lte: new Date(endDate)
+        }
+      },
+      orderBy: { dataInicio: 'asc' },
+
+      include: {
+        presidente: true,
+        designacoes: {
+          include: {
+            parteTemplate: true,
+            titular: true,
+            ajudante: true
+          },
+          orderBy: { ordem: 'asc' }
+        }
+      }
+    });
+  }
+
   async createWeek(date: string) {
     const start = new Date(date);
     const templates = await this.prisma.parteTemplate.findMany();

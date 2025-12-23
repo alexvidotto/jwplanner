@@ -1,29 +1,82 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from 'date-fns';
+import { format, addDays, subDays, isMonday, endOfMonth } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, X, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import { MultiSelect } from '../ui/MultiSelect';
+import { formatDateRange } from '../../lib/transformers';
 
 type FilterType = 'this_cycle' | 'past_cycle' | 'next_cycle' | 'last_6_months' | 'this_year' | 'all_time' | 'custom';
 type RoleType = 'ALL' | 'TITULAR' | 'AJUDANTE';
 
 export const ReportsView = () => {
-  // Initialize with "This Cycle"
-  const getCycleRange = (date: Date) => {
-    const month = date.getMonth(); // 0-11
-    const cycleStartMonth = Math.floor(month / 2) * 2;
-    const start = new Date(date.getFullYear(), cycleStartMonth, 1);
-    const end = endOfMonth(addMonths(start, 1));
+  // Helper: Find the first Monday of a given month
+  const getFirstMonday = (year: number, month: number) => {
+    let date = new Date(year, month, 1);
+    while (!isMonday(date)) {
+      date = addDays(date, 1);
+    }
+    return date;
+  };
+
+  // Helper: Get cycle limits for a specific cycle index (0=Jan-Feb, 1=Mar-Apr, etc.)
+  const getCycleLimits = (year: number, cycleIndex: number) => {
+    let targetYear = year;
+    let targetIndex = cycleIndex;
+
+    while (targetIndex < 0) {
+      targetIndex += 6;
+      targetYear -= 1;
+    }
+    while (targetIndex > 5) {
+      targetIndex -= 6;
+      targetYear += 1;
+    }
+
+    const startMonth = targetIndex * 2;
+    const start = getFirstMonday(targetYear, startMonth);
+
+    // End is Sunday before the NEXT cycle starts
+    // Next cycle start month is startMonth + 2
+    const nextCycleStart = getFirstMonday(targetYear, startMonth + 2);
+    const end = subDays(nextCycleStart, 1);
+
     return { start, end };
   };
 
-  const initialRange = getCycleRange(new Date());
+  // Helper: Determine which cycle a date belongs to
+  const getCycleForDate = (date: Date) => {
+    const year = date.getFullYear();
+    // Check all 6 cycles of this year
+    for (let i = 0; i < 6; i++) {
+      const { start, end } = getCycleLimits(year, i);
+      if (date >= start && date <= end) {
+        return { index: i, year, start, end };
+      }
+    }
 
-  const [startDate, setStartDate] = useState(initialRange.start);
-  const [endDate, setEndDate] = useState(initialRange.end);
+    // Check Previous Year Last Cycle
+    const prevLast = getCycleLimits(year - 1, 5);
+    if (date >= prevLast.start && date <= prevLast.end) {
+      return { index: 5, year: year - 1, start: prevLast.start, end: prevLast.end };
+    }
+
+    // Check Next Year First Cycle
+    const nextFirst = getCycleLimits(year + 1, 0);
+    if (date >= nextFirst.start && date <= nextFirst.end) {
+      return { index: 0, year: year + 1, start: nextFirst.start, end: nextFirst.end };
+    }
+
+    // Fallback default
+    return { index: 0, year, ...getCycleLimits(year, 0) };
+  };
+
+  const initialCycle = getCycleForDate(new Date());
+
+  const [startDate, setStartDate] = useState(initialCycle.start);
+  const [endDate, setEndDate] = useState(initialCycle.end);
   const [activeFilter, setActiveFilter] = useState<FilterType>('this_cycle');
 
   // State
@@ -69,32 +122,31 @@ export const ReportsView = () => {
   const setRange = (type: FilterType) => {
     setActiveFilter(type);
     const now = new Date();
+    const currentCycle = getCycleForDate(now);
 
     if (type === 'this_cycle') {
-      const { start, end } = getCycleRange(now);
+      setStartDate(currentCycle.start);
+      setEndDate(currentCycle.end);
+    } else if (type === 'past_cycle') {
+      const { start, end } = getCycleLimits(currentCycle.year, currentCycle.index - 1);
       setStartDate(start);
       setEndDate(end);
-    } else if (type === 'past_cycle') {
-      const currentCycleStart = getCycleRange(now).start;
-      const pastCycleStart = subMonths(currentCycleStart, 2);
-      const pastCycleEnd = endOfMonth(addMonths(pastCycleStart, 1));
-      setStartDate(pastCycleStart);
-      setEndDate(pastCycleEnd);
     } else if (type === 'next_cycle') {
-      const currentCycleStart = getCycleRange(now).start;
-      const nextCycleStart = addMonths(currentCycleStart, 2);
-      const nextCycleEnd = endOfMonth(addMonths(nextCycleStart, 1));
-      setStartDate(nextCycleStart);
-      setEndDate(nextCycleEnd);
+      const { start, end } = getCycleLimits(currentCycle.year, currentCycle.index + 1);
+      setStartDate(start);
+      setEndDate(end);
     } else if (type === 'last_6_months') {
-      setStartDate(startOfMonth(subMonths(now, 5)));
-      setEndDate(endOfMonth(now));
+      const startLimit = getCycleLimits(currentCycle.year, currentCycle.index - 2);
+      setStartDate(startLimit.start);
+      setEndDate(currentCycle.end);
     } else if (type === 'this_year') {
-      setStartDate(startOfYear(now));
-      setEndDate(endOfYear(now));
+      const first = getCycleLimits(now.getFullYear(), 0);
+      const last = getCycleLimits(now.getFullYear(), 5);
+      setStartDate(first.start);
+      setEndDate(last.end);
     } else if (type === 'all_time') {
-      setStartDate(new Date(2020, 0, 1));
-      setEndDate(new Date(2030, 11, 31));
+      setStartDate(new Date(2000, 0, 1));
+      setEndDate(new Date(2100, 11, 31));
     }
   };
 
@@ -460,8 +512,11 @@ export const ReportsView = () => {
                 startDate={startDate}
                 endDate={endDate}
                 onChange={(start, end) => {
-                  setStartDate(start);
-                  setEndDate(end);
+                  const adjustedStart = getFirstMonday(start.getFullYear(), start.getMonth());
+                  const adjustedEnd = endOfMonth(end);
+
+                  setStartDate(adjustedStart);
+                  setEndDate(adjustedEnd);
                   setActiveFilter('custom');
                 }}
               />
@@ -512,9 +567,9 @@ export const ReportsView = () => {
           </div>
           <h3 className="text-purple-600 font-medium mb-1 text-sm uppercase tracking-wider">Período Selecionado</h3>
           <p className="text-base font-medium text-gray-900 mt-2">
-            {format(startDate, 'dd/MM/yyyy')}
+            {formatDateRange(startDate)}
             <span className="mx-2 text-gray-400">até</span>
-            {format(endDate, 'dd/MM/yyyy')}
+            {formatDateRange(endDate)}
           </p>
         </div>
       </div>

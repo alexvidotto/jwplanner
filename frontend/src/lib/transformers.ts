@@ -4,7 +4,7 @@ import { ptBR } from 'date-fns/locale';
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-const formatDateRange = (date: Date) => {
+export const formatDateRange = (date: Date) => {
   // Ensure we are working with the Monday of the week
   const startDate = startOfWeek(date, { weekStartsOn: 1 });
   const endDate = addDays(startDate, 6);

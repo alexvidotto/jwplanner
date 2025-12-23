@@ -18,12 +18,13 @@ export class AssignmentsController {
   @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
-    @Body('status') status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE'
+    @Body('status') status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE',
+    @Body('personId') personId?: string
   ) {
     const assignment = await this.weeksService.findAssignmentById(id);
     if (!assignment) {
       throw new NotFoundException('Assignment not found');
     }
-    return this.weeksService.updateAssignmentStatus(id, status);
+    return this.weeksService.updateAssignmentStatus(id, status, personId);
   }
 }

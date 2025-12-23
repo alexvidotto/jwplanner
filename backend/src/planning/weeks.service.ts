@@ -416,6 +416,7 @@ export class WeeksService {
                 titularId: d.assignedTo || null,
                 ajudanteId: d.assistantId || null,
                 status: d.status || 'PENDENTE',
+                statusAjudante: d.assistantStatus || d.readerStatus || 'PENDENTE',
                 ordem: d.ordem !== undefined ? d.ordem : 0,
                 observacao: d.observation,
                 tituloDoTema: d.tituloDoTema,
@@ -433,6 +434,7 @@ export class WeeksService {
                 titularId: d.assignedTo || null,
                 ajudanteId: d.assistantId || null,
                 status: d.status,
+                statusAjudante: d.assistantStatus || d.readerStatus,
                 ordem: d.ordem !== undefined ? d.ordem : undefined,
                 observacao: d.observation,
                 tituloDoTema: d.tituloDoTema,
@@ -525,7 +527,7 @@ export class WeeksService {
     });
   }
 
-  async updateAssignmentStatus(id: string, status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE') {
+  async updateAssignmentStatus(id: string, status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE', personId?: string) {
     // Check for special Week assignments
     if (id.startsWith('week-')) {
       const match = id.match(/^week-(.+)-(president|prayer)$/);
@@ -547,9 +549,33 @@ export class WeeksService {
       }
     }
 
+    // Identify which field to update based on personId
+    const assignment = await this.prisma.designacao.findUnique({ where: { id } });
+    if (!assignment) return null; // Should be handled by controller, but safe check
+
+    const data: any = {};
+
+    if (personId) {
+      if (assignment.ajudanteId === personId) {
+        data.statusAjudante = status;
+      } else if (assignment.titularId === personId) {
+        data.status = status;
+      } else {
+        // Fallback: if personId doesn't match either, maybe it's an admin forcing update?
+        // Or maybe we should default to updating 'status' (titular) if ambiguous?
+        // Let's assume matches titular OR default to titular if null.
+        // But if provided and NO match, better not update wrong one?
+        // Use titular as default for backward compatibility.
+        data.status = status;
+      }
+    } else {
+      // Default to Titular status if no personId provided (legacy behavior)
+      data.status = status;
+    }
+
     return this.prisma.designacao.update({
       where: { id },
-      data: { status }
+      data: data
     });
   }
 

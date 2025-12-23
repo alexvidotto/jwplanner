@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 interface Assignment {
   id: string;
   status: 'PENDENTE' | 'CONFIRMADO' | 'RECUSADO';
+  statusAjudante?: 'PENDENTE' | 'CONFIRMADO' | 'RECUSADO';
   parteTemplate: {
     titulo: string;
     secao: string;
@@ -63,7 +64,7 @@ export const ConfirmationPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, personId }),
       });
 
       if (!response.ok) {
@@ -101,8 +102,6 @@ export const ConfirmationPage = () => {
 
   const date = new Date(assignment.semana.dataInicio);
   const dateFormatted = date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
-  const isConfirmed = assignment.status === 'CONFIRMADO';
-  const isDeclined = assignment.status === 'RECUSADO';
   const requiresReader = assignment.parteTemplate.requerLeitor;
 
   // Role Determination
@@ -123,6 +122,21 @@ export const ConfirmationPage = () => {
   // Refine role for special parts
   if (assignment.parteTemplate.titulo === 'Presidente') viewerRole = 'PRESIDENTE';
   if (assignment.parteTemplate.titulo === 'Oração Inicial') viewerRole = 'ORAÇÃO';
+
+  // Determine status based on role
+  let myStatus = assignment.status;
+  if (viewerRole === 'AJUDANTE' || viewerRole === 'LEITOR') {
+    myStatus = assignment.statusAjudante || 'PENDENTE'; // Fallback if not yet populated
+  } else if (viewerRole === 'TITULAR') {
+    myStatus = assignment.status;
+  }
+  // For President/Prayer, it might still map to assignment.status if it's a virtual/special map, 
+  // OR we might need to handle them if they are using real assignments now.
+  // The backend findAssignmentById for virtual parts returns a constructed object where .status is populated correctly.
+
+  const isConfirmed = myStatus === 'CONFIRMADO';
+  const isDeclined = myStatus === 'RECUSADO';
+
 
   const isStudentPart = assignment.parteTemplate.secao === 'fsm' || assignment.parteTemplate.secao === 'vida_crista'; // Assuming these are student parts, mostly FSM
 
@@ -253,7 +267,7 @@ export const ConfirmationPage = () => {
               </div>
               <div className="p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <div className="flex flex-col">
+                  <div className="flex flex-row items-center gap-2">
                     <span className={`text-sm font-medium ${requiresReader ? 'text-rose-900' : 'text-yellow-900'}`}>Titular</span>
                     {viewerRole === 'TITULAR' && (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full w-fit font-bold ${requiresReader ? 'bg-rose-200 text-rose-800' : 'bg-yellow-200 text-yellow-800'}`}>VOCÊ</span>
@@ -267,7 +281,7 @@ export const ConfirmationPage = () => {
                   <>
                     <div className={`h-px ${requiresReader ? 'bg-rose-100' : 'bg-yellow-100'}`} />
                     <div className="flex justify-between items-center">
-                      <div className="flex flex-col">
+                      <div className="flex flex-row items-center gap-2">
                         <span className={`text-sm font-medium ${requiresReader ? 'text-rose-900' : 'text-yellow-900'}`}>
                           {requiresReader ? 'Leitor' : 'Ajudante'}
                         </span>

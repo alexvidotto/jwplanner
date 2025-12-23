@@ -46,7 +46,7 @@ export default function ParticipantConfirm() {
             onClick={handleConfirm}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg"
           >
-            Confirmar Presença
+            Confirmar
           </button>
           <button
             onClick={handleRefuse}

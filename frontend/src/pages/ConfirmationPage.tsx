@@ -315,7 +315,7 @@ export const ConfirmationPage = () => {
               disabled={actionLoading}
               className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-lg"
             >
-              {actionLoading ? 'Confirmando...' : 'Confirmar Presença'}
+              {actionLoading ? 'Confirmando...' : 'Confirmar'}
             </Button>
           )}
 

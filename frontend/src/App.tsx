@@ -170,6 +170,8 @@ const AppContent = () => {
           usedMatchIds.add(prayerMatch.id);
         }
 
+        let orderCounter = 1;
+
         weekToSave.sections.forEach((s: any) => s.parts.forEach((p: any) => {
           // Find a match that hasn't been used yet
           const match = newWeek.designacoes.find((d: any) => d.parteTemplateId === p.templateId && !usedMatchIds.has(d.id));
@@ -183,7 +185,8 @@ const AppContent = () => {
               status: p.status || 'PENDENTE',
               observation: p.observation,
               tituloDoTema: p.title,
-              tempo: parseTime(p.time)
+              tempo: parseTime(p.time),
+              ordem: orderCounter++
             });
             usedMatchIds.add(match.id);
           } else {
@@ -196,7 +199,8 @@ const AppContent = () => {
               status: p.status || 'PENDENTE',
               observation: p.observation,
               tituloDoTema: p.title,
-              tempo: parseTime(p.time)
+              tempo: parseTime(p.time),
+              ordem: orderCounter++
             });
           }
         }));

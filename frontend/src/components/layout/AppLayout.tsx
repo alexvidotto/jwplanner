@@ -1,15 +1,30 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3 } from 'lucide-react';
+import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Menu } from 'lucide-react';
 
 export const AppLayout = () => {
-
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Helper to determine if link is active
   const getLinkClass = ({ isActive }: { isActive: boolean }) => {
-    return `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200/50 font-medium'
-      : 'text-gray-600 hover:bg-gray-100 hover:text-blue-600'
-      }`;
+    // Base classes
+    let classes = 'flex items-center rounded-xl transition-all duration-200 group ';
+
+    // Size & Spacing based on collapsed state
+    if (isCollapsed) {
+      classes += 'justify-center p-3 ';
+    } else {
+      classes += 'gap-3 px-4 py-3 ';
+    }
+
+    // Active state styles
+    if (isActive) {
+      classes += 'bg-blue-600 text-white shadow-lg shadow-blue-200/50 font-medium';
+    } else {
+      classes += 'text-gray-600 hover:bg-gray-100 hover:text-blue-600';
+    }
+
+    return classes;
   };
 
   const getBottomLinkClass = ({ isActive }: { isActive: boolean }) => {
@@ -32,35 +47,61 @@ export const AppLayout = () => {
     <div className="min-h-screen bg-gray-50 flex font-sans">
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-gray-100 z-50">
+      <aside
+        className={`hidden lg:flex flex-col bg-white border-r border-gray-100 z-50 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-72'
+          }`}
+      >
         <div className="h-full flex flex-col">
           {/* Header */}
-          <div className="p-6 flex items-center justify-between border-b border-gray-50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-200">
+          <div className={`p-4 flex items-center border-b border-gray-50 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+            <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+              <div className="w-10 h-10 bg-blue-600 rounded-lg shrink-0 flex items-center justify-center shadow-md shadow-blue-200">
                 <Calendar className="text-white" size={20} />
               </div>
-              <div className="leading-tight">
+              <div className="leading-tight whitespace-nowrap">
                 <h1 className="font-bold text-gray-800 text-lg tracking-tight">JW Planner</h1>
                 <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">v0.1.0</span>
               </div>
             </div>
+
+            {/* Toggle Button - Centered when collapsed, right-aligned when expanded */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className={`p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors ${isCollapsed ? 'mx-auto' : ''}`}
+              title={isCollapsed ? "Expandir Menu" : "Recolher Menu"}
+            >
+              {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            </button>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Menu Principal</div>
+          <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+            {!isCollapsed && (
+              <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 transition-opacity duration-300">
+                Menu Principal
+              </div>
+            )}
+
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 className={getLinkClass}
+                title={isCollapsed ? item.label : ''}
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon size={20} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-blue-600 transition-colors'} />
-                    <span className="flex-1">{item.label}</span>
-                    {isActive && <ChevronRight size={16} className="text-white/80" />}
+                    <item.icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-blue-600 transition-colors'}`} />
+
+                    {!isCollapsed && (
+                      <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-300">
+                        {item.label}
+                      </span>
+                    )}
+
+                    {!isCollapsed && isActive && (
+                      <ChevronRight size={16} className="text-white/80 shrink-0" />
+                    )}
                   </>
                 )}
               </NavLink>
@@ -68,18 +109,24 @@ export const AppLayout = () => {
           </nav>
 
           {/* Footer User Profile (Mock) */}
-          <div className="p-4 border-t border-gray-50">
-            <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
+          <div className="p-3 border-t border-gray-50">
+            <div className={`bg-gray-50 rounded-xl p-3 flex items-center gap-3 transition-all duration-300 ${isCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-10 h-10 rounded-full bg-indigo-100 shrink-0 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
                 A
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 truncate">Admin User</p>
-                <p className="text-xs text-gray-500 truncate">Congregação</p>
-              </div>
-              <button className="text-gray-400 hover:text-red-500 transition-colors">
-                <LogOut size={18} />
-              </button>
+
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <p className="text-sm font-semibold text-gray-800 truncate">Admin User</p>
+                  <p className="text-xs text-gray-500 truncate">Congregação</p>
+                </div>
+              )}
+
+              {!isCollapsed && (
+                <button className="text-gray-400 hover:text-red-500 transition-colors shrink-0">
+                  <LogOut size={18} />
+                </button>
+              )}
             </div>
           </div>
         </div>

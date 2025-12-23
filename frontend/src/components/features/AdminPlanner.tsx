@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
@@ -56,6 +56,13 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ isVisible: true, message, type });
   };
+
+  // Clear search term when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      setSearchTerm('');
+    }
+  }, [isModalOpen]);
 
   const totalMinutes = weekData.sections.reduce((acc: number, section: any) => {
     return acc + section.parts.reduce((pAcc: number, part: any) => {

@@ -28,12 +28,20 @@ enum TipoSemana {
   NO_MEET
 }
 
+enum Role {
+  ADMIN
+  PRESIDENTE
+  ASSISTENTE
+  USER
+}
+
 model Participante {
   id           String            @id @default(uuid())
   nome         String
   email        String?           @unique
   telefone     String?
   privilegio   Privilegio
+  role         Role              @default(USER)
   podeDesignar Boolean           @default(true)
   uidAuth      String?           @unique
   

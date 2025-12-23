@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UsersRepository } from './users.repository';
-import { Participante, Prisma, Privilegio } from '@prisma/client';
+import { Participante, Prisma, Privilegio, Role } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -18,6 +18,7 @@ export class InMemoryUsersRepository implements UsersRepository {
       email: data.email || null,
       telefone: data.telefone || null,
       privilegio: data.privilegio || Privilegio.PUB_HOMEM,
+      role: data.role || Role.USER, // Default to USER
       podeDesignar: data.podeDesignar ?? true,
       uidAuth: data.uidAuth || null,
     };

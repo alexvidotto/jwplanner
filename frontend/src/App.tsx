@@ -18,6 +18,10 @@ import { MonthView } from './components/features/MonthView';
 import { TrackingView } from './components/features/TrackingView';
 import { ReportsView } from './components/features/ReportsView';
 import { ConfirmationPage } from './pages/ConfirmationPage';
+import { LoginPage } from './pages/LoginPage';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
+import { AdminUsersPage } from './pages/AdminUsersPage';
 
 const queryClient = new QueryClient();
 
@@ -79,9 +83,6 @@ const AppContent = () => {
 
     if (weekData) {
       const transformed = transformWeekToFrontend(weekData);
-
-      // Safety check: if backend date differs significantly, we might have mismatch? 
-      // But typically it matches.
       setActiveWeek(transformed);
     } else if (parts.length > 0) {
       // Generate Virtual
@@ -92,36 +93,21 @@ const AppContent = () => {
   const handleNavigateWeek = (direction: number) => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + (direction * 7));
-
-    // Update URL
-    // We format as YYYY-MM-DD
     const dateStr = newDate.toISOString().split('T')[0];
     setSearchParams({ date: dateStr });
-
-    // Trigger loading state visually immediately?
     setActiveWeek(null);
   };
 
   const handleJumpToCurrentWeek = () => {
-    // Check if we are already on current week (no date param or date matches next monday)
     const currentParam = searchParams.get('date');
     if (!currentParam) {
-      // Already on current week (default), do nothing to avoid reload/flicker or just ensuring activeWeek is set?
-      // If we are "stuck" for some reason, we might want to reload, but usually we just want to navigate.
-      // If activeWeek is null, the effect should handle it ONLY if we change something.
-      // But if we do nothing, activeWeek remains whatever it is (likely correct).
-      // We can just return.
       return;
     }
-
-    // If not on current week, we clear params.
     setSearchParams({}); // Clear date param to default to Today
     setActiveWeek(null);
   };
 
   const handleDateSelect = (date: Date) => {
-    // Format as YYYY-MM-DD (local time)
-    // Avoid UTC conversion issues by using local year/month/day
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
@@ -146,7 +132,6 @@ const AppContent = () => {
         savedWeekId = newWeek.id;
 
         const updates: any[] = [];
-
         const usedMatchIds = new Set<string>();
 
         // Handle Opening Prayer
@@ -235,8 +220,6 @@ const AppContent = () => {
             ordem: 0
           });
         } else if (weekToSave.openingPrayerId) {
-          // Opening Prayer assigned but Part doesn't exist yet -> CREATE IT
-          // We use the known fixed ID for the template
           updates.push({
             id: `new-op-${Date.now()}`,
             parteTemplateId: weekToSave.openingPrayerTemplateId || 'tpl_oracao_inicial',
@@ -297,7 +280,6 @@ const AppContent = () => {
     }
     else {
       // Check sections
-      // Logic to find part by customized Ids
       for (const section of weekCopy.sections) {
         for (const part of section.parts) {
           if (assignmentId === part.id) {
@@ -323,57 +305,74 @@ const AppContent = () => {
     return <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando dados iniciais...</div>;
   }
 
-  // Loading week indicator could be inside Planner or here.
-  // If activeWeek is null, we show loading?
-
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<Navigate to="/planner" replace />} />
-        <Route path="/planner" element={
-          activeWeek ? (
-            <AdminPlanner
-              weekData={activeWeek}
-              setWeekData={handleUpdateWeek}
-              onBack={() => navigate('/')}
-              onNavigateWeek={handleNavigateWeek}
-              onJumpToCurrentWeek={handleJumpToCurrentWeek}
-              onSelectDate={handleDateSelect}
-              participants={participants}
-              partTemplates={parts}
-              onSave={handleSaveWeek}
-            />
-          ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
-        } />
-        <Route path="/participants" element={<AdminParticipantsView participants={participants} setParticipants={setParticipants} onBack={() => navigate('/')} />} />
-        <Route path="/parts" element={<AdminPartsView parts={parts} setParts={setParts} onBack={() => navigate('/')} />} />
-        <Route path="/skills" element={<AdminSkillsView participants={participants} setParticipants={setParticipants} parts={parts} onBack={() => navigate('/')} />} />
-        <Route path="/tracking" element={
-          activeWeek ? (
-            <TrackingView
-              weekData={activeWeek}
-              participants={participants}
-              onBack={() => navigate('/')}
-              onNavigateWeek={handleNavigateWeek}
-              onJumpToCurrentWeek={handleJumpToCurrentWeek}
-              onStatusChange={handleStatusChange}
-            />
-          ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
-        } />
-        <Route path="/month" element={<MonthView onBack={() => navigate('/')} />} />
-        <Route path="/my-assignments" element={
-          <ParticipantView
-            weekData={activeWeek}
-            setWeekData={handleUpdateWeek}
-            currentUser={participants[0]} // Mock current user for now
-            onBack={() => navigate('/')}
-            participants={participants}
-          />
-        } />
-        <Route path="/reports" element={<ReportsView />} />
-      </Route>
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/confirm/:assignmentId" element={<ConfirmationPage />} />
       <Route path="/confirm/:assignmentId/:personId" element={<ConfirmationPage />} />
+
+      <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PRESIDENTE', 'ASSISTENTE', 'USER']} />}>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Navigate to="/planner" replace />} />
+
+          {/* Admin only */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+            <Route path="/planner" element={
+              activeWeek ? (
+                <AdminPlanner
+                  weekData={activeWeek}
+                  setWeekData={handleUpdateWeek}
+                  onBack={() => navigate('/')}
+                  onNavigateWeek={handleNavigateWeek}
+                  onJumpToCurrentWeek={handleJumpToCurrentWeek}
+                  onSelectDate={handleDateSelect}
+                  participants={participants}
+                  partTemplates={parts}
+                  onSave={handleSaveWeek}
+                />
+              ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
+            } />
+            <Route path="/participants" element={<AdminParticipantsView participants={participants} setParticipants={setParticipants} onBack={() => navigate('/')} />} />
+            <Route path="/parts" element={<AdminPartsView parts={parts} setParts={setParts} onBack={() => navigate('/')} />} />
+            <Route path="/skills" element={<AdminSkillsView participants={participants} setParticipants={setParticipants} parts={parts} onBack={() => navigate('/')} />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+          </Route>
+
+          {/* Tracking: Admin, Presidente, Assistente */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PRESIDENTE', 'ASSISTENTE']} />}>
+            <Route path="/tracking" element={
+              activeWeek ? (
+                <TrackingView
+                  weekData={activeWeek}
+                  participants={participants}
+                  onBack={() => navigate('/')}
+                  onNavigateWeek={handleNavigateWeek}
+                  onJumpToCurrentWeek={handleJumpToCurrentWeek}
+                  onStatusChange={handleStatusChange}
+                />
+              ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
+            } />
+          </Route>
+
+          {/* Reports: Admin, Presidente */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PRESIDENTE']} />}>
+            <Route path="/reports" element={<ReportsView />} />
+          </Route>
+
+          <Route path="/month" element={<MonthView onBack={() => navigate('/')} />} />
+
+          {/* Deprecated/Mock page - leaving for now or removing? Keeping as is. */}
+          <Route path="/my-assignments" element={
+            <ParticipantView
+              weekData={activeWeek}
+              setWeekData={handleUpdateWeek}
+              currentUser={participants[0]} // Mock current user for now
+              onBack={() => navigate('/')}
+              participants={participants}
+            />
+          } />
+        </Route>
+      </Route>
     </Routes>
   );
 };
@@ -382,9 +381,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LoadingSpinner />
-      <Router>
-        <AppContent />
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

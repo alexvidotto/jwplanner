@@ -1,9 +1,23 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Menu } from 'lucide-react';
+import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Menu, Shield } from 'lucide-react';
+
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export const AppLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { userProfile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to logout', error);
+    }
+  };
 
   // Helper to determine if link is active
   const getLinkClass = ({ isActive }: { isActive: boolean }) => {
@@ -34,6 +48,13 @@ export const AppLayout = () => {
       }`;
   };
 
+  const userInitials = userProfile?.nome
+    ? userProfile.nome.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
+    : 'U';
+
+  const userName = userProfile?.nome || 'Usuário';
+  const userRole = userProfile?.role || 'Publicador';
+
   const navItems = [
     { to: '/planner', icon: Calendar, label: 'Semanas' },
     { to: '/participants', icon: Users, label: 'Publicadores' },
@@ -42,6 +63,10 @@ export const AppLayout = () => {
     { to: '/tracking', icon: MessageCircle, label: 'Acompanhamento' },
     { to: '/reports', icon: BarChart3, label: 'Relatórios' },
   ];
+
+  if (userRole === 'ADMIN') {
+    navItems.push({ to: '/admin/users', icon: Shield, label: 'Usuários' });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">
@@ -108,22 +133,26 @@ export const AppLayout = () => {
             ))}
           </nav>
 
-          {/* Footer User Profile (Mock) */}
+          {/* Footer User Profile */}
           <div className="p-3 border-t border-gray-50">
             <div className={`bg-gray-50 rounded-xl p-3 flex items-center gap-3 transition-all duration-300 ${isCollapsed ? 'justify-center' : ''}`}>
               <div className="w-10 h-10 rounded-full bg-indigo-100 shrink-0 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
-                A
+                {userInitials}
               </div>
 
               {!isCollapsed && (
                 <div className="flex-1 min-w-0 overflow-hidden">
-                  <p className="text-sm font-semibold text-gray-800 truncate">Admin User</p>
-                  <p className="text-xs text-gray-500 truncate">Congregação</p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">{userName}</p>
+                  <p className="text-xs text-gray-500 truncate">{userRole}</p>
                 </div>
               )}
 
               {!isCollapsed && (
-                <button className="text-gray-400 hover:text-red-500 transition-colors shrink-0">
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                  title="Sair"
+                >
                   <LogOut size={18} />
                 </button>
               )}
@@ -134,7 +163,7 @@ export const AppLayout = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-[100vh] overflow-hidden">
-        {/* Mobile Header (No Menu Button) */}
+        {/* Mobile Header */}
         <header className="lg:hidden bg-white border-b border-gray-100 p-4 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm shadow-blue-200">
@@ -142,8 +171,17 @@ export const AppLayout = () => {
             </div>
             <span className="font-bold text-gray-800">JW Planner</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-            A
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">
+              {userInitials}
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+              title="Sair"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
         </header>
 

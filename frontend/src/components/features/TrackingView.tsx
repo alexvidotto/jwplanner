@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, MessageCircle, Smartphone, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, MessageCircle, Smartphone, Copy, Check, ChevronDown, ChevronUp, Link as LinkIcon } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 
@@ -15,6 +15,7 @@ interface TrackingViewProps {
 export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, onJumpToCurrentWeek, onStatusChange }: TrackingViewProps) => {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [expandedObsIds, setExpandedObsIds] = useState<Set<string>>(new Set());
 
   const toggleObs = (id: string) => {
@@ -223,6 +224,21 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
     confirmed: assignments.filter(a => a.status === 'CONFIRMADO').length
   };
 
+  const generateAssignmentLink = (assignment: any) => {
+    // Generate link using Real Assignment ID (UUID)
+    const targetId = assignment.realId || assignment.id;
+    // Check if it's a UUID (real assignment) not 'president' or 'openingPrayer' (unless they eventually become real UUIDs)
+    if (targetId && targetId.length > 20) {
+      let link = `${window.location.origin}/confirm/${targetId}`;
+      // Append person ID for personalized view if available
+      if (assignment.assigneeId && ['TITULAR', 'AJUDANTE', 'LEITOR', 'PRESIDENTE', 'ORAÇÃO'].includes(assignment.role)) {
+        link += `/${assignment.assigneeId}`;
+      }
+      return link;
+    }
+    return null;
+  };
+
   const getMessageText = (assignment: any) => {
     const name = getParticipantName(assignment.assigneeId);
     const date = weekData.dateLabel || 'esta semana';
@@ -243,15 +259,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
       message += `\nObs: ${assignment.observation}`;
     }
 
-    // Generate link using Real Assignment ID (UUID)
-    const targetId = assignment.realId || assignment.id;
-    // Check if it's a UUID (real assignment) not 'president' or 'openingPrayer'
-    if (targetId && targetId.length > 20) {
-      let link = `${window.location.origin}/confirm/${targetId}`;
-      // Append person ID for personalized view if available
-      if (assignment.assigneeId && ['TITULAR', 'AJUDANTE', 'LEITOR', 'PRESIDENTE', 'ORAÇÃO'].includes(assignment.role)) {
-        link += `/${assignment.assigneeId}`;
-      }
+    const link = generateAssignmentLink(assignment);
+    if (link) {
       message += `\n\nPara ver detalhes e confirmar, clique aqui:\n${link}`;
     } else {
       message += `\nPor favor, confirme se poderá realizar.`;
@@ -283,6 +292,19 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
       console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const handleCopyLink = async (assignment: any) => {
+    const link = generateAssignmentLink(assignment);
+    if (!link) return;
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedLinkId(assignment.id);
+      setTimeout(() => setCopiedLinkId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy link: ', err);
     }
   };
 
@@ -354,6 +376,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
                   {sectionAssignments.map(a => {
                     const phone = getParticipantPhone(a.assigneeId);
                     const waLink = generateWhatsAppLink(a);
+                    const hasLink = generateAssignmentLink(a);
                     const isConfirmed = a.status === 'CONFIRMADO';
                     const isPending = a.status === 'PENDENTE';
 
@@ -421,7 +444,18 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
                             variant="circle"
                           />
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            {/* Copy Link Button */}
+                            {hasLink && (
+                              <button
+                                onClick={() => handleCopyLink(a)}
+                                className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                                title="Copiar link"
+                              >
+                                {copiedLinkId === a.id ? <Check size={14} className="text-green-500" /> : <LinkIcon size={14} />}
+                              </button>
+                            )}
+
                             <button
                               onClick={() => handleCopyMessage(a)}
                               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"

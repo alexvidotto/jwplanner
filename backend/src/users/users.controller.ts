@@ -70,4 +70,14 @@ export class UsersController {
       throw new HttpException(e.message || String(e), HttpStatus.BAD_REQUEST);
     }
   }
+
+  @Post(':id/reset-password')
+  @UseGuards(AuthGuard)
+  async resetPassword(@Param('id') id: string) {
+    try {
+      return await this.usersService.resetPassword(id);
+    } catch (e: any) {
+      throw new HttpException(e.message || String(e), HttpStatus.BAD_REQUEST);
+    }
+  }
 }

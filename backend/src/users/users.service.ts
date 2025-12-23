@@ -118,4 +118,31 @@ export class UsersService {
 
     return { email: emailToUse, password };
   }
+
+  async resetPassword(userId: string) {
+    const user = await this.usersRepository.findById(userId);
+    if (!user) throw new Error('User not found');
+    if (!user.uidAuth) throw new Error('User does not have credentials yet');
+
+    // 1. Generate new password
+    const password = crypto.randomBytes(8).toString('hex');
+
+    // 2. Update in Firebase
+    try {
+      // If for some reason uidAuth is "linked-now" (frontend temp state) or invalid, we might have issues.
+      // But we stored the real UID in DB (hopefully). 
+      // Wait, in createWithAuth we stored uidAuth. 
+      // BUT in createCredentials we stored uidAuth.
+      // Let's assume uidAuth is the Firebase UID.
+      // Actually, looking at createCredentials: 
+      // uidAuth = existingFirebaseUser.uid OR userRecord.uid.
+
+      await this.firebaseService.getAuth().updateUser(user.uidAuth, { password });
+    } catch (error) {
+      console.error('Error resetting password in Firebase:', error);
+      throw error;
+    }
+
+    return { email: user.email, password };
+  }
 }

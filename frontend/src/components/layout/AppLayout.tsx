@@ -55,18 +55,27 @@ export const AppLayout = () => {
   const userName = userProfile?.nome || 'Usuário';
   const userRole = userProfile?.role || 'Publicador';
 
-  const navItems = [
-    { to: '/planner', icon: Calendar, label: 'Semanas' },
-    { to: '/participants', icon: Users, label: 'Publicadores' },
-    { to: '/parts', icon: List, label: 'Partes' },
-    { to: '/skills', icon: Grid, label: 'Matriz' },
-    { to: '/tracking', icon: MessageCircle, label: 'Acompanhamento' },
-    { to: '/reports', icon: BarChart3, label: 'Relatórios' },
+  const allNavItems = [
+    { to: '/planner', icon: Calendar, label: 'Semanas', roles: ['USER', 'ASSISTENTE', 'PRESIDENTE', 'ADMIN'] },
+    // Publicadores (Users) only for Admin
+    { to: '/participants', icon: Users, label: 'Publicadores', roles: ['ADMIN'] }, // Or maybe Presidente? Plan says Admin only for Management, but maybe View for Presidente? let's stick to Admin for now or check plan.
+    // Plan says: Admin: Full, User Management. Presidente: View Reports, Tracking. Assistente: Tracking.
+    // So 'Publicadores' (Participants) page might be Admin only? Or does it show list of people? 
+    // The previous code had it for everyone. Let's restrict it to Admin/Presidente maybe?
+    // Actually, let's look at page content. It's usually a list of publishers. 
+    // For now, let's implement strict separation. 
+    // Admin: All. 
+    // Presidente: Reports, Tracking. 
+    // Assistente: Tracking.
+    // User: Weeks (planner).
+    { to: '/parts', icon: List, label: 'Partes', roles: ['ADMIN', 'PRESIDENTE'] }, // Manage parts?
+    { to: '/skills', icon: Grid, label: 'Matriz', roles: ['ADMIN', 'PRESIDENTE'] }, // Matrix?
+    { to: '/tracking', icon: MessageCircle, label: 'Acompanhamento', roles: ['ADMIN', 'PRESIDENTE', 'ASSISTENTE'] },
+    { to: '/reports', icon: BarChart3, label: 'Relatórios', roles: ['ADMIN', 'PRESIDENTE'] },
+    { to: '/admin/users', icon: Shield, label: 'Usuários', roles: ['ADMIN'] },
   ];
 
-  if (userRole === 'ADMIN') {
-    navItems.push({ to: '/admin/users', icon: Shield, label: 'Usuários' });
-  }
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">

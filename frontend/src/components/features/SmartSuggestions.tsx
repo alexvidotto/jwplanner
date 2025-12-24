@@ -228,6 +228,50 @@ export const SmartSuggestions = ({ templates }: SmartSuggestionsProps) => {
         };
       }
       return user;
+    }).sort((a: any, b: any) => {
+      // Sort Logic:
+      // 1. If Part Filter is active, sort by THAT part's status
+      // 2. 'NEVER' comes first (monthsDiff = 999 or similar high logic, but we use status)
+      // 3. Then 'READY' (sorted by monthsDiff DESC -> longest time ago first)
+      // 4. Then 'RECENT' (sorted by monthsDiff DESC)
+
+      if (selectedPartId) {
+        const partA = a.readyParts[0]; // Should have only 1 if filtered
+        const partB = b.readyParts[0];
+
+        if (!partA && !partB) return 0;
+        if (!partA) return 1;
+        if (!partB) return -1;
+
+        // Custom weight for status
+        const getWeight = (p: any) => {
+          if (p.status === 'NEVER') return 3;
+          if (p.status === 'READY') return 2;
+          return 1;
+        };
+
+        const weightA = getWeight(partA);
+        const weightB = getWeight(partB);
+
+        if (weightA !== weightB) {
+          return weightB - weightA; // Higher weight first
+        }
+
+        // If same weight, sort by time (Longest ago first)
+        // For NEVER, monthsDiff is 999, so it doesn't matter much (stable)
+        // For READY/RECENT, we want larger monthsDiff first
+        return partB.monthsDiff - partA.monthsDiff;
+      }
+
+      // Default Sort (No part selected): Sort by "Best" available suggestion
+      // We can sort by the count of 'NEVER' parts, then 'READY' parts?
+      // Or just alphabetical for now if no filter?
+      // User specific request was likely about the specific filtered view.
+      // Let's keep alphabetical for 'All' or maybe sort by "Most Available"?
+      // Let's default to Name for non-filtered to keep it stable, 
+      // UNLESS user wants generally "underused" people top. 
+      // Let's sticking to Name for general view for now to avoid chaos.
+      return a.name.localeCompare(b.name);
     });
   }, [suggestions, searchTerm, selectedPrivileges, templates, minMonths, selectedPartId, nameCounts]);
 

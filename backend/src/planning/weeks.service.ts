@@ -592,6 +592,17 @@ export class WeeksService {
   }
 
   async getSmartSuggestionsData() {
+    // 0. Fetch President and Prayer Template IDs
+    const presidentTemplate = await this.prisma.parteTemplate.findFirst({
+      where: { titulo: 'Presidente' }
+    });
+    const presidentPartId = presidentTemplate?.id || 'president';
+
+    const prayerTemplate = await this.prisma.parteTemplate.findFirst({
+      where: { titulo: 'Oração Inicial' }
+    });
+    const prayerPartId = prayerTemplate?.id || 'prayer';
+
     // 1. Fetch all participants with their skills
     const users = await this.prisma.participante.findMany({
       include: { habilidades: true },
@@ -610,15 +621,18 @@ export class WeeksService {
       orderBy: { semana: { dataInicio: 'desc' } }
     });
 
-    // Also fetch presidencies
-    const presidencies = await this.prisma.semana.findMany({
+    // Also fetch presidencies and prayers from Week table
+    const weekAssignments = await this.prisma.semana.findMany({
       where: {
-        presidenteId: { not: null },
-        statusPresidente: { not: 'RECUSADO' }
+        OR: [
+          { presidenteId: { not: null }, statusPresidente: { not: 'RECUSADO' } },
+          { oracaoId: { not: null }, statusOracao: { not: 'RECUSADO' } }
+        ]
       },
       orderBy: { dataInicio: 'desc' },
       select: {
         presidenteId: true,
+        oracaoId: true,
         dataInicio: true
       }
     });
@@ -638,10 +652,13 @@ export class WeeksService {
       }
     };
 
-    // Process Presidencies
-    presidencies.forEach(p => {
+    // Process Week Assignments (President/Prayer)
+    weekAssignments.forEach(p => {
       if (p.presidenteId) {
-        setLastDate(p.presidenteId, 'president', p.dataInicio);
+        setLastDate(p.presidenteId, presidentPartId, p.dataInicio);
+      }
+      if (p.oracaoId) {
+        setLastDate(p.oracaoId, prayerPartId, p.dataInicio);
       }
     });
 

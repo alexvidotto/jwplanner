@@ -824,6 +824,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                                         variant="circle"
                                         status={part.status}
                                         onChange={(s) => handleUpdatePart(section.id, part.id, 'status', s)}
+                                        disabled={readOnly}
                                       />
                                     </div>
                                   )}
@@ -855,7 +856,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                                       {!readOnly && (
                                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                           <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'assistant' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
-                                          <StatusEditMenu variant="circle" status={part.assistantStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'assistantStatus', s)} />
+                                          <StatusEditMenu variant="circle" status={part.assistantStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'assistantStatus', s)} disabled={readOnly} />
                                         </div>
                                       )}
                                     </div>
@@ -874,20 +875,29 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                               {part.requiresReader && (
                                 <div className="ml-4 border-l-2 border-gray-200 pl-2">
                                   {part.readerId ? (
-                                    <div onClick={() => handleAssignClick(part, 'reader')} className="flex items-center justify-between p-2 bg-purple-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
+                                    <div
+                                      onClick={() => !readOnly && handleAssignClick(part, 'reader')}
+                                      className={`flex items-center justify-between p-2 bg-purple-50 border border-gray-200 rounded ${!readOnly ? 'hover:border-blue-400 cursor-pointer' : ''}`}
+                                    >
                                       <div className="flex items-center gap-2">
                                         <span className="text-xs font-bold text-purple-600 flex-shrink-0">Leitor:</span>
                                         <span className="text-sm text-gray-700 whitespace-nowrap">{participants.find(p => p.id === part.readerId)?.name}</span>
                                       </div>
-                                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'reader' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
-                                        <StatusEditMenu variant="circle" status={part.readerStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'readerStatus', s)} />
-                                      </div>
+                                      {!readOnly && (
+                                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'reader' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
+                                          <StatusEditMenu variant="circle" status={part.readerStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'readerStatus', s)} disabled={readOnly} />
+                                        </div>
+                                      )}
                                     </div>
                                   ) : (
-                                    <button onClick={() => handleAssignClick(part, 'reader')} className="w-full text-left text-xs text-purple-600 hover:underline pl-2">
-                                      + Leitor
-                                    </button>
+                                      readOnly ? (
+                                        <div className="w-full text-left text-xs text-gray-400 pl-2 italic">Sem leitor</div>
+                                      ) : (
+                                          <button onClick={() => handleAssignClick(part, 'reader')} className="w-full text-left text-xs text-purple-600 hover:underline pl-2">
+                                            + Leitor
+                                          </button>
+                                        )
                                   )}
                                 </div>
                               )}

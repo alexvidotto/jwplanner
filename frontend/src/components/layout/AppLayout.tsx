@@ -68,8 +68,8 @@ export const AppLayout = () => {
     // Presidente: Reports, Tracking. 
     // Assistente: Tracking.
     // User: Weeks (planner).
-    { to: '/parts', icon: List, label: 'Partes', roles: ['ADMIN', 'PRESIDENTE'] }, // Manage parts?
-    { to: '/skills', icon: Grid, label: 'Matriz', roles: ['ADMIN', 'PRESIDENTE'] }, // Matrix?
+    { to: '/parts', icon: List, label: 'Partes', roles: ['ADMIN'] }, // Manage parts?
+    { to: '/skills', icon: Grid, label: 'Matriz', roles: ['ADMIN'] }, // Matrix?
     { to: '/tracking', icon: MessageCircle, label: 'Acompanhamento', roles: ['ADMIN', 'PRESIDENTE', 'ASSISTENTE'] },
     { to: '/reports', icon: BarChart3, label: 'Relatórios', roles: ['ADMIN', 'PRESIDENTE'] },
     { to: '/admin/users', icon: Shield, label: 'Usuários', roles: ['ADMIN'] },

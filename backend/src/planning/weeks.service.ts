@@ -102,13 +102,7 @@ export class WeeksService {
 
     // 1. Find candidates with the skill
     let whereClause: any = {
-      podeDesignar: true,
-      indisponibilidades: {
-        none: {
-          dataInicio: { lte: week.dataInicio },
-          dataFim: { gte: week.dataInicio }
-        }
-      }
+      podeDesignar: true
     };
 
     if (partTemplateId === 'president') {
@@ -198,14 +192,14 @@ export class WeeksService {
       const titularHistory = c.designacoes.map(d => ({
         date: d.semana.dataInicio,
         role: 'TITULAR',
-        title: d.parteTemplate.titulo,
+        title: d.parteTemplate?.titulo || 'Desconhecido',
         isSpecific: d.parteTemplateId === partTemplateId
       }));
 
       const assistantHistory = c.ajudas.map(d => ({
         date: d.semana.dataInicio,
-        role: d.parteTemplate.requerLeitor ? 'LEITOR' : 'AJUDANTE',
-        title: d.parteTemplate.titulo,
+        role: d.parteTemplate?.requerLeitor ? 'LEITOR' : 'AJUDANTE',
+        title: d.parteTemplate?.titulo || 'Desconhecido',
         isSpecific: d.parteTemplateId === partTemplateId
       }));
 
@@ -244,20 +238,20 @@ export class WeeksService {
       // Primary: Specific Part History (Ascending: older is better/more available)
       // If never assigned (0), it's "better" than recently assigned.
       // But wait, standard logic: Least recently assigned first. 0 means never assigned, so it should be first.
-      
+
       // If A has never done it (0) and B has (timestamp), A comes first.
       // If both have done it, smaller timestamp (older) comes first.
-      
+
       // Let's assume 0 is "Long ago" (effectively).
-      
+
       // Wait, if I use a.lastSpecificTs - b.lastSpecificTs:
       // A=0, B=Time. 0 - Time = Negative. A comes first. Correct.
       // A=OldTime, B=NewTime. Old - New = Negative. A comes first. Correct.
-      
+
       if (a.lastSpecificTs !== b.lastSpecificTs) {
         return a.lastSpecificTs - b.lastSpecificTs;
       }
-      
+
       // Secondary: General History
       return a.lastGeneralTs - b.lastGeneralTs;
     }).map(item => {
@@ -639,7 +633,7 @@ export class WeeksService {
         setLastDate(a.titularId, a.parteTemplateId, a.semana.dataInicio);
       }
       if (a.ajudanteId) {
-        if (a.parteTemplate.requerLeitor) {
+        if (a.parteTemplate?.requerLeitor) {
           setLastDate(a.ajudanteId, `${a.parteTemplateId}_reader`, a.semana.dataInicio);
         } else {
           // Generic assistant (for FSM parts mostly)

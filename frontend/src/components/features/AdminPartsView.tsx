@@ -153,10 +153,10 @@ export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
         <div className="max-w-4xl mx-auto px-4 py-3 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
+              <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2 sm:ml-0"><ArrowLeft size={20} /></Button>
               <h1 className="font-bold text-gray-800 text-lg">Cadastro de Partes</h1>
             </div>
-            <Button onClick={() => { setEditingId(null); setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false }); setIsModalOpen(true); }}>
+            <Button onClick={() => { setEditingId(null); setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false }); setIsModalOpen(true); }} size="sm">
               <Plus size={16} /> Nova Parte
             </Button>
           </div>
@@ -174,45 +174,59 @@ export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th
-                  className="px-6 py-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
+                  className="p-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('title')}
                 >
                   <div className="flex items-center">Título <SortIcon columnKey="title" /></div>
                 </th>
                 <th
-                  className="px-6 py-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
+                  className="p-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('section')}
                 >
                   <div className="flex items-center">Seção <SortIcon columnKey="section" /></div>
                 </th>
                 <th
-                  className="px-6 py-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors"
+                  className="p-3 text-gray-500 font-medium cursor-pointer group select-none hover:bg-gray-100 transition-colors hidden md:table-cell"
                   onClick={() => handleSort('defaultTime')}
                 >
                   <div className="flex items-center">Tempo Padrão <SortIcon columnKey="defaultTime" /></div>
                 </th>
-                <th className="px-6 py-3 text-gray-500 font-medium">Ajudante?</th>
-                <th className="px-6 py-3 text-gray-500 font-medium">Leitor?</th>
-                <th className="px-6 py-3 text-gray-500 font-medium text-right">Ações</th>
+                <th className="p-3 text-gray-500 font-medium hidden md:table-cell">Ajudante?</th>
+                <th className="p-3 text-gray-500 font-medium hidden md:table-cell">Leitor?</th>
+                <th className="p-3 text-gray-500 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {filteredAndSortedParts.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleEdit(p)}>
-                  <td className="px-6 py-4 font-medium text-gray-900">{p.title}</td>
-                  <td className="px-6 py-4 text-gray-600 uppercase text-xs">{p.section}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.hasTime !== false ? p.defaultTime : '-'}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.requiresAssistant ? 'Sim' : '-'}</td>
-                  <td className="px-6 py-4 text-gray-600">{p.requiresReader ? <span className="text-blue-600 font-bold flex items-center gap-1"><Book size={14} /> Sim</span> : '-'}</td>
-                  <td className="px-6 py-4 text-right flex justify-end gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); handleEdit(p); }} className="p-1 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={16} /></button>
-                    <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(p.id); }} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                <tr key={p.id} className="hover:bg-gray-50 border-b last:border-0 cursor-pointer" onClick={() => handleEdit(p)}>
+                  <td className="p-3 font-medium text-gray-900">{p.title}</td>
+                  <td className="p-3 text-gray-600 uppercase text-xs">
+                    <span className={`px-2 py-1 rounded text-xs border ${p.section === 'tesouros' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' :
+                      p.section === 'fsm' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                        p.section === 'nvc' ? 'bg-red-50 text-red-700 border-red-100' :
+                          'bg-gray-50 text-gray-600 border-gray-100'
+                      }`}>
+                      {p.section}
+                    </span>
+                  </td>
+                  <td className="p-3 text-gray-600 text-sm hidden md:table-cell">{p.hasTime !== false ? p.defaultTime : '-'}</td>
+                  <td className="p-3 text-gray-600 text-sm hidden md:table-cell">{p.requiresAssistant ? 'Sim' : '-'}</td>
+                  <td className="p-3 text-gray-600 text-sm hidden md:table-cell">{p.requiresReader ? <span className="text-blue-600 font-bold flex items-center gap-1"><Book size={14} /> Sim</span> : '-'}</td>
+                  <td className="p-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(p); }} title="Editar">
+                        <Edit2 size={16} className="text-blue-600" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmDelete(p.id); }} title="Excluir">
+                        <Trash2 size={16} className="text-red-600" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

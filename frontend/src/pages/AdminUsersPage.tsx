@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { UserPlus, Copy, Shield, Check, Key, Search, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { UserPlus, Copy, Shield, Check, Key, Search, X, Trash2 } from 'lucide-react';
 
 export const AdminUsersPage = () => {
+  const { userProfile } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   /* const [loading, setLoading] = useState(true); */
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -97,6 +99,21 @@ export const AdminUsersPage = () => {
     } catch (error: any) {
       console.error('Failed to reset password', error);
       alert('Erro ao redefinir senha: ' + (error.response?.data?.message || 'Erro desconhecido'));
+      setConfirmingUser(null);
+    }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!confirmingUser) return;
+    const user = confirmingUser;
+
+    try {
+      await api.delete(`/users/${user.id}`);
+      setUsers(users.filter(u => u.id !== user.id));
+      setConfirmingUser(null);
+    } catch (error: any) {
+      console.error('Failed to delete user', error);
+      alert('Erro ao excluir usuário: ' + (error.response?.data?.message || 'Erro desconhecido'));
       setConfirmingUser(null);
     }
   };
@@ -210,6 +227,15 @@ export const AdminUsersPage = () => {
                         >
                           <Key size={18} />
                         </button>
+                          {userProfile?.id !== user.id && (
+                            <button
+                              onClick={() => setConfirmingUser({ ...user, action: 'DELETE' })}
+                              className="text-gray-400 hover:text-red-600"
+                              title="Excluir Usuário"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                       </div>
                     )}
                   </td>
@@ -320,11 +346,14 @@ export const AdminUsersPage = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/20 backdrop-blur-[1px]">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200 border border-gray-100">
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              {confirmingUser.action === 'RESET' ? 'Redefinir Senha?' : 'Confirmar Acesso'}
+              {confirmingUser.action === 'RESET' ? 'Redefinir Senha?' :
+                confirmingUser.action === 'DELETE' ? 'Excluir Usuário?' : 'Confirmar Acesso'}
             </h3>
             <p className="text-gray-600 mb-6 text-sm">
               {confirmingUser.action === 'RESET'
                 ? `Isso irá invalidar a senha atual de ${confirmingUser.nome} e gerar uma nova.`
+                : confirmingUser.action === 'DELETE'
+                  ? `Tem certeza que deseja excluir ${confirmingUser.nome}? Essa ação não pode ser desfeita.`
                 : `Gerar credenciais para ${confirmingUser.nome}?`
               }
             </p>
@@ -336,11 +365,13 @@ export const AdminUsersPage = () => {
                 Cancelar
               </button>
               <button
-                onClick={confirmingUser.action === 'RESET' ? confirmResetPassword : confirmCredentialGeneration}
-                className={`px-3 py-2 text-sm text-white rounded-lg font-medium ${confirmingUser.action === 'RESET' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+                onClick={confirmingUser.action === 'RESET' ? confirmResetPassword :
+                  confirmingUser.action === 'DELETE' ? confirmDeleteUser : confirmCredentialGeneration}
+                className={`px-3 py-2 text-sm text-white rounded-lg font-medium ${(confirmingUser.action === 'RESET' || confirmingUser.action === 'DELETE') ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
                   }`}
               >
-                {confirmingUser.action === 'RESET' ? 'Redefinir' : 'Sim, Gerar'}
+                {confirmingUser.action === 'RESET' ? 'Redefinir' :
+                  confirmingUser.action === 'DELETE' ? 'Excluir' : 'Sim, Gerar'}
               </button>
             </div>
           </div>

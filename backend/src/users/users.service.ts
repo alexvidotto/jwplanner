@@ -145,4 +145,26 @@ export class UsersService {
 
     return { email: user.email, password };
   }
+
+  async delete(id: string) {
+    const user = await this.usersRepository.findById(id);
+    if (!user) throw new Error('User not found');
+
+    // 1. Delete from Firebase if exists
+    if (user.uidAuth) {
+      try {
+        await this.firebaseService.getAuth().deleteUser(user.uidAuth);
+      } catch (error: any) {
+        console.warn(`Failed to delete Firebase user ${user.uidAuth}:`, error.message);
+        // Continue to delete from DB even if Firebase fails? 
+        // Yes, otherwise we have a zombie record in DB that can't be deleted.
+        // It's better to clean up DB.
+      }
+    }
+
+    // 2. Delete from DB
+    await this.usersRepository.delete(id);
+
+    return { success: true };
+  }
 }

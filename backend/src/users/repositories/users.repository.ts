@@ -8,4 +8,5 @@ export abstract class UsersRepository {
   abstract update(id: string, data: Prisma.ParticipanteUpdateInput): Promise<Participante>;
   abstract updateSkillsBulk(updates: { id: string; abilities: string[] }[]): Promise<void>;
   abstract findHistory(userId: string): Promise<any[]>;
+  abstract delete(id: string): Promise<void>;
 }

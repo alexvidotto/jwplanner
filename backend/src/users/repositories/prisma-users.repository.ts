@@ -83,4 +83,34 @@ export class PrismaUsersRepository implements UsersRepository {
       take: 50
     });
   }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Delete skills
+      await tx.habilidade.deleteMany({ where: { participanteId: id } });
+
+      // 2. Nullify assignments (Titular)
+      await tx.designacao.updateMany({
+        where: { titularId: id },
+        data: { titularId: null }
+      });
+
+      // 3. Nullify assignments (Ajudante)
+      await tx.designacao.updateMany({
+        where: { ajudanteId: id },
+        data: { ajudanteId: null }
+      });
+
+      // 4. Nullify presidencies
+      await tx.semana.updateMany({
+        where: { presidenteId: id },
+        data: { presidenteId: null }
+      });
+
+      // 5. Delete user
+      await tx.participante.delete({
+        where: { id }
+      });
+    });
+  }
 }

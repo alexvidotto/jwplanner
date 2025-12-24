@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, UseGuards, Request, HttpException, HttpStatus, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Prisma } from '@prisma/client';
 import { AuthGuard } from '../auth/auth.guard';
@@ -76,6 +76,21 @@ export class UsersController {
   async resetPassword(@Param('id') id: string) {
     try {
       return await this.usersService.resetPassword(id);
+    } catch (e: any) {
+      throw new HttpException(e.message || String(e), HttpStatus.BAD_REQUEST);
+    }
+  }
+
+
+  @Delete(':id')
+  @UseGuards(AuthGuard)
+  async delete(@Request() req, @Param('id') id: string) {
+    // Check if user is trying to delete themselves (by ID or Authorization UID)
+    if (req.user && (req.user.id === id || req.user.uidAuth === id)) {
+      throw new HttpException('Cannot delete yourself', HttpStatus.FORBIDDEN);
+    }
+    try {
+      return await this.usersService.delete(id);
     } catch (e: any) {
       throw new HttpException(e.message || String(e), HttpStatus.BAD_REQUEST);
     }

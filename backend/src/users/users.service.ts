@@ -95,6 +95,7 @@ export class UsersService {
         uidAuth = existingFirebaseUser.uid;
         // Optional: Update password if exists? Or throw?
         // Let's update password so the admin gets a valid one
+        // Let's update password so the admin gets a valid one
         await this.firebaseService.getAuth().updateUser(uidAuth, { password });
       } catch (err: any) {
         if (err.code === 'auth/user-not-found') {
@@ -108,6 +109,9 @@ export class UsersService {
           throw err;
         }
       }
+
+      // Set custom claim to force password change
+      await this.firebaseService.getAuth().setCustomUserClaims(uidAuth, { mustChangePassword: true });
     } catch (error) {
       console.error('Error creating/linking Firebase user:', error);
       throw error;
@@ -129,21 +133,33 @@ export class UsersService {
 
     // 2. Update in Firebase
     try {
-      // If for some reason uidAuth is "linked-now" (frontend temp state) or invalid, we might have issues.
-      // But we stored the real UID in DB (hopefully). 
-      // Wait, in createWithAuth we stored uidAuth. 
-      // BUT in createCredentials we stored uidAuth.
-      // Let's assume uidAuth is the Firebase UID.
-      // Actually, looking at createCredentials: 
-      // uidAuth = existingFirebaseUser.uid OR userRecord.uid.
-
       await this.firebaseService.getAuth().updateUser(user.uidAuth, { password });
+
+      // Set custom claim to force password change
+      await this.firebaseService.getAuth().setCustomUserClaims(user.uidAuth, { mustChangePassword: true });
     } catch (error) {
       console.error('Error resetting password in Firebase:', error);
       throw error;
     }
 
     return { email: user.email, password };
+  }
+
+  async changePassword(userId: string, newPassword: string) {
+    const user = await this.usersRepository.findById(userId);
+    if (!user) throw new Error('User not found');
+    if (!user.uidAuth) throw new Error('User does not have credentials');
+
+    try {
+      await this.firebaseService.getAuth().updateUser(user.uidAuth, { password: newPassword });
+      // Remove the custom claim
+      await this.firebaseService.getAuth().setCustomUserClaims(user.uidAuth, { mustChangePassword: null });
+    } catch (error) {
+      console.error('Error changing password in Firebase:', error);
+      throw error;
+    }
+
+    return { success: true };
   }
 
   async delete(id: string) {

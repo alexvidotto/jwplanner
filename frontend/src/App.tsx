@@ -22,6 +22,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdminUsersPage } from './pages/AdminUsersPage';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const AppContent = () => {
   // API Hooks
   const { data: participantsData, isLoading: isLoadingParticipants } = useParticipants();
   const { data: partsData, isLoading: isLoadingParts } = useParts();
+  const { userProfile } = useAuth();
 
   // Date State (Derived from URL or Default)
   const currentDate = useMemo(() => {
@@ -308,6 +310,7 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/change-password" element={<ChangePasswordPage />} />
       <Route path="/confirm/:assignmentId" element={<ConfirmationPage />} />
       <Route path="/confirm/:assignmentId/:personId" element={<ConfirmationPage />} />
 
@@ -333,7 +336,7 @@ const AppContent = () => {
                   participants={participants}
                   partTemplates={parts}
                   onSave={handleSaveWeek}
-                  readOnly={useAuth().userProfile?.role !== 'ADMIN'}
+                  readOnly={userProfile?.role !== 'ADMIN'}
                 />
               ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
             } />

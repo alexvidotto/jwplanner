@@ -81,6 +81,20 @@ export class UsersController {
     }
   }
 
+  @Post('change-password')
+  @UseGuards(AuthGuard)
+  async changePassword(@Request() req, @Body() body: { password: string }) {
+    if (!body.password || body.password.length < 6) {
+      throw new HttpException('Password must be at least 6 characters', HttpStatus.BAD_REQUEST);
+    }
+    try {
+      // req.user.id is the database ID (Participante ID) from AuthGuard
+      return await this.usersService.changePassword(req.user.id, body.password);
+    } catch (e: any) {
+      throw new HttpException(e.message || String(e), HttpStatus.BAD_REQUEST);
+    }
+  }
+
 
   @Delete(':id')
   @UseGuards(AuthGuard)

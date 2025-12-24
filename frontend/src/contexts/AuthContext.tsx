@@ -18,6 +18,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  checkClaims: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -33,28 +34,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userProfile, setUserProfile] = useState<Participante | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const checkClaims = async (user?: User | null) => {
+    const u = user || currentUser;
+    if (!u) return;
+
+    try {
+      // Force refresh token to get latest claims
+      const tokenResult = await u.getIdTokenResult(true);
+      if (tokenResult.claims.mustChangePassword) {
+        if (window.location.pathname !== '/change-password') {
+          window.location.href = '/change-password';
+        }
+      }
+    } catch (error) {
+      console.error('Error checking claims:', error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true); // Start loading immediately to prevent flash
       setCurrentUser(user);
       if (user) {
         try {
-          // Fetch user profile from your backend using the UID or Email
-          // We need an endpoint to get "ME". Or we can query by email/uid if we have a generic endpoint.
-          // Let's assume we can fetch by UID or just use the token to identify self.
-          // For now, let's try fetching by ID if we knew it, but we don't.
-          // We probably need a /users/me endpoint or similar.
-          // Using a temporary hack: fetch all users and find logic (NOT SECURE/SCALABLE but works for small app)
-          // OR: update backend to support GET /users/me
-          // Let's assume we update backend to support GET /users/me later.
-          // For now, let's just fetch all users (if allowed) or fetch by email?
-          // The backend users controller has generic findAll, but maybe protected?
-          // Let's try to implement /users/me in backend quickly.
+          // Check for forced password change claim
+          // FORCE REFRESH to ensure we see the new claim immediately after login/reset
+          const tokenResult = await user.getIdTokenResult(true);
 
-          // Actually, let's use the new backend endpoint I should create: GET /users/profile
-          // I will add this to backend next.
 
-          // Placeholder for now: using token to get profile data if backend supports it.
-          // I'll leave userProfile null for a moment until I fix backend.
+          if (tokenResult.claims.mustChangePassword) {
+
+            if (window.location.pathname !== '/change-password') {
+              window.location.href = '/change-password';
+              return; // Keep loading=true while redirecting
+            }
+          }
+
           const token = await user.getIdToken();
           const response = await api.get('/users/me', {
             headers: { Authorization: `Bearer ${token}` }
@@ -82,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, userProfile, loading, login, logout }}>
+    <AuthContext.Provider value={{ currentUser, userProfile, loading, login, logout, checkClaims }}>
       {!loading && children}
     </AuthContext.Provider>
   );

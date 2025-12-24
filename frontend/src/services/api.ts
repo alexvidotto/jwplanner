@@ -6,9 +6,9 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  let token = localStorage.getItem('authToken');
+  let token = null;
 
-  if (!token && auth.currentUser) {
+  if (auth.currentUser) {
     token = await auth.currentUser.getIdToken();
   }
 

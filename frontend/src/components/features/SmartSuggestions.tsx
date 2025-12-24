@@ -1,6 +1,7 @@
+
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import api from '../../lib/api';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Search, Filter, Clock } from 'lucide-react';
@@ -70,7 +71,7 @@ export const SmartSuggestions = ({ templates }: SmartSuggestionsProps) => {
   const { data: suggestions = [], isLoading } = useQuery({
     queryKey: ['smart-suggestions'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:3000/planning/weeks/smart-suggestions');
+      const response = await api.get('/planning/weeks/smart-suggestions');
       return response.data;
     }
   });

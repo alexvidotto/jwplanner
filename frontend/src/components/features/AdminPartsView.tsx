@@ -22,7 +22,7 @@ interface AdminPartsViewProps {
   onBack: () => void;
 }
 
-export const AdminPartsView = ({ parts, setParts, onBack }: AdminPartsViewProps) => {
+export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { data: history, isLoading: isLoadingHistory } = usePartHistory(editingId);

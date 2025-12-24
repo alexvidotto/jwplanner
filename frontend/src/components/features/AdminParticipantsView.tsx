@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, Edit2, Trash2, Check, Ban, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Check, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { PRIVILEGE_OPTIONS } from '../../lib/constants';
@@ -22,7 +22,7 @@ interface AdminParticipantsViewProps {
   onBack: () => void;
 }
 
-export const AdminParticipantsView = ({ participants, setParticipants, onBack }: AdminParticipantsViewProps) => {
+export const AdminParticipantsView = ({ participants, onBack }: AdminParticipantsViewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 

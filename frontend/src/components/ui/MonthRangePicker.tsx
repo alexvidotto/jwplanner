@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react';
-import { format, addMonths, subMonths, isSameMonth, isWithinInterval, startOfMonth, endOfMonth, setYear, setMonth } from 'date-fns';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { format, isSameMonth, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface MonthRangePickerProps {

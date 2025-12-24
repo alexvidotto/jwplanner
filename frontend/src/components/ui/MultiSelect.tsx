@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, Search, X } from 'lucide-react';
+import { ChevronDown, Check, Search } from 'lucide-react';
 
 interface MultiSelectProps {
   options: { value: string; label: string }[];

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Calendar, MessageCircle, Smartphone, Copy, Check, ChevronDown, ChevronUp, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Smartphone, Copy, Check, ChevronDown, ChevronUp, Link as LinkIcon } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 
@@ -12,7 +12,7 @@ interface TrackingViewProps {
   onStatusChange: (assignmentId: string, newStatus: string) => void;
 }
 
-export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, onJumpToCurrentWeek, onStatusChange }: TrackingViewProps) => {
+export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, onStatusChange }: TrackingViewProps) => {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
 
     const tesouros = weekData.sections?.find((s: any) => s.id === 'tesouros');
     if (tesouros) {
-      tesouros.parts?.forEach((part: any, idx: number) => {
+      tesouros.parts?.forEach((part: any) => {
         globalPartCounter++;
         const partNum = globalPartCounter;
 

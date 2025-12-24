@@ -55,19 +55,7 @@ export default function Login() {
             Sign in with Google
           </button>
 
-          {/* Dev Mode Login */}
-          {import.meta.env.VITE_USE_MOCK_AUTH === 'true' && (
-            <button
-              onClick={() => {
-                // Simulate successful login
-                localStorage.setItem('authToken', 'dev-token');
-                window.location.href = '/planner';
-              }}
-              className="w-full bg-gray-600 text-white p-2 rounded"
-            >
-              Dev Login (No Auth)
-            </button>
-          )}
+
         </div>
       </div>
     </div>

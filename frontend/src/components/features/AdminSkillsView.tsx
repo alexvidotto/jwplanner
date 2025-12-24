@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Check, ChevronUp, ChevronDown, Briefcase, Users, User, Minus, Book } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { useUpdateParticipant, useBulkUpdateParticipants } from '../../hooks/useParticipants';
+import { useBulkUpdateParticipants } from '../../hooks/useParticipants';
 
 // Added internal types for self-containment if not imported, but best to import.
 interface AdminSkillsViewProps {

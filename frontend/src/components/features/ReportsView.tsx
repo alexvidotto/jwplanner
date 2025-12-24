@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import api from '../../lib/api';
 import { format, addDays, subDays, isMonday, endOfMonth } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, Printer, BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown, Sparkles, LayoutGrid } from 'lucide-react';
+import { Loader2, BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import { formatDateRange } from '../../lib/transformers';
 import { SmartSuggestions } from './SmartSuggestions';
@@ -97,7 +97,7 @@ export const ReportsView = () => {
   const { data: weeks, isLoading: isLoadingReports, refetch } = useQuery({
     queryKey: ['reports', startStr, endStr],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:3000/planning/weeks/reports', {
+      const response = await api.get('/planning/weeks/reports', {
         params: { start: startStr, end: endStr }
       });
       return response.data;
@@ -108,7 +108,7 @@ export const ReportsView = () => {
   const { data: templates = [] } = useQuery({
     queryKey: ['parts-templates'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:3000/parts');
+      const response = await api.get('/parts');
       return response.data;
     }
   });
@@ -116,7 +116,7 @@ export const ReportsView = () => {
   const { data: allUsers = [] } = useQuery({
     queryKey: ['all-users'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:3000/users');
+      const response = await api.get('/users');
       return response.data;
     }
   });

@@ -20,9 +20,10 @@ interface AdminPlannerProps {
   partTemplates: any[];
   onSave?: (weekData: any) => Promise<void>;
   participants: any[];
+  readOnly?: boolean;
 }
 
-export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, onJumpToCurrentWeek, onSelectDate, participants, partTemplates, onSave }: AdminPlannerProps) => {
+export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, onJumpToCurrentWeek, onSelectDate, participants, partTemplates, onSave, readOnly = false }: AdminPlannerProps) => {
   // ... existing state ...
 
   // ... render ...
@@ -116,6 +117,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   const isOverTime = totalMinutes > MAX_MINUTES;
 
   const handleDragStart = (e: React.DragEvent, partId: string, sectionId: string) => {
+    if (readOnly) return;
     if (sectionId !== 'fsm' && sectionId !== 'nvc') {
       e.preventDefault();
       return;
@@ -226,6 +228,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   };
 
   const handleUpdatePart = (sectionId: string, partId: string, field: string, value: any) => {
+    if (readOnly) return;
     const updatedSections = weekData.sections.map((section: any) => {
       if (section.id !== sectionId) return section;
       return {
@@ -237,6 +240,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   };
 
   const handleAssignClick = (part: any, role: string) => {
+    if (readOnly) return;
     setSelectedPart({ ...part, roleTarget: role });
     setIsModalOpen(true);
   };
@@ -542,37 +546,41 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
             <Button size="sm" variant="ghost" onClick={onJumpToCurrentWeek} className="hidden sm:flex text-gray-600 hover:bg-gray-100" title="Voltar para semana atual">
               <Calendar size={20} />
             </Button>
-            <Button size="sm" variant="primary" onClick={handleSave} disabled={isSaving} className="hidden sm:flex">
-              {isSaving ? 'Salvando...' : <><Save size={16} /> Salvar</>}
-            </Button>
-
-            <div className="relative">
-              <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-600 hover:bg-gray-100">
-                <MoreVertical size={20} />
+            {!readOnly && (
+              <Button size="sm" variant="primary" onClick={handleSave} disabled={isSaving} className="hidden sm:flex">
+                {isSaving ? 'Salvando...' : <><Save size={16} /> Salvar</>}
               </Button>
+            )}
 
-              {isMenuOpen && (
-                <div className="absolute right-0 top-10 w-64 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-30">
-                  <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-start gap-3" onClick={handleToggleWeekCanceled}>
-                    <div className={`mt-0.5 w-5 h-5 border-2 rounded flex items-center justify-center ${weekData.isCanceled ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`}>
-                      {weekData.isCanceled && <CheckCircle size={14} className="fill-white text-blue-600" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-gray-800">Não haverá reunião</span>
-                        <div className="group relative">
-                          <Info size={14} className="text-gray-400 hover:text-blue-500" />
-                          <div className="absolute right-0 top-6 w-56 p-2 bg-gray-800 text-white text-xs rounded hidden group-hover:block z-40 shadow-lg">
-                            Utilize esta opção quando eventos especiais cancelam a reunião do meio de semana.
+            {!readOnly && (
+              <div className="relative">
+                <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-600 hover:bg-gray-100">
+                  <MoreVertical size={20} />
+                </Button>
+
+                {isMenuOpen && (
+                  <div className="absolute right-0 top-10 w-64 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-30">
+                    <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-start gap-3" onClick={handleToggleWeekCanceled}>
+                      <div className={`mt-0.5 w-5 h-5 border-2 rounded flex items-center justify-center ${weekData.isCanceled ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`}>
+                        {weekData.isCanceled && <CheckCircle size={14} className="fill-white text-blue-600" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-gray-800">Não haverá reunião</span>
+                          <div className="group relative">
+                            <Info size={14} className="text-gray-400 hover:text-blue-500" />
+                            <div className="absolute right-0 top-6 w-56 p-2 bg-gray-800 text-white text-xs rounded hidden group-hover:block z-40 shadow-lg">
+                              Utilize esta opção quando eventos especiais cancelam a reunião do meio de semana.
+                            </div>
                           </div>
                         </div>
+                        <p className="text-xs text-gray-500 leading-tight">Desativa a grade e notifica participantes.</p>
                       </div>
-                      <p className="text-xs text-gray-500 leading-tight">Desativa a grade e notifica participantes.</p>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -597,7 +605,10 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                 {/* President Assignee */}
                 <div className="w-full sm:min-w-[280px]">
                   {weekData.presidentId ? (
-                    <div onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer transition-colors shadow-sm">
+                    <div
+                      onClick={() => !readOnly && handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')}
+                      className={`flex items-center justify-between p-2 bg-white border border-gray-200 rounded ${!readOnly ? 'hover:border-blue-400 cursor-pointer' : ''} transition-colors shadow-sm`}
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-sm flex-shrink-0">
                           {participants.find(p => p.id === weekData.presidentId)?.name.charAt(0)}
@@ -606,53 +617,77 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                           {participants.find(p => p.id === weekData.presidentId)?.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'president', partId: 'president', role: 'president' })} className="text-gray-400 hover:text-red-500 p-1"><XCircle size={18} /></button>
-                        <StatusEditMenu
-                          variant="circle"
-                          status={weekData.presidentStatus}
-                          onChange={(s) => setWeekData({ ...weekData, presidentStatus: s })}
-                        />
-                      </div>
+                      {!readOnly && (
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'president', partId: 'president', role: 'president' })} className="text-gray-400 hover:text-red-500 p-1"><XCircle size={18} /></button>
+                          <StatusEditMenu
+                            variant="circle"
+                            status={weekData.presidentStatus}
+                            onChange={(s) => setWeekData({ ...weekData, presidentStatus: s })}
+                            disabled={readOnly}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
-                      + Designar Presidente
-                    </button>
+                    readOnly ? (
+                      <div className="w-full flex items-center justify-center gap-2 text-sm text-gray-400 border border-dashed border-gray-200 rounded p-2">
+                        <span className="italic">Não designado</span>
+                      </div>
+                    ) : (
+                      <button onClick={() => handleAssignClick({ id: 'president', title: 'Presidente', templateId: 'president' }, 'main')} className="w-full flex items-center justify-center gap-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded p-2 hover:bg-blue-50 transition-colors">
+                        + Designar Presidente
+                      </button>
+                    )
                   )}
                 </div>
 
                 {/* Opening Prayer */}
                 <div className="w-full sm:min-w-[280px]">
                   {weekData.openingPrayerId ? (
-                    <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
+                    <div
+                      onClick={() => !readOnly && handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')}
+                      className={`flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded ${!readOnly ? 'hover:border-blue-400 cursor-pointer' : ''}`}
+                    >
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-gray-500 flex-shrink-0">Oração Inicial:</span>
                         <span className="text-sm text-gray-700 whitespace-nowrap">
                           {participants.find(p => p.id === weekData.openingPrayerId)?.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'openingPrayer', partId: 'openingPrayer', role: 'openingPrayer' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
-                        {weekData.openingPrayerId !== weekData.presidentId && (
-                          <StatusEditMenu
-                            variant="circle"
-                            status={weekData.openingPrayerStatus}
-                            onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
-                          />
-                        )}
-                      </div>
+                      {!readOnly && (
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'openingPrayer', partId: 'openingPrayer', role: 'openingPrayer' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
+                          {weekData.openingPrayerId !== weekData.presidentId && (
+                            <StatusEditMenu
+                              variant="circle"
+                              status={weekData.openingPrayerStatus}
+                              onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
+                              disabled={readOnly}
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="w-full flex items-center justify-between bg-gray-50 rounded px-2 py-2 border border-transparent hover:border-gray-200 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-2 w-full">
-                        <span className="text-gray-400 text-sm font-medium whitespace-nowrap flex-shrink-0">Oração Inicial:</span>
-                        <div className="flex items-center gap-2 text-gray-400 text-sm px-3 py-1.5 border border-dashed rounded-lg hover:bg-gray-100 w-full bg-white whitespace-nowrap">
-                          <Plus size={16} className="flex-shrink-0" />
-                          <span>Designar Oração</span>
+                    readOnly ? (
+                      <div className="w-full flex items-center justify-between bg-gray-50 rounded px-2 py-2 border border-transparent">
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="text-gray-400 text-sm font-medium whitespace-nowrap flex-shrink-0">Oração Inicial:</span>
+                          <span className="text-gray-400 text-sm italic">Pendente</span>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div onClick={() => handleAssignClick({ id: 'openingPrayer', title: 'Oração Inicial', role: 'openingPrayer' }, 'openingPrayer')} className="w-full flex items-center justify-between bg-gray-50 rounded px-2 py-2 border border-transparent hover:border-gray-200 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="text-gray-400 text-sm font-medium whitespace-nowrap flex-shrink-0">Oração Inicial:</span>
+                          <div className="flex items-center gap-2 text-gray-400 text-sm px-3 py-1.5 border border-dashed rounded-lg hover:bg-gray-100 w-full bg-white whitespace-nowrap">
+                            <Plus size={16} className="flex-shrink-0" />
+                            <span>Designar Oração</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
                   )}
                 </div>
               </div>
@@ -673,7 +708,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                       {section.title}
                     </div>
 
-                    {section.allowAdd && (
+                    {!readOnly && section.allowAdd && (
                       <div className="relative">
                         <button onClick={() => setActiveAddMenu(activeAddMenu === section.id ? null : section.id)} className="bg-white/20 hover:bg-white/30 p-1 rounded transition-colors">
                           <Plus size={20} />
@@ -696,7 +731,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                     {section.parts.map((part: any) => {
                       const isClosingPrayer = part.id.includes('n_prayer') || part.title === 'Oração Final';
                       const isBibleStudy = part.id.includes('n2-') || part.title.includes('Estudo');
-                      const isDraggable = (section.id === 'fsm' || (section.id === 'nvc' && !isClosingPrayer && !isBibleStudy));
+                      const isDraggable = !readOnly && (section.id === 'fsm' || (section.id === 'nvc' && !isClosingPrayer && !isBibleStudy));
                       const isFixedPart = isClosingPrayer || isBibleStudy;
 
                       return (
@@ -710,7 +745,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                           onDrop={(e) => handleDrop(e, part.id, section.id)}
                         >
                           {/* Botão de Excluir - Visível só no Hover, e apenas para partes não fixas */}
-                          {section.allowAdd && !isFixedPart && (
+                          {!readOnly && section.allowAdd && !isFixedPart && (
                             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <button
                                 onClick={(e) => {
@@ -739,15 +774,27 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                                     {partNumbers.get(part.id)}
                                   </div>
                                 )}
-                                <EditableField value={part.title} onChange={(val) => handleUpdatePart(section.id, part.id, 'title', val)} className="font-bold text-gray-800 truncate" />
+                                {readOnly ? (
+                                  <div className="font-bold text-gray-800 truncate">{part.title}</div>
+                                ) : (
+                                  <EditableField value={part.title} onChange={(val) => handleUpdatePart(section.id, part.id, 'title', val)} className="font-bold text-gray-800 truncate" />
+                                )}
                                 {part.hasTime !== false && (
-                                  <EditableField value={part.time} onChange={(val) => handleUpdatePart(section.id, part.id, 'time', val)} className="text-xs bg-gray-100 text-gray-600 rounded flex-shrink-0" />
+                                  readOnly ? (
+                                    <span className="text-xs bg-gray-100 text-gray-600 rounded px-1">{part.time}</span>
+                                  ) : (
+                                    <EditableField value={part.time} onChange={(val) => handleUpdatePart(section.id, part.id, 'time', val)} className="text-xs bg-gray-100 text-gray-600 rounded flex-shrink-0" />
+                                  )
                                 )}
                               </div>
 
                               {part.hasObservation && (
                                 <div className="mb-2 max-w-md">
-                                  <EditableDescription value={part.observation} onChange={(val) => handleUpdatePart(section.id, part.id, 'observation', val)} />
+                                  {readOnly ? (
+                                    part.observation ? <p className="text-gray-600 text-sm italic">{part.observation}</p> : null
+                                  ) : (
+                                    <EditableDescription value={part.observation} onChange={(val) => handleUpdatePart(section.id, part.id, 'observation', val)} />
+                                  )}
                                 </div>
                               )}
 
@@ -758,7 +805,10 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
 
                             <div className="flex flex-col gap-2 min-w-[200px] flex-shrink-0">
                               {part.assignedTo ? (
-                                <div onClick={() => handleAssignClick(part, 'main')} className={`flex items-center justify-between p-2 bg-white border border-gray-200 rounded hover:border-blue-400 cursor-pointer`}>
+                                <div
+                                  onClick={() => !readOnly && handleAssignClick(part, 'main')}
+                                  className={`flex items-center justify-between p-2 bg-white border border-gray-200 rounded ${!readOnly ? 'hover:border-blue-400 cursor-pointer' : ''}`}
+                                >
                                   <div className="flex items-center gap-2">
                                     <div className={`w-6 h-6 text-xs rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 flex-shrink-0`}>
                                       {participants.find(p => p.id === part.assignedTo)?.name.charAt(0)}
@@ -767,39 +817,56 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                                       {participants.find(p => p.id === part.assignedTo)?.name}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                    <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'titular' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={16} /></button>
-                                    <StatusEditMenu
-                                      variant="circle"
-                                      status={part.status}
-                                      onChange={(s) => handleUpdatePart(section.id, part.id, 'status', s)}
-                                    />
-                                  </div>
+                                  {!readOnly && (
+                                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                      <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'titular' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={16} /></button>
+                                      <StatusEditMenu
+                                        variant="circle"
+                                        status={part.status}
+                                        onChange={(s) => handleUpdatePart(section.id, part.id, 'status', s)}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
-                                <button onClick={() => handleAssignClick(part, 'main')} className="flex items-center justify-between p-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded hover:bg-blue-50">
-                                  <span>+ Designar {part.requiresAssistant || part.requiresReader ? 'Titular' : 'Participante'}</span>
-                                </button>
+                                readOnly ? (
+                                  <div className="flex items-center justify-between p-2 text-sm text-gray-400 border border-dashed border-gray-200 rounded">
+                                    <span className="italic">Não designado</span>
+                                  </div>
+                                ) : (
+                                  <button onClick={() => handleAssignClick(part, 'main')} className="flex items-center justify-between p-2 text-sm text-blue-600 border border-dashed border-blue-300 rounded hover:bg-blue-50">
+                                    <span>+ Designar {part.requiresAssistant || part.requiresReader ? 'Titular' : 'Participante'}</span>
+                                  </button>
+                                )
                               )}
 
 
                               {part.requiresAssistant && (
                                 <div className="ml-4 border-l-2 border-gray-200 pl-2">
                                   {part.assistantId ? (
-                                    <div onClick={() => handleAssignClick(part, 'assistant')} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded hover:border-blue-400 cursor-pointer">
+                                    <div
+                                      onClick={() => !readOnly && handleAssignClick(part, 'assistant')}
+                                      className={`flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded ${!readOnly ? 'hover:border-blue-400 cursor-pointer' : ''}`}
+                                    >
                                       <div className="flex items-center gap-2">
                                         <span className="text-xs font-bold text-green-600 flex-shrink-0">Ajudante:</span>
                                         <span className="text-sm text-gray-700 whitespace-nowrap">{participants.find(p => p.id === part.assistantId)?.name}</span>
                                       </div>
-                                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'assistant' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
-                                        <StatusEditMenu variant="circle" status={part.assistantStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'assistantStatus', s)} />
-                                      </div>
+                                      {!readOnly && (
+                                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                          <button onClick={() => setShowClearConfirm({ isOpen: true, type: 'assignment', partId: part.id, role: 'assistant' })} className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"><XCircle size={14} /></button>
+                                          <StatusEditMenu variant="circle" status={part.assistantStatus} onChange={(s) => handleUpdatePart(section.id, part.id, 'assistantStatus', s)} />
+                                        </div>
+                                      )}
                                     </div>
                                   ) : (
-                                    <button onClick={() => handleAssignClick(part, 'assistant')} className="w-full text-left text-xs text-green-600 hover:underline pl-2">
-                                      + Ajudante
-                                    </button>
+                                    readOnly ? (
+                                      <div className="w-full text-left text-xs text-gray-400 pl-2 italic">Sem ajudante</div>
+                                    ) : (
+                                      <button onClick={() => handleAssignClick(part, 'assistant')} className="w-full text-left text-xs text-green-600 hover:underline pl-2">
+                                        + Designar Ajudante
+                                      </button>
+                                    )
                                   )}
                                 </div>
                               )}

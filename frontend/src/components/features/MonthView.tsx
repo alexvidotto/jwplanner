@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ArrowLeft, Printer, Filter } from 'lucide-react';
 import { useWeeks, useUpdateWeek } from '../../hooks/useWeeks';
 import { useParticipants } from '../../hooks/useParticipants';
@@ -30,7 +30,7 @@ export const MonthView = ({ onBack }: MonthViewProps) => {
     return weeks.map(w => {
         const getParticipantName = (id: string | null) => {
              if (!id) return null;
-             return participants?.find(p => p.id === id)?.nome || '---';
+          return participants?.find((p: any) => p.id === id)?.nome || '---';
         };
 
         const enrichPart = (part: any) => ({

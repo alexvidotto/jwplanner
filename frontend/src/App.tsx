@@ -20,7 +20,7 @@ import { ReportsView } from './components/features/ReportsView';
 import { ConfirmationPage } from './pages/ConfirmationPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 
 const queryClient = new QueryClient();
@@ -315,8 +315,12 @@ const AppContent = () => {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Navigate to="/planner" replace />} />
 
-          {/* Admin only */}
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+
+          {/* Planner - Accessible by everyone, but read-only for USER/ASSISTENTE/PRESIDENTE? (Wait, Presidente can edit? Plan says "Admins: Can drag, drop, edit, save. Others: Can ONLY view") 
+              Plan: "Pass readOnly prop to AdminPlanner based on role (True if not ADMIN)."
+              So only ADMIN can edit.
+          */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PRESIDENTE', 'ASSISTENTE', 'USER']} />}>
             <Route path="/planner" element={
               activeWeek ? (
                 <AdminPlanner
@@ -329,9 +333,14 @@ const AppContent = () => {
                   participants={participants}
                   partTemplates={parts}
                   onSave={handleSaveWeek}
+                  readOnly={useAuth().userProfile?.role !== 'ADMIN'}
                 />
               ) : <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>
             } />
+          </Route>
+
+          {/* Admin only - Other pages */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
             <Route path="/participants" element={<AdminParticipantsView participants={participants} setParticipants={setParticipants} onBack={() => navigate('/')} />} />
             <Route path="/parts" element={<AdminPartsView parts={parts} setParts={setParts} onBack={() => navigate('/')} />} />
             <Route path="/skills" element={<AdminSkillsView participants={participants} setParticipants={setParticipants} parts={parts} onBack={() => navigate('/')} />} />

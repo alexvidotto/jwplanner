@@ -1,5 +1,5 @@
 import { useIsFetching, useIsMutating } from '@tanstack/react-query';
-import { Loader2, Server } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export const LoadingSpinner = () => {
   const isFetching = useIsFetching();

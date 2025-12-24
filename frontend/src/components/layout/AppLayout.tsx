@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Menu, Shield } from 'lucide-react';
+import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Shield } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';

@@ -4,7 +4,7 @@ import { UserPlus, Copy, Shield, Check, Key, Search, X } from 'lucide-react';
 
 export const AdminUsersPage = () => {
   const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  /* const [loading, setLoading] = useState(true); */
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -23,8 +23,6 @@ export const AdminUsersPage = () => {
       setUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users', error);
-    } finally {
-      setLoading(false);
     }
   };
 

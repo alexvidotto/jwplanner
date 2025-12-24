@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Check, X, Clock, User, ChevronLeft, AlertCircle, MoreVertical, RotateCcw, Users } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Calendar, Check, X, Clock, User, AlertCircle, MoreVertical, RotateCcw, Users } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
 interface Assignment {
@@ -27,7 +27,7 @@ interface Assignment {
 
 export const ConfirmationPage = () => {
   const { assignmentId, personId } = useParams();
-  const navigate = useNavigate();
+  /* const navigate = useNavigate(); */
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +138,7 @@ export const ConfirmationPage = () => {
   const isDeclined = myStatus === 'RECUSADO';
 
 
-  const isStudentPart = assignment.parteTemplate.secao === 'fsm' || assignment.parteTemplate.secao === 'vida_crista'; // Assuming these are student parts, mostly FSM
+
 
   // Theme Configuration based on Role
   const theme = {

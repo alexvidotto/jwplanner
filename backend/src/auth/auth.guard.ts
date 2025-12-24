@@ -13,16 +13,6 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const token = request.headers.authorization?.split('Bearer ')[1];
 
-    if (process.env.USE_MOCK_AUTH === 'true') {
-      if (token === 'dev-token') {
-        const devUser = await this.prisma.participante.findFirst({
-          where: { email: 'dev@test.com' }
-        });
-        request.user = devUser || { uid: 'dev-user', email: 'dev@test.com', role: 'ADMIN' };
-        return true;
-      }
-    }
-
     if (!token) {
       throw new UnauthorizedException('No token provided');
     }

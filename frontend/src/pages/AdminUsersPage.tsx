@@ -14,6 +14,7 @@ export const AdminUsersPage = () => {
   const [copied, setCopied] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [confirmingUser, setConfirmingUser] = useState<any | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -31,6 +32,7 @@ export const AdminUsersPage = () => {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    setIsSubmitting(true);
 
     try {
       await api.put(`/users/${editingUser.id}`, {
@@ -43,6 +45,8 @@ export const AdminUsersPage = () => {
     } catch (error) {
       console.error('Failed to update user', error);
       alert('Erro ao atualizar usuário');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -53,6 +57,7 @@ export const AdminUsersPage = () => {
   const confirmCredentialGeneration = async () => {
     if (!confirmingUser) return;
     const user = confirmingUser;
+    setIsSubmitting(true);
 
     try {
       const response = await api.post(`/users/${user.id}/credentials`, {});
@@ -70,6 +75,8 @@ export const AdminUsersPage = () => {
       console.error('Failed to generate credentials', error);
       alert('Erro ao gerar credenciais: ' + (error.response?.data?.message || 'Erro desconhecido'));
       setConfirmingUser(null);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -87,6 +94,7 @@ export const AdminUsersPage = () => {
   const confirmResetPassword = async () => {
     if (!confirmingUser) return;
     const user = confirmingUser;
+    setIsSubmitting(true);
 
     try {
       const response = await api.post(`/users/${user.id}/reset-password`, {});
@@ -100,12 +108,15 @@ export const AdminUsersPage = () => {
       console.error('Failed to reset password', error);
       alert('Erro ao redefinir senha: ' + (error.response?.data?.message || 'Erro desconhecido'));
       setConfirmingUser(null);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const confirmDeleteUser = async () => {
     if (!confirmingUser) return;
     const user = confirmingUser;
+    setIsSubmitting(true);
 
     try {
       await api.delete(`/users/${user.id}`);
@@ -115,6 +126,8 @@ export const AdminUsersPage = () => {
       console.error('Failed to delete user', error);
       alert('Erro ao excluir usuário: ' + (error.response?.data?.message || 'Erro desconhecido'));
       setConfirmingUser(null);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -214,8 +227,10 @@ export const AdminUsersPage = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {editingUser?.id === user.id ? (
                       <div className="flex gap-2">
-                        <button onClick={handleUpdateUser} className="text-green-600 hover:text-green-800 font-medium">Salvar</button>
-                        <button onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600">Cancelar</button>
+                        <button disabled={isSubmitting} onClick={handleUpdateUser} className="text-green-600 hover:text-green-800 font-medium disabled:opacity-50">
+                          {isSubmitting ? '...' : 'Salvar'}
+                        </button>
+                        <button disabled={isSubmitting} onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600 disabled:opacity-50">Cancelar</button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-3">
@@ -365,13 +380,16 @@ export const AdminUsersPage = () => {
                 Cancelar
               </button>
               <button
+                disabled={isSubmitting}
                 onClick={confirmingUser.action === 'RESET' ? confirmResetPassword :
                   confirmingUser.action === 'DELETE' ? confirmDeleteUser : confirmCredentialGeneration}
-                className={`px-3 py-2 text-sm text-white rounded-lg font-medium ${(confirmingUser.action === 'RESET' || confirmingUser.action === 'DELETE') ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+                className={`px-3 py-2 text-sm text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(confirmingUser.action === 'RESET' || confirmingUser.action === 'DELETE') ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
                   }`}
               >
-                {confirmingUser.action === 'RESET' ? 'Redefinir' :
-                  confirmingUser.action === 'DELETE' ? 'Excluir' : 'Sim, Gerar'}
+                {isSubmitting ? 'Processando...' : (
+                  confirmingUser.action === 'RESET' ? 'Redefinir' :
+                    confirmingUser.action === 'DELETE' ? 'Excluir' : 'Sim, Gerar'
+                )}
               </button>
             </div>
           </div>

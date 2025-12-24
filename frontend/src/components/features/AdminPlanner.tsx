@@ -526,13 +526,14 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
             <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
           </div>
 
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-4 w-max">
+          <div className="flex items-center gap-4 w-max md:absolute md:left-1/2 md:top-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2">
             <button onClick={() => onNavigateWeek(-1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
               <ChevronLeft size={20} />
             </button>
             <div className="text-center group cursor-pointer" onClick={() => setIsPickerOpen(true)} title="Selecionar Data">
               <h1 className="font-bold text-gray-800 text-lg leading-tight flex items-center justify-center gap-2">
-                Planejamento
+                <span className="hidden xs:inline">Planejamento</span>
+                <span className="xs:hidden">Semana</span>
                 <Calendar size={16} className="text-blue-500" />
               </h1>
               <p className="text-xs text-gray-500 whitespace-nowrap">{weekData.dateLabel}</p>
@@ -547,8 +548,9 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
               <Calendar size={20} />
             </Button>
             {!readOnly && (
-              <Button size="sm" variant="primary" onClick={handleSave} disabled={isSaving} className="hidden sm:flex">
-                {isSaving ? 'Salvando...' : <><Save size={16} /> Salvar</>}
+              <Button size="sm" variant="primary" onClick={handleSave} disabled={isSaving} className="flex">
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                <span className="hidden sm:inline ml-2">{isSaving ? 'Salvando...' : 'Salvar'}</span>
               </Button>
             )}
 
@@ -961,8 +963,8 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       />
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white rounded-t-xl sm:rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh] animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
             <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
               <h3 className="font-semibold text-gray-800">Selecionar Participante</h3>
               <button onClick={() => { setIsModalOpen(false); setSearchTerm(''); }}><XCircle size={20} className="text-gray-400" /></button>
@@ -1001,7 +1003,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                 />
               </div>
             </div>
-            <div className="overflow-y-auto flex-1 p-2 space-y-1">
+            <div className="overflow-y-auto flex-1 p-2 space-y-1 pb-8">
               {isLoadingSuggestions ? (
                 <div className="flex flex-col items-center justify-center p-8 text-gray-400">
                   <Loader2 size={32} className="animate-spin mb-2" />

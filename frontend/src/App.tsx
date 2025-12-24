@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { AdminParticipantsView } from './components/features/AdminParticipantsView';
@@ -14,6 +14,7 @@ import { useWeekByDate, useCreateWeek, useUpdateWeek } from './hooks/useWeeks';
 import { transformWeekToFrontend, generateVirtualWeek, transformParticipantsToFrontend, transformPartsToFrontend } from './lib/transformers';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { parseTime } from './lib/utils';
+import { api } from './lib/api';
 import { MonthView } from './components/features/MonthView';
 import { TrackingView } from './components/features/TrackingView';
 import { ReportsView } from './components/features/ReportsView';
@@ -37,6 +38,7 @@ const getNextMonday = (date: Date) => {
 const AppContent = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
 
   // API Hooks
   const { data: participantsData, isLoading: isLoadingParticipants } = useParticipants();
@@ -133,8 +135,12 @@ const AppContent = () => {
         const newWeek = await createWeek({ date: currentDate });
         savedWeekId = newWeek.id;
 
+        // Critical: Update activeWeek ID immediately to prevent race conditions (duplicate creates)
+        setActiveWeek((prev: any) => prev ? { ...prev, id: newWeek.id } : prev);
+
         const updates: any[] = [];
         const usedMatchIds = new Set<string>();
+        const idMap = new Map<string, string>(); // Virtual -> Real
 
         // Handle Opening Prayer
         const openingPrayerTemplateId = weekToSave.openingPrayerTemplateId;
@@ -147,6 +153,9 @@ const AppContent = () => {
         );
 
         if (prayerMatch) {
+          if (weekToSave.openingPrayerPartId && (weekToSave.openingPrayerPartId.startsWith('virtual-') || weekToSave.openingPrayerPartId.startsWith('new-'))) {
+            idMap.set(weekToSave.openingPrayerPartId, prayerMatch.id);
+          }
           if (openingPrayerId) {
             updates.push({
               id: prayerMatch.id,
@@ -178,6 +187,9 @@ const AppContent = () => {
               ordem: orderCounter++
             });
             usedMatchIds.add(match.id);
+            if (p.id.startsWith('virtual-') || p.id.startsWith('new-')) {
+              idMap.set(p.id, match.id);
+            }
           } else {
             // Treat as NEW added part
             updates.push({
@@ -204,6 +216,30 @@ const AppContent = () => {
               presidentStatus: weekToSave.presidentStatus,
               tipo: weekToSave.isCanceled ? 'NO_MEET' : 'NORMAL'
             }
+          });
+
+          // Apply ID Map to activeWeek immediately
+          setActiveWeek((prev: any) => {
+            if (!prev) return prev;
+            const updated = { ...prev };
+
+            // Update Opening Prayer Part ID
+            if (updated.openingPrayerPartId && idMap.has(updated.openingPrayerPartId)) {
+              updated.openingPrayerPartId = idMap.get(updated.openingPrayerPartId);
+            }
+
+            // Update Parts
+            updated.sections = updated.sections.map((s: any) => ({
+              ...s,
+              parts: s.parts.map((p: any) => {
+                if (idMap.has(p.id)) {
+                  return { ...p, id: idMap.get(p.id) };
+                }
+                return p;
+              })
+            }));
+
+            return updated;
           });
         }
       } else {
@@ -267,39 +303,137 @@ const AppContent = () => {
   const handleStatusChange = async (assignmentId: string, newStatus: string) => {
     if (!activeWeek) return;
 
-    const weekCopy = JSON.parse(JSON.stringify(activeWeek));
-    let changeMade = false;
+    // Optimistic Update
+    const previousWeek = JSON.parse(JSON.stringify(activeWeek));
+    let personIdUpdate: string | null = null;
+    let assignmentRealIdForCache: string | null = null;
 
-    // President
-    if (assignmentId === 'president') {
-      weekCopy.presidentStatus = newStatus;
-      changeMade = true;
+    const newWeekData = { ...activeWeek };
+
+    // Helper to update parts
+    const updatePartStatus = (part: any) => {
+      if (assignmentId === part.id) {
+        part.status = newStatus;
+        personIdUpdate = part.assignedTo;
+        assignmentRealIdForCache = part.id;
+      } else if (assignmentId === `${part.id}-ass`) {
+        part.assistantStatus = newStatus;
+        personIdUpdate = part.assistantId;
+        assignmentRealIdForCache = part.id;
+      } else if (assignmentId === `${part.id}-read`) {
+        part.readerStatus = newStatus;
+        personIdUpdate = part.readerId;
+        assignmentRealIdForCache = part.id;
+      }
+    };
+
+    if (assignmentId === 'president' || assignmentId.endsWith('-president')) {
+      newWeekData.presidentStatus = newStatus;
+      personIdUpdate = newWeekData.presidentId;
+    } else if (assignmentId === 'openingPrayer' || assignmentId.endsWith('-prayer') || assignmentId === activeWeek.openingPrayerPartId) {
+      newWeekData.openingPrayerStatus = newStatus;
+      personIdUpdate = newWeekData.openingPrayerId;
+    } else {
+      newWeekData.sections = newWeekData.sections.map((section: any) => ({
+        ...section,
+        parts: section.parts.map((p: any) => {
+          const newP = { ...p };
+          updatePartStatus(newP);
+          return newP;
+        })
+      }));
     }
-    // Opening Prayer
-    else if (assignmentId === 'openingPrayer') {
-      weekCopy.openingPrayerStatus = newStatus;
-      changeMade = true;
-    }
-    else {
-      // Check sections
-      for (const section of weekCopy.sections) {
-        for (const part of section.parts) {
-          if (assignmentId === part.id) {
-            part.status = newStatus;
-            changeMade = true;
-          } else if (assignmentId === `${part.id}-ass`) {
-            part.assistantStatus = newStatus;
-            changeMade = true;
-          } else if (assignmentId === `${part.id}-read`) {
-            part.readerStatus = newStatus;
-            changeMade = true;
+
+    // Apply Optimistic Update to Local State
+    setActiveWeek(newWeekData);
+
+    // Also Update React Query Cache to prevent revert on background refetch
+    const queryKey = ['week', currentDate.toISOString()];
+    const previousCache = queryClient.getQueryData(queryKey);
+
+    if (previousCache) {
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        const newCache = JSON.parse(JSON.stringify(old)); // Deep clone to be safe
+
+        // Update Week-level fields (President/Prayer)
+        if (assignmentId === 'president' || assignmentId.endsWith('-president')) {
+          newCache.statusPresidente = newStatus;
+        } else if (assignmentId === 'openingPrayer' || assignmentId.endsWith('-prayer') || assignmentId === activeWeek.openingPrayerPartId) {
+          newCache.statusOracao = newStatus;
+          // Also update Designacao if exists in cache
+          if (newCache.designacoes) {
+            const prayerPart = newCache.designacoes.find((d: any) => d.tituloDoTema === 'Oração Inicial' || (d.parteTemplate && d.parteTemplate.titulo === 'Oração Inicial'));
+            if (prayerPart) prayerPart.status = newStatus;
           }
         }
-      }
+
+        // Update Designations (Parts)
+        if (assignmentRealIdForCache && newCache.designacoes) {
+          newCache.designacoes = newCache.designacoes.map((d: any) => {
+            if (d.id === assignmentRealIdForCache) {
+              if (assignmentId === d.id) d.status = newStatus;
+              else if (assignmentId === `${d.id}-ass`) d.statusAjudante = newStatus;
+              else if (assignmentId === `${d.id}-read`) d.statusAjudante = newStatus; // Correct field for Reader per transformers.ts
+            }
+            return d;
+          });
+        }
+        return newCache;
+      });
     }
 
-    if (changeMade) {
-      await handleSaveWeek(weekCopy);
+    try {
+      // Determine real ID for API call
+      let realId = assignmentId;
+      let targetPersonId = personIdUpdate;
+
+      // Map special IDs or Suffixes
+      if (assignmentId === 'president' || assignmentId.endsWith('-president')) {
+        // Use granular updateWeek for President Status without full save/refetch
+        // Using api.put directly to avoid query invalidation from useUpdateWeek
+        await api.put(`/planning/weeks/${activeWeek.id}`, {
+          presidentStatus: newStatus
+        });
+        return;
+      }
+
+      if (assignmentId === 'openingPrayer' || assignmentId.endsWith('-prayer') || (activeWeek.openingPrayerPartId && assignmentId === activeWeek.openingPrayerPartId)) {
+        // Use granular updateWeek for Prayer Status
+        // Using api.put directly to avoid query invalidation from useUpdateWeek
+        await api.put(`/planning/weeks/${activeWeek.id}`, {
+          openingPrayerStatus: newStatus
+        });
+        return;
+      }
+
+      // Stripping suffixes for API call
+      if (assignmentId.endsWith('-ass')) {
+        realId = assignmentId.replace('-ass', '');
+      } else if (assignmentId.endsWith('-read')) {
+        realId = assignmentId.replace('-read', '');
+      }
+
+      // Check if realId is a valid UUID (not new-...)
+      if (realId.startsWith('new-') || realId.startsWith('virtual-')) {
+        await handleSaveWeek(newWeekData);
+        return;
+      }
+
+      // Call Granular Endpoint (Optimized)
+      await api.patch(`/planning/assignments/${realId}/status`, {
+        status: newStatus,
+        personId: targetPersonId
+      });
+
+    } catch (error) {
+      console.error("Failed to update status", error);
+      // Revert Optimistic Update
+      setActiveWeek(previousWeek);
+      if (previousCache) {
+        queryClient.setQueryData(queryKey, previousCache);
+      }
+      alert("Erro ao atualizar status. Tente novamente.");
     }
   };
 

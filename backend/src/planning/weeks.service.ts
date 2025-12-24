@@ -352,7 +352,7 @@ export class WeeksService {
     const weekDataToUpdate: any = {};
     if (data.presidentId !== undefined) weekDataToUpdate.presidenteId = data.presidentId;
     if (data.presidentStatus !== undefined) weekDataToUpdate.statusPresidente = data.presidentStatus;
-    // if (data.openingPrayerStatus !== undefined) weekDataToUpdate.statusOracao = data.openingPrayerStatus; // Optional if we use direct field
+    if (data.openingPrayerStatus !== undefined) weekDataToUpdate.statusOracao = data.openingPrayerStatus;
     if (data.tipo !== undefined) weekDataToUpdate.tipo = data.tipo;
     if (data.descricao !== undefined) weekDataToUpdate.descricao = data.descricao;
 
@@ -364,7 +364,25 @@ export class WeeksService {
         })
       );
     }
-
+    // Sync statusOracao with Designacao if exists
+    if (data.openingPrayerStatus !== undefined) {
+      const prayerDesignation = await this.prisma.designacao.findFirst({
+        where: {
+          semanaId: id,
+          parteTemplate: {
+            titulo: 'Oração Inicial'
+          }
+        }
+      });
+      if (prayerDesignation) {
+        transaction.push(
+          this.prisma.designacao.update({
+            where: { id: prayerDesignation.id },
+            data: { status: data.openingPrayerStatus }
+          })
+        );
+      }
+    }
     // Update Designations
     // We expect data.designacoes to be an array of updates
     // Update Designations with Sync Logic (Delete missing, Create new, Update existing)

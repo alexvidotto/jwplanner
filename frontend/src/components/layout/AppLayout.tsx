@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Shield } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Shield, MoreHorizontal } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -57,21 +59,12 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   const allNavItems = [
     { to: '/planner', icon: Calendar, label: 'Semanas', roles: ['USER', 'ASSISTENTE', 'PRESIDENTE', 'ADMIN'] },
-    // Publicadores (Users) only for Admin
-    { to: '/participants', icon: Users, label: 'Publicadores', roles: ['ADMIN'] }, // Or maybe Presidente? Plan says Admin only for Management, but maybe View for Presidente? let's stick to Admin for now or check plan.
-    // Plan says: Admin: Full, User Management. Presidente: View Reports, Tracking. Assistente: Tracking.
-    // So 'Publicadores' (Participants) page might be Admin only? Or does it show list of people? 
-    // The previous code had it for everyone. Let's restrict it to Admin/Presidente maybe?
-    // Actually, let's look at page content. It's usually a list of publishers. 
-    // For now, let's implement strict separation. 
-    // Admin: All. 
-    // Presidente: Reports, Tracking. 
-    // Assistente: Tracking.
-    // User: Weeks (planner).
-    { to: '/parts', icon: List, label: 'Partes', roles: ['ADMIN'] }, // Manage parts?
-    { to: '/skills', icon: Grid, label: 'Matriz', roles: ['ADMIN'] }, // Matrix?
-    { to: '/tracking', icon: MessageCircle, label: 'Acompanhamento', roles: ['ADMIN', 'PRESIDENTE', 'ASSISTENTE'] },
+    { to: '/tracking', icon: MessageCircle, label: 'Status', roles: ['ADMIN', 'PRESIDENTE', 'ASSISTENTE'] },
     { to: '/reports', icon: BarChart3, label: 'Relatórios', roles: ['ADMIN', 'PRESIDENTE'] },
+    { to: '/skills', icon: Grid, label: 'Matriz', roles: ['ADMIN'] },
+    // Grouped in Menu for mobile (index >= 4)
+    { to: '/participants', icon: Users, label: 'Publicadores', roles: ['ADMIN'] },
+    { to: '/parts', icon: List, label: 'Partes', roles: ['ADMIN'] },
     { to: '/admin/users', icon: Shield, label: 'Usuários', roles: ['ADMIN'] },
   ];
 
@@ -203,24 +196,91 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Mobile Bottom Navigation */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
           <div className="flex justify-around items-center px-2 py-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={getBottomLinkClass}
-              >
-                {({ isActive }) => (
-                  <>
-                    <div className={`p-1 rounded-full transition-all ${isActive ? 'bg-blue-50' : 'bg-transparent'}`}>
-                      <item.icon size={20} className={isActive ? 'text-blue-600' : 'text-gray-400'} strokeWidth={isActive ? 2.5 : 2} />
-                    </div>
-                    <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
+            {/* Logic: If <= 5 items, show all. If > 5, show 4 + More button */}
+            {navItems.length <= 5 ? (
+              navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={getBottomLinkClass}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <div className={`p-1 rounded-full transition-all ${isActive ? 'bg-blue-50' : 'bg-transparent'}`}>
+                        <item.icon size={20} className={isActive ? 'text-blue-600' : 'text-gray-400'} strokeWidth={isActive ? 2.5 : 2} />
+                      </div>
+                      <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ))
+            ) : (
+              // More than 5 items: Show first 4 + More
+              <>
+                {navItems.slice(0, 4).map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={getBottomLinkClass}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <div className={`p-1 rounded-full transition-all ${isActive ? 'bg-blue-50' : 'bg-transparent'}`}>
+                          <item.icon size={20} className={isActive ? 'text-blue-600' : 'text-gray-400'} strokeWidth={isActive ? 2.5 : 2} />
+                        </div>
+                        <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+
+                {/* More Button */}
+                <button
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className={`flex flex-col items-center justify-center py-2 px-1 transition-colors ${isMobileMenuOpen ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <div className={`p-1 rounded-full transition-all ${isMobileMenuOpen ? 'bg-blue-50' : 'bg-transparent'}`}>
+                    <MoreHorizontal size={20} className={isMobileMenuOpen ? 'text-blue-600' : 'text-gray-400'} strokeWidth={isMobileMenuOpen ? 2.5 : 2} />
+                  </div>
+                  <span className="text-[10px] mt-0.5 font-medium">Menu</span>
+                </button>
+              </>
+            )}
           </div>
         </nav>
+
+        {/* Mobile Menu Drawer */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-[60] lg:hidden">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 shadow-2xl animate-in slide-in-from-bottom duration-200">
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+              <div className="grid grid-cols-4 gap-4 mb-8">
+                {/* Show remaining items */}
+                {navItems.slice(4).map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={({ isActive }) => `flex flex-col items-center justify-center gap-2 p-2 rounded-xl transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    <div className={`p-2 rounded-full ${location.pathname.startsWith(item.to) ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                      <item.icon size={24} />
+                    </div>
+                    <span className="text-xs font-medium text-center leading-tight">{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-xl"
+              >
+                Fechar
+              </button>
+              <div className="h-safe-bottom" />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

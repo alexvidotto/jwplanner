@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Calendar, Users, List, Grid, MessageCircle, ChevronRight, LogOut, BarChart3, ChevronLeft, Shield } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-export const AppLayout = () => {
+export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { userProfile, logout } = useAuth();
   const navigate = useNavigate();
@@ -197,7 +197,7 @@ export const AppLayout = () => {
         {/* Page Content Scrollable Area */}
         {/* Added pb-24 to ensure content is not hidden behind bottom nav */}
         <div className="flex-1 overflow-auto bg-gray-50 relative pb-24 lg:pb-0">
-          <Outlet />
+          {children}
         </div>
 
         {/* Mobile Bottom Navigation */}

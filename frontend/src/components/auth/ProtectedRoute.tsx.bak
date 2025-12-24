@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation, Outlet, useOutletContext } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
 
 interface ProtectedRouteProps {
@@ -9,7 +9,6 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   const { currentUser, userProfile, loading } = useAuth();
   const location = useLocation();
-  const context = useOutletContext();
 
   if (loading) {
     // Or a spinner
@@ -28,6 +27,5 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
     }
   }
 
-  return <Outlet context={context} />;
+  return <Outlet />;
 };
-

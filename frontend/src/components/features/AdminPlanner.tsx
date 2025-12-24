@@ -21,9 +21,24 @@ interface AdminPlannerProps {
   onSave?: (weekData: any) => Promise<void>;
   participants: any[];
   readOnly?: boolean;
+  isDirty?: boolean;
+  setIsDirty?: (dirty: boolean) => void;
 }
 
-export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, onJumpToCurrentWeek, onSelectDate, participants, partTemplates, onSave, readOnly = false }: AdminPlannerProps) => {
+export const AdminPlanner = ({
+  weekData,
+  setWeekData,
+  onBack,
+  onNavigateWeek,
+  onJumpToCurrentWeek,
+  onSelectDate,
+  participants,
+  partTemplates,
+  onSave,
+  readOnly = false,
+  isDirty = false,
+  setIsDirty = () => { }
+}: AdminPlannerProps) => {
   // ... existing state ...
 
   // ... render ...
@@ -57,6 +72,8 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
+
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ isVisible: true, message, type });
   };
@@ -78,6 +95,25 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       itemsRef.current[selectedIndex]?.scrollIntoView({ block: 'nearest' });
     }
   }, [selectedIndex]);
+
+  // Browser Navigation Interception (Native)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  /* Also reset blocker if we confirm manually via pendingNavigation */
+  useEffect(() => {
+    // If pendingNavigation is cleared and blocker is blocked, we might need to reset?
+    // Actually, confirm modal handles execute -> which is blocker.proceed().
+    // If Cancel -> we need to blocker.reset().
+  }, []);
 
   const totalMinutes = weekData.sections.reduce((acc: number, section: any) => {
     return acc + section.parts.reduce((pAcc: number, part: any) => {
@@ -112,6 +148,24 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
     });
     return map;
   }, [weekData.sections]);
+
+  /* Consolidated Update Helper */
+  const updateWeekDataLocal = (newData: any) => {
+    setWeekData(newData);
+    // setIsDirty(true); // Handled by setWeekData (handleUpdateWeek) in parent? 
+    // Wait, setWeekData IS handleUpdateWeek from MainLayout.
+    // And I updated MainLayout to set isDirty=true in handleUpdateWeek.
+    // So I don't need to call it here explicitly unless setWeekData doesn't do it?
+    // Let's check MainLayout... yes, handleUpdateWeek sets isDirty=true.
+    // BUT AdminPlanner receives `setWeekData` prop.
+    // So calling setWeekData(newData) triggers handleUpdateWeek(newData) -> setIsDirty(true).
+    // So we are good.
+  };
+
+  // --------------------------------------------------------
+  // Navigation Blocker (Now in MainLayout)
+  // --------------------------------------------------------
+
 
   const MAX_MINUTES = 105;
   const isOverTime = totalMinutes > MAX_MINUTES;
@@ -177,6 +231,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
 
     setWeekData({ ...weekData, sections: updatedSections });
     setDraggedPart(null);
+    setIsDirty(true);
   };
 
   const handleClearAssignment = () => {
@@ -208,6 +263,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
 
     setWeekData(newWeekData);
     setShowClearConfirm(null);
+    setIsDirty(true);
     showToast("Designação removida.");
   };
 
@@ -215,6 +271,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
     setIsSaving(true);
     if (onSave) {
       await onSave(weekData);
+      setIsDirty(false);
     } else {
       setTimeout(() => { }, 800); // Fallback
     }
@@ -225,6 +282,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
   const handleToggleWeekCanceled = () => {
     setWeekData({ ...weekData, isCanceled: !weekData.isCanceled });
     setIsMenuOpen(false);
+    setIsDirty(true);
   };
 
   const handleUpdatePart = (sectionId: string, partId: string, field: string, value: any) => {
@@ -237,6 +295,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
       };
     });
     setWeekData({ ...weekData, sections: updatedSections });
+    setIsDirty(true);
   };
 
   const handleAssignClick = (part: any, role: string) => {
@@ -368,6 +427,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
     }
 
     setWeekData({ ...weekData, sections: updatedSections });
+    setIsDirty(true);
   };
 
   const handleAddPart = (sectionId: string, template: any) => {
@@ -405,6 +465,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
 
     setWeekData({ ...weekData, sections: updatedSections });
     setActiveAddMenu(null);
+    setIsDirty(true);
   };
 
   const handleRequestRemove = (sectionId: string, partId: string) => {
@@ -422,6 +483,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
     });
     setWeekData({ ...weekData, sections: updatedSections });
     setConfirmDialog({ isOpen: false, data: null });
+    setIsDirty(true);
     showToast("Parte removida.");
   };
 
@@ -518,12 +580,15 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
         currentDate={weekData.date}
         isOpen={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
-        onSelectDate={onSelectDate}
+        onSelectDate={(d) => {
+          setIsPickerOpen(false);
+          onSelectDate(d);
+        }}
       />
       <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between relative">
           <div className="flex items-center gap-3 z-10">
-            <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
+            <Button variant="ghost" size="icon" onClick={() => onBack()}><ArrowLeft size={20} /></Button>
           </div>
 
           <div className="flex items-center gap-4 w-max md:absolute md:left-1/2 md:top-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2">
@@ -548,9 +613,15 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
               <Calendar size={20} />
             </Button>
             {!readOnly && (
-              <Button size="sm" variant="primary" onClick={handleSave} disabled={isSaving} className="flex">
+              <Button
+                size="sm"
+                variant={isDirty ? "warning" : "primary"}
+                onClick={handleSave}
+                disabled={isSaving}
+                className={`flex ${isDirty ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600' : ''}`}
+              >
                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                <span className="hidden sm:inline ml-2">{isSaving ? 'Salvando...' : 'Salvar'}</span>
+                <span className="hidden sm:inline ml-2">{isSaving ? 'Salvando...' : (isDirty ? 'Salvar Alterações' : 'Salvar')}</span>
               </Button>
             )}
 
@@ -627,7 +698,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                           <StatusEditMenu
                             variant="circle"
                             status={weekData.presidentStatus}
-                            onChange={(s) => setWeekData({ ...weekData, presidentStatus: s })}
+                              onChange={(s) => updateWeekDataLocal({ ...weekData, presidentStatus: s })}
                             disabled={readOnly}
                           />
                         </div>
@@ -666,7 +737,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
                             <StatusEditMenu
                               variant="circle"
                               status={weekData.openingPrayerStatus}
-                              onChange={(s) => setWeekData({ ...weekData, openingPrayerStatus: s })}
+                                onChange={(s) => updateWeekDataLocal({ ...weekData, openingPrayerStatus: s })}
                               disabled={readOnly}
                             />
                           )}
@@ -946,6 +1017,7 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
         confirmLabel={confirmDialog.data?.isWarning ? "Sim, designar mesmo assim" : "Confirmar"}
         onClose={() => setConfirmDialog({ isOpen: false, data: null })}
       />
+
 
       <ConfirmModal
         isOpen={!!showClearConfirm?.isOpen}

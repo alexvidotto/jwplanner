@@ -33,6 +33,7 @@ export const ConfirmationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<'CONFIRMADO' | 'RECUSADO' | 'PENDENTE' | null>(null);
   const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export const ConfirmationPage = () => {
   const updateStatus = async (status: 'CONFIRMADO' | 'RECUSADO' | 'PENDENTE') => {
     if (!assignmentId) return;
     setActionLoading(true);
+    setProcessingStatus(status);
     try {
       await api.patch(`/planning/assignments/${assignmentId}/status`, {
         status,
@@ -69,6 +71,7 @@ export const ConfirmationPage = () => {
       alert('Erro ao atualizar status. Tente novamente.');
     } finally {
       setActionLoading(false);
+      setProcessingStatus(null);
       setShowMenu(false);
     }
   };
@@ -213,8 +216,8 @@ export const ConfirmationPage = () => {
                 <X className="h-8 w-8 text-red-600" />
               </div>
             ) : (
-                  <div className={`h-16 w-16 ${currentTheme.iconBg} rounded-full flex items-center justify-center`}>
-                    <User className={`h-8 w-8 ${currentTheme.iconText}`} />
+              <div className={`h-16 w-16 ${currentTheme.iconBg} rounded-full flex items-center justify-center`}>
+                <User className={`h-8 w-8 ${currentTheme.iconText}`} />
               </div>
             )}
           </div>
@@ -322,7 +325,10 @@ export const ConfirmationPage = () => {
               disabled={actionLoading}
               className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-lg"
             >
-              {actionLoading ? 'Confirmando...' : 'Confirmar'}
+              {actionLoading
+                ? (processingStatus === 'RECUSADO' ? 'Informando ausência...' : 'Confirmando...')
+                : 'Confirmar'
+              }
             </Button>
           )}
 

@@ -1,142 +1,37 @@
-import { useState } from 'react';
-import { ArrowLeft, Check, ChevronUp, ChevronDown, Briefcase, Users, User, Minus, Book } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ArrowLeft, Check, Search, Briefcase, Users, User, Minus, Book, X, Save } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useBulkUpdateParticipants } from '../../hooks/useParticipants';
 
-// Added internal types for self-containment if not imported, but best to import.
 interface AdminSkillsViewProps {
-  participants: any[]; // Use any or strict type
+  participants: any[];
   setParticipants: (p: any[]) => void;
   parts: any[];
   onBack: () => void;
+  isDirty?: boolean;
+  setIsDirty?: (dirty: boolean) => void;
 }
 
-export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }: AdminSkillsViewProps) => {
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+export const AdminSkillsView = ({ participants, setParticipants, parts, onBack, isDirty, setIsDirty }: AdminSkillsViewProps) => {
+  const [localParticipants, setLocalParticipants] = useState<any[]>(participants);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [changedUserIds, setChangedUserIds] = useState<Set<string>>(new Set());
+  const [showMobileSkills, setShowMobileSkills] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Remove unused hook
-  // const updateParticipant = useUpdateParticipant(); 
   const bulkUpdateParticipants = useBulkUpdateParticipants();
 
-  // Alternar habilidade para UM usuário
-  const toggleAbility = async (participantId: string, abilityKey: string) => {
-    const participant = participants.find(p => p.id === participantId);
-    if (!participant) return;
-
-    const hasAbility = participant.abilities?.includes(abilityKey);
-    let newAbilities;
-
-    if (hasAbility) {
-      newAbilities = participant.abilities.filter((a: string) => a !== abilityKey);
-    } else {
-      newAbilities = [...(participant.abilities || []), abilityKey];
+  // Sync local participants if props change (e.g. initial load or refetch) AND we don't have unsaved changes
+  useMemo(() => {
+    // Only update from props if we haven't made changes locally, OR if it's a fresh load (changedUserIds empty)
+    // Actually, getting fresh data should probably overwrite unless we deal with conflicts.
+    // Ideally, we reset local state when prop participants changes deeply.
+    // For simplicity, let's sync if changedUserIds is empty.
+    if (changedUserIds.size === 0) {
+      setLocalParticipants(participants);
     }
-
-    setParticipants(participants.map(p => p.id === participantId ? { ...p, abilities: newAbilities } : p));
-
-    // Mark as changed
-    setChangedUserIds(prev => new Set(prev).add(participantId));
-  };
-
-  // Alternar habilidade para TODOS os selecionados
-  const toggleBulkAbility = async (abilityKey: string) => {
-    const selectedArray = Array.from(selectedIds);
-    if (selectedArray.length === 0) return;
-
-    // Verificar se TODOS os selecionados já têm a habilidade
-    const allSelectedHave = selectedArray.every(id => {
-      const p = participants.find(user => user.id === id);
-      return p?.abilities?.includes(abilityKey);
-    });
-
-    const updates: { id: string; abilities: string[] }[] = [];
-    const newParticipants = participants.map(p => {
-      if (!selectedIds.has(p.id)) return p;
-
-      let newAbilities = p.abilities || [];
-      if (allSelectedHave) {
-        // Remover de todos
-        newAbilities = newAbilities.filter((a: string) => a !== abilityKey);
-      } else {
-        // Adicionar a todos (se não tiver)
-        if (!newAbilities.includes(abilityKey)) {
-          newAbilities = [...newAbilities, abilityKey];
-        }
-      }
-
-      // Collect update promise
-      updates.push({ id: p.id, abilities: newAbilities });
-
-      return { ...p, abilities: newAbilities };
-    });
-
-    setParticipants(newParticipants);
-
-    // Mark all selected as changed
-    setChangedUserIds(prev => {
-      const next = new Set(prev);
-      selectedIds.forEach(id => next.add(id));
-      return next;
-    });
-  };
-
-  const handleSave = async () => {
-    // Collect all changed users
-    // If we are in bulk mode (selectedIds > 0), we save only selected? 
-    // Wait, the user might have made individual changes BEFORE selecting users.
-    // It's safer to save ALL changed users.
-
-    // BUT, the "Bulk Save" button is inside the "Edit Selected" panel.
-    // If I use that button, I should probably save everything anyway to avoid confusion.
-    // Let's make "handleSave" universal.
-
-    const idsToSave = Array.from(changedUserIds);
-    if (idsToSave.length === 0) return;
-
-    const changes = participants
-      .filter(p => changedUserIds.has(p.id))
-      .map(p => ({ id: p.id, abilities: p.abilities || [] }));
-
-    try {
-      await bulkUpdateParticipants.mutateAsync(changes);
-      setChangedUserIds(new Set());
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-    } catch (error) {
-      console.error('Failed to save skills:', error);
-    }
-  };
-
-  // Selecionar/Deselecionar usuário individual
-  const toggleSelectUser = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-      // Collapse any expanded user when selecting to avoid visual confusion
-      setExpandedUserId(null);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  // Selecionar/Deselecionar TODOS do grupo
-  const toggleSelectAllGroup = (groupParticipants: any[]) => {
-    const ids = groupParticipants.map(p => p.id);
-    const allSelected = ids.every(id => selectedIds.has(id));
-    const newSelected = new Set(selectedIds);
-
-    if (allSelected) {
-      ids.forEach(id => newSelected.delete(id));
-    } else {
-      ids.forEach(id => newSelected.add(id));
-      setExpandedUserId(null);
-    }
-    setSelectedIds(newSelected);
-  };
+  }, [participants, changedUserIds.size]);
 
   const groups = [
     { id: 'ANCIAO', label: 'Anciãos', bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-200' },
@@ -152,239 +47,338 @@ export const AdminSkillsView = ({ participants, setParticipants, parts, onBack }
     { id: 'nvc', label: 'Nossa Vida Cristã', icon: User, color: 'text-red-700' },
   ];
 
-  return (
-    <div className={`bg-gray-50 min-h-screen ${selectedIds.size > 0 ? 'pb-[420px]' : 'pb-20'}`}>
-      <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
-            <h1 className="font-bold text-gray-800 text-lg">Matriz de Habilidades</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {(changedUserIds.size > 0 || selectedIds.size > 0) && (
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white animate-in zoom-in-50 duration-200"
-                onClick={handleSave}
-                disabled={bulkUpdateParticipants.isPending || changedUserIds.size === 0}
-              >
-                {bulkUpdateParticipants.isPending ? 'Salvando...' : `Salvar (${changedUserIds.size})`}
-              </Button>
-            )}
-            {selectedIds.size > 0 && (
-              <Button size="sm" variant="ghost" className="text-red-600" onClick={() => setSelectedIds(new Set())}>
-                Limpar Seleção
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+  // Logic to toggle skill for ALL selected users
+  const handleToggleSkill = (skillId: string) => {
+    const selectedArray = Array.from(selectedIds);
+    if (selectedArray.length === 0) return;
 
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
-        {groups.map(group => {
-          const groupParticipants = participants.filter(p => p.type === group.id);
-          if (groupParticipants.length === 0) return null;
+    // Check if ALL selected users ALREADY have this skill
+    const allSelectedHave = selectedArray.every(id => {
+      const p = localParticipants.find(user => user.id === id);
+      return p?.abilities?.includes(skillId);
+    });
 
-          const allGroupSelected = groupParticipants.every(p => selectedIds.has(p.id));
-          const someGroupSelected = groupParticipants.some(p => selectedIds.has(p.id));
+    const newParticipants = localParticipants.map(p => {
+      if (!selectedIds.has(p.id)) return p;
 
-          return (
-            <div key={group.id}>
-              <div className={`flex items-center justify-between mb-3 px-3 py-2 rounded-lg w-full md:w-fit md:min-w-[300px] ${group.bg} ${group.text} border ${group.border}`}>
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-sm uppercase tracking-wider">{group.label}</span>
-                  <span className="bg-white/50 px-2 rounded-full text-xs font-bold">{groupParticipants.length}</span>
-                </div>
+      let newAbilities = p.abilities || [];
+      if (allSelectedHave) {
+        // Remove from all
+        newAbilities = newAbilities.filter((a: string) => a !== skillId);
+      } else {
+        // Add to all (if missing)
+        if (!newAbilities.includes(skillId)) {
+          newAbilities = [...newAbilities, skillId];
+        }
+      }
 
-                {/* Checkbox de Selecionar Todos do Grupo */}
-                <div
-                  onClick={() => toggleSelectAllGroup(groupParticipants)}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-white/20 px-2 py-1 rounded"
-                >
-                  <div className={`w-5 h-5 bg-white border border-current rounded flex items-center justify-center ${allGroupSelected ? 'bg-current' : ''}`}>
-                    {allGroupSelected ? <Check size={14} className="text-white" /> : someGroupSelected ? <div className="w-3 h-3 bg-current rounded-sm" /> : null}
-                  </div>
-                  <span className="text-xs font-bold">Todos</span>
-                </div>
-              </div>
+      return { ...p, abilities: newAbilities };
+    });
 
-              <div className="space-y-3">
-                {groupParticipants.map(p => {
-                  const isExpanded = expandedUserId === p.id;
-                  const isSelected = selectedIds.has(p.id);
-                  const totalSkills = p.abilities?.length || 0;
+    setLocalParticipants(newParticipants);
 
-                  return (
-                    <div key={p.id} className={`bg-white rounded-xl border transition-all duration-200 ${isSelected ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/30' : 'border-gray-200 hover:border-blue-300'}`}>
-                      {/* Header do Usuário */}
-                      <div className="p-4 flex items-center gap-4">
-                        {/* Checkbox de Seleção Individual */}
-                        <div
-                          onClick={(e) => { e.stopPropagation(); toggleSelectUser(p.id); }}
-                          className={`w-6 h-6 rounded border flex items-center justify-center cursor-pointer transition-colors ${isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300 hover:border-blue-400'}`}
-                        >
-                          {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
-                        </div>
+    // Mark updated users as changed
+    setChangedUserIds(prev => {
+      const next = new Set(prev);
+      selectedIds.forEach(id => next.add(id));
+      // Trigger global dirty state
+      if (next.size > 0 && setIsDirty) {
+        setIsDirty(true);
+      }
+      return next;
+    });
+  };
 
-                        <div
-                          onClick={() => {
-                            if (selectedIds.size > 0) return; // Prevent expansion in bulk mode
-                            setExpandedUserId(isExpanded ? null : p.id);
-                          }}
-                          className={`flex-1 flex items-center justify-between cursor-pointer ${selectedIds.size > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${isExpanded ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
-                              {p.name.charAt(0)}
-                            </div>
-                            <div>
-                              <h3 className={`font-bold ${isExpanded ? 'text-blue-700' : 'text-gray-800'}`}>{p.name}</h3>
-                              <p className="text-xs text-gray-500">{p.gender === 'PH' ? 'H' : 'M'} • {totalSkills} habilidades ativas</p>
-                            </div>
-                          </div>
-                          <div className="text-gray-400">
-                            {selectedIds.size === 0 && (isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />)}
-                          </div>
-                        </div>
-                      </div>
+  const handleSave = async () => {
+    const idsToSave = Array.from(changedUserIds);
+    if (idsToSave.length === 0) return;
 
-                      {/* Área Expandida de Habilidades (Individual) */}
-                      {isExpanded && !selectedIds.size && (
-                        <div className="border-t border-gray-100 bg-gray-50/50 p-4 animate-in slide-in-from-top-2 duration-200">
-                          <div className="grid md:grid-cols-3 gap-6">
-                            {sections.map(section => {
-                              const sectionParts = parts.filter(pt => pt.section === section.id);
-                              if (sectionParts.length === 0) return null;
+    const changes = localParticipants
+      .filter(p => changedUserIds.has(p.id))
+      .map(p => ({ id: p.id, abilities: p.abilities || [] }));
 
-                              return (
-                                <div key={section.id} className="space-y-3">
-                                  <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${section.color}`}>
-                                    <section.icon size={14} />
-                                    {section.label}
-                                  </div>
-                                  <div className="space-y-2">
-                                    {sectionParts.map(part => {
-                                      const hasMainAbility = p.abilities?.includes(part.id);
-                                      const hasReaderAbility = p.abilities?.includes(`${part.id}_reader`);
+    try {
+      await bulkUpdateParticipants.mutateAsync(changes);
+      setChangedUserIds(new Set());
+      if (setIsDirty) setIsDirty(false); // Clear global dirty
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+      setShowMobileSkills(false); // Close mobile modal on save
+      // Propagate changes to parent if needed, although invalidation usually handles it
+      setParticipants(localParticipants); 
+    } catch (error) {
+      console.error('Failed to save skills:', error);
+      alert('Erro ao salvar habilidades.');
+    }
+  };
 
-                                      return (
-                                        <div key={part.id} className="flex flex-col gap-1">
-                                          <label className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer transition-all ${hasMainAbility ? 'bg-white border-blue-300 shadow-sm' : 'border-transparent hover:bg-gray-100'}`}>
-                                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${hasMainAbility ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}>
-                                              {hasMainAbility && <Check size={12} className="text-white" strokeWidth={3} />}
-                                            </div>
-                                            <input type="checkbox" className="hidden" checked={hasMainAbility || false} onChange={() => toggleAbility(p.id, part.id)} />
-                                            <span className={`text-sm ${hasMainAbility ? 'font-medium text-gray-900' : 'text-gray-500'}`}>{part.title}</span>
-                                          </label>
+  const toggleSelectUser = (id: string, multiSelect: boolean) => {
+    const newSelected = new Set(multiSelect ? selectedIds : []);
+    if (newSelected.has(id)) {
+      if (multiSelect) newSelected.delete(id);
+      else newSelected.clear(); // Clicking selected in single mode -> Deselect? Or just keep? Let's keep.
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
 
-                                          {part.requiresReader && (
-                                            <label className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer transition-all ml-4 ${hasReaderAbility ? 'bg-white border-purple-300 shadow-sm' : 'border-transparent hover:bg-gray-100'}`}>
-                                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${hasReaderAbility ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
-                                                {hasReaderAbility && <Book size={10} className="text-white" strokeWidth={3} />}
-                                              </div>
-                                              <input type="checkbox" className="hidden" checked={hasReaderAbility || false} onChange={() => toggleAbility(p.id, `${part.id}_reader`)} />
-                                              <span className={`text-xs ${hasReaderAbility ? 'font-medium text-purple-900' : 'text-gray-500'}`}>Leitor: {part.title}</span>
-                                            </label>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+  const toggleSelectGroup = (groupId: string) => {
+    const groupParticipants = localParticipants.filter(p => p.type === groupId);
+    const allSelected = groupParticipants.every(p => selectedIds.has(p.id));
+
+    const newSelected = new Set(selectedIds);
+    if (allSelected) {
+      groupParticipants.forEach(p => newSelected.delete(p.id));
+    } else {
+      groupParticipants.forEach(p => newSelected.add(p.id));
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const filteredParticipants = useMemo(() => {
+    if (!searchTerm) return localParticipants;
+    const lower = searchTerm.toLowerCase();
+    return localParticipants.filter(p => p.name.toLowerCase().includes(lower));
+  }, [localParticipants, searchTerm]);
+
+  // Render Skills Grid (Reused for Desktop and Mobile)
+  const SkillsGrid = () => (
+    <div className="space-y-6 pb-20 md:pb-0">
+      {sections.map(section => {
+        const sectionParts = parts.filter(pt => pt.section === section.id);
+        if (sectionParts.length === 0) return null;
+
+        return (
+          <div key={section.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className={`px-4 py-3 border-b flex items-center gap-2 bg-gray-50/50`}>
+              <section.icon size={16} className={section.color} />
+              <span className={`text-sm font-bold uppercase tracking-wider ${section.color}`}>{section.label}</span>
             </div>
-          );
-        })}
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sectionParts.map(part => {
+                const selectedArr = Array.from(selectedIds);
 
-        {participants.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
-            <Users size={48} className="mx-auto mb-3 opacity-20" />
-            <p>Nenhum participante cadastrado.</p>
-          </div>
-        )}
-      </div>
+                // MAIN ABILITY
+                const countMain = selectedArr.filter(id => localParticipants.find(p => p.id === id)?.abilities?.includes(part.id)).length;
+                const allMain = selectedArr.length > 0 && countMain === selectedArr.length;
+                const someMain = countMain > 0 && !allMain;
 
-      {/* PAINEL DE EDIÇÃO EM MASSA (FIXO NA PARTE INFERIOR) */}
-      {selectedIds.size > 0 ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom-10 duration-300 max-h-[400px] overflow-y-auto">
-          <div className="max-w-4xl mx-auto">
-            <div className="p-4 bg-gray-900 text-white flex items-center justify-between sticky top-0 z-10 shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 w-8 h-8 rounded-full flex items-center justify-center font-bold">{selectedIds.size}</div>
-                <div>
-                  <p className="font-bold text-sm">Editando Selecionados</p>
-                  <p className="text-xs text-gray-400">Alterações pendentes ({changedUserIds.size})</p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="p-6 grid md:grid-cols-3 gap-6 pb-10">
-              {sections.map(section => {
-                const sectionParts = parts.filter(pt => pt.section === section.id);
-                if (sectionParts.length === 0) return null;
+                // READER ABILITY
+                const countReader = selectedArr.filter(id => localParticipants.find(p => p.id === id)?.abilities?.includes(`${part.id}_reader`)).length;
+                const allReader = selectedArr.length > 0 && countReader === selectedArr.length;
+                const someReader = countReader > 0 && !allReader;
 
                 return (
-                  <div key={section.id} className="space-y-3">
-                    <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${section.color}`}>
-                      <section.icon size={14} />
-                      {section.label}
-                    </div>
-                    <div className="space-y-2">
-                      {sectionParts.map(part => {
-                        const selectedArr = Array.from(selectedIds);
-                        const countMain = selectedArr.filter(id => participants.find(p => p.id === id)?.abilities?.includes(part.id)).length;
-                        const allMain = countMain === selectedIds.size;
-                        const someMain = countMain > 0 && !allMain;
+                  <div key={part.id} className="flex flex-col gap-2">
+                    <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all select-none
+                      ${allMain ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 
+                        ${allMain ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}>
+                        {allMain && <Check size={14} className="text-white" strokeWidth={3} />}
+                        {someMain && <Minus size={14} className="text-blue-600" strokeWidth={3} />}
+                      </div>
+                      <input type="checkbox" className="hidden" checked={allMain} onChange={() => handleToggleSkill(part.id)} />
+                      <span className={`text-sm ${allMain ? 'font-medium text-blue-900' : 'text-gray-700'}`}>{part.title}</span>
+                    </label>
 
-                        const countReader = selectedArr.filter(id => participants.find(p => p.id === id)?.abilities?.includes(`${part.id}_reader`)).length;
-                        const allReader = countReader === selectedIds.size;
-                        const someReader = countReader > 0 && !allReader;
-
-                        return (
-                          <div key={part.id} className="flex flex-col gap-1">
-                            <label className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer transition-all hover:bg-gray-50 ${allMain ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}`}>
-                              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${allMain ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}>
-                                {allMain && <Check size={12} className="text-white" strokeWidth={3} />}
-                                {someMain && <Minus size={12} className="text-blue-600" strokeWidth={3} />}
-                              </div>
-                              <input type="checkbox" className="hidden" checked={allMain} onChange={() => toggleBulkAbility(part.id)} />
-                              <span className="text-sm font-medium text-gray-700">{part.title}</span>
-                            </label>
-
-                            {part.requiresReader && (
-                              <label className={`flex items-center gap-3 p-2 rounded-lg border cursor-pointer transition-all ml-4 hover:bg-purple-50 ${allReader ? 'bg-purple-50 border-purple-200' : 'border-gray-200'}`}>
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${allReader ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
-                                  {allReader && <Book size={10} className="text-white" strokeWidth={3} />}
-                                  {someReader && <Minus size={10} className="text-purple-600" strokeWidth={3} />}
-                                </div>
-                                <input type="checkbox" className="hidden" checked={allReader} onChange={() => toggleBulkAbility(`${part.id}_reader`)} />
-                                <span className="text-xs font-medium text-gray-600">Leitor: {part.title}</span>
-                              </label>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {part.requiresReader && (
+                      <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all select-none ml-6 relative
+                        ${allReader ? 'bg-purple-50 border-purple-200 ring-1 ring-purple-200' : 'bg-white border-gray-200 hover:border-purple-300'}`}>
+                        <div className="absolute -left-6 top-1/2 w-4 h-[1px] bg-gray-300"></div>
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 
+                          ${allReader ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
+                          {allReader && <Book size={12} className="text-white" strokeWidth={3} />}
+                          {someReader && <Minus size={12} className="text-purple-600" strokeWidth={3} />}
+                        </div>
+                        <input type="checkbox" className="hidden" checked={allReader} onChange={() => handleToggleSkill(`${part.id}_reader`)} />
+                        <span className={`text-xs ${allReader ? 'font-medium text-purple-900' : 'text-gray-600'}`}>Leitor</span>
+                      </label>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
+      {/* HEADER */}
+      <header className="bg-white border-b z-20 flex-shrink-0">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft size={20} /></Button>
+            <h1 className="font-bold text-gray-800 text-lg flex items-center">
+              Matriz de Habilidades
+              {changedUserIds.size > 0 && (
+                <span className="hidden md:inline-flex text-xs font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full ml-2">
+                  Alterações não salvas
+                </span>
+              )}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={changedUserIds.size > 0 ? "warning" : "primary"}
+              onClick={handleSave}
+              disabled={changedUserIds.size === 0 || bulkUpdateParticipants.isPending}
+              className={changedUserIds.size > 0 ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600' : ''}
+            >
+              <Save size={16} className="mr-2" />
+              {bulkUpdateParticipants.isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
         </div>
-      ) : null}
+      </header>
+
+      {/* MAIN CONTENT SPLIT */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* LEFT SIDEBAR - PARTICIPANTS LIST */}
+        <div className="w-full md:w-[350px] lg:w-[400px] flex flex-col border-r bg-white h-full">
+          {/* Search Bar */}
+          <div className="p-3 border-b bg-gray-50/50">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Buscar participantes..."
+                className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="flex-1 overflow-y-auto p-2 pb-24 space-y-4">
+            {groups.map(group => {
+              const groupParticipants = filteredParticipants.filter(p => p.type === group.id);
+              if (groupParticipants.length === 0) return null;
+
+              const allSelected = groupParticipants.every(p => selectedIds.has(p.id));
+              const someSelected = groupParticipants.some(p => selectedIds.has(p.id));
+
+              return (
+                <div key={group.id}>
+                  <div className={`sticky top-0 z-10 mx-1 mb-1 px-3 py-1.5 rounded-lg flex items-center justify-between backdrop-blur-sm shadow-sm border ${group.bg} ${group.border} ${group.text}`}>
+                    <span className="text-xs font-bold uppercase tracking-wider">{group.label}</span>
+                    <button onClick={() => toggleSelectGroup(group.id)} className="p-1 hover:bg-white/50 rounded transition-colors">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${allSelected ? 'bg-current border-current' : 'border-gray-400 bg-white'}`}>
+                        {allSelected && <Check size={10} className="text-white" strokeWidth={4} />}
+                        {someSelected && !allSelected && <div className="w-2 h-2 bg-current rounded-sm" />}
+                      </div>
+                    </button>
+                  </div>
+                  <div className="space-y-1 px-1">
+                    {groupParticipants.map(p => {
+                      const isSelected = selectedIds.has(p.id);
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={(e) => toggleSelectUser(p.id, e.ctrlKey || e.metaKey || true)} // Always toggle on click for now? Or Exclusive? Let's do Toggle for ease.
+                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${isSelected
+                            ? 'bg-blue-50 border-blue-200 shadow-sm'
+                            : 'bg-white border-transparent hover:bg-gray-50 hover:border-gray-200'
+                            }`}
+                        >
+                          <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}>
+                            {isSelected && <Check size={12} className="text-white" strokeWidth={3} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className={`text-sm font-medium truncate ${isSelected ? 'text-blue-900' : 'text-gray-800'}`}>{p.name}</h4>
+                            <p className="text-xs text-gray-500">{p.abilities?.length || 0} habilidades</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {filteredParticipants.length === 0 && (
+              <div className="p-8 text-center text-gray-400">
+                <Users size={32} className="mx-auto mb-2 opacity-20" />
+                <p className="text-sm">Nenhum participante encontrado.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Bottom Bar for Actions (Visible only on mobile when selected) */}
+          {selectedIds.size > 0 && (
+            <div className="md:hidden fixed bottom-[80px] left-4 right-4 z-40 animate-in slide-in-from-bottom-4 duration-200">
+              <Button
+                onClick={() => setShowMobileSkills(true)}
+                className="w-full shadow-xl bg-blue-600 text-white hover:bg-blue-700 py-6 text-lg font-semibold"
+              >
+                {selectedIds.size === 1 ? 'Editar 1 Participante' : `Editar ${selectedIds.size} Participantes`}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT MAIN AREA (SKILLS) - Desktop Hidden on Mobile */}
+        <div className="hidden md:flex flex-1 flex-col bg-gray-50/50 h-full overflow-hidden relative">
+          {selectedIds.size === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8 text-center">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <Briefcase size={40} className="opacity-20 text-gray-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-700 mb-2">Selecione Participantes</h3>
+              <p className="text-sm max-w-xs">Selecione um ou mais participantes na lista ao lado para gerenciar suas habilidades.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col h-full">
+              <div className="p-4 bg-white border-b flex items-center justify-between shadow-sm z-10">
+                <div>
+                    <h2 className="font-bold text-gray-800">Editando Habilidades</h2>
+                    <p className="text-xs text-gray-500">{selectedIds.size} participantes selecionados</p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} className="text-red-600 hover:bg-red-50">
+                    Limpar Seleção
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  <SkillsGrid />
+                </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MOBILE SKILLS MODAL/DRAWER */}
+      {showMobileSkills && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col bg-white animate-in slide-in-from-bottom-full duration-300">
+          <div className="bg-white border-b px-4 py-3 flex items-center justify-between shadow-sm flex-shrink-0">
+            <div>
+              <h2 className="font-bold text-gray-800">Habilidades</h2>
+              <p className="text-xs text-gray-500">{selectedIds.size} selecionados</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setShowMobileSkills(false)}>
+                <X size={24} />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            <SkillsGrid />
+          </div>
+          <div className="p-4 border-t bg-white">
+            <Button onClick={handleSave} className="w-full" disabled={changedUserIds.size === 0}>
+              Salvar Alterações
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Success Toast */}
       {showSuccessToast && (
-        <div className="fixed top-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 z-50">
+        <div className="fixed top-20 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 z-[60]">
           <Check size={20} />
           <span className="font-bold">Salvo com sucesso!</span>
         </div>

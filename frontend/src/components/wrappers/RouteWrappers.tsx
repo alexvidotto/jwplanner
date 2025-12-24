@@ -46,7 +46,16 @@ export const PartsWrapper = () => {
 export const SkillsWrapper = () => {
   const navigate = useNavigate();
   const context: any = useOutletContext();
-  return <AdminSkillsView participants={context.participants} setParticipants={context.setParticipants} parts={context.parts} onBack={() => navigate('/')} />;
+  return (
+    <AdminSkillsView
+      participants={context.participants}
+      setParticipants={context.setParticipants}
+      parts={context.parts}
+      onBack={() => navigate('/')}
+      isDirty={context.isDirty}
+      setIsDirty={context.setIsDirty}
+    />
+  );
 };
 
 export const TrackingWrapper = () => {

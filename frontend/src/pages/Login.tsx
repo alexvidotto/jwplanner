@@ -9,9 +9,14 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      let emailToUse = email;
+      if (!email.includes('@')) {
+        emailToUse = `${email}@jwplanner.com.br`;
+      }
+      await signInWithEmailAndPassword(auth, emailToUse, password);
     } catch (error) {
       console.error(error);
+      alert('Login failed. Check your credentials.');
     }
   };
 
@@ -26,16 +31,19 @@ export default function Login() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="p-8 bg-white rounded shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-4">Login</h1>
+      <div className="p-8 bg-white rounded-xl shadow-lg w-96 border border-gray-200">
+        <h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">JW Planner</h1>
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className="p-2 border rounded"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email ou Usuário</label>
+            <input
+              type="text"
+              placeholder="seu.usuario"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
           <input
             type="password"
             placeholder="Password"

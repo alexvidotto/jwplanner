@@ -593,7 +593,9 @@ export const AdminPlanner = ({ weekData, setWeekData, onBack, onNavigateWeek, on
             </div>
             <h2 className="text-xl font-bold text-gray-700">Semana sem Reunião</h2>
             <p className="text-gray-500 max-w-md">Programação suspensa. Não haverá reunião nesta semana devido a eventos especiais.</p>
-            <Button variant="outline" onClick={handleToggleWeekCanceled} className="mt-4">Reativar Semana</Button>
+            {!readOnly && (
+              <Button variant="outline" onClick={handleToggleWeekCanceled} className="mt-4">Reativar Semana</Button>
+            )}
           </div>
         ) : (
           <>

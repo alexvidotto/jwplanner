@@ -172,14 +172,18 @@ export class UsersService {
         await this.firebaseService.getAuth().deleteUser(user.uidAuth);
       } catch (error: any) {
         console.warn(`Failed to delete Firebase user ${user.uidAuth}:`, error.message);
-        // Continue to delete from DB even if Firebase fails? 
-        // Yes, otherwise we have a zombie record in DB that can't be deleted.
-        // It's better to clean up DB.
+        // Continue to unlink in DB
       }
     }
 
-    // 2. Delete from DB
-    await this.usersRepository.delete(id);
+    // 2. Unlink from DB (Keep the participant, just remove access)
+    await this.usersRepository.update(id, {
+      uidAuth: null,
+      role: 'USER', // Reset role to basic user
+      // We keep the email so they can be re-invited or linked again later if needed
+      // ensuring we don't lose their contact info if it was real.
+      // If the email was generated, it stays there, which is fine.
+    });
 
     return { success: true };
   }

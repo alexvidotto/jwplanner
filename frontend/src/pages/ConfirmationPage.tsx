@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Calendar, Check, X, Clock, User, AlertCircle, MoreVertical, RotateCcw, Users } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { api } from '../lib/api';
 
 interface Assignment {
   id: string;
@@ -42,14 +43,12 @@ export const ConfirmationPage = () => {
 
   const fetchAssignment = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/planning/assignments/${assignmentId}`);
-      if (!response.ok) {
-        throw new Error('Designação não encontrada ou link inválido.');
-      }
-      const data = await response.json();
-      setAssignment(data);
+      // Use configured API client (proxied via /api)
+      const response = await api.get(`/planning/assignments/${assignmentId}`);
+      setAssignment(response.data);
     } catch (err: any) {
-      setError(err.message);
+      console.error(err);
+      setError('Designação não encontrada ou link inválido.');
     } finally {
       setLoading(false);
     }
@@ -59,20 +58,14 @@ export const ConfirmationPage = () => {
     if (!assignmentId) return;
     setActionLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/planning/assignments/${assignmentId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status, personId }),
+      await api.patch(`/planning/assignments/${assignmentId}/status`, {
+        status,
+        personId
       });
-
-      if (!response.ok) {
-        throw new Error('Erro ao atualizar status');
-      }
 
       await fetchAssignment();
     } catch (err: any) {
+      console.error(err);
       alert('Erro ao atualizar status. Tente novamente.');
     } finally {
       setActionLoading(false);

@@ -43,3 +43,5 @@ backend/prisma/dev.db-journal
 # Frontend Specific
 frontend/.vite/
 frontend/.eslintcache
+deployment_secrets.sh
+deployment_guide.md

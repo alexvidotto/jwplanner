@@ -99,7 +99,7 @@ export const ConfirmationPage = () => {
       });
       // Optionally re-fetch to ensure data consistency, but usually not strictly needed if patch is robust.
       // We will perform a silent re-fetch just in case.
-      fetchAssignment();
+      // fetchAssignment(); // Commented out to prevent "flash" of old status if read happens too fast or just simply to avoid redundant network call. Optimistic update is sufficient.
     } catch (err: any) {
       console.error(err);
       // Revert on error

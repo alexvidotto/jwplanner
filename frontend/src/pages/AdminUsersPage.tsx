@@ -132,18 +132,20 @@ export const AdminUsersPage = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto relative">
+    <div className="p-4 sm:p-6 max-w-lg mx-auto relative min-h-screen bg-gray-50/50">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Shield className="text-blue-600" />
-          Gerenciar Usuários
-        </h1>
+        <div className="flex items-center gap-3">
+          <Shield className="text-blue-600" size={20} />
+          <h1 className="text-xl font-bold text-gray-800">
+            Usuários
+          </h1>
+        </div>
         <button
           onClick={() => { setIsLinkModalOpen(true); setCreatedCredentials(null); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-shadow shadow-sm font-medium text-sm"
         >
-          <UserPlus size={18} />
-          Adicionar Usuário
+          <UserPlus size={16} />
+          <span>Adicionar</span>
         </button>
       </div>
 
@@ -175,84 +177,33 @@ export const AdminUsersPage = () => {
       {/* Active Users List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-[40%]">Nome</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {activeUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                    Nenhum usuário ativo encontrado. Adicione um clicando no botão acima.
+                  <td colSpan={2} className="px-6 py-8 text-center text-gray-500">
+                    Nenhum usuário ativo encontrado.
                   </td>
                 </tr>
               ) : activeUsers.map((user) => (
-                <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {editingUser?.id === user.id ? (
-                      <input
-                        className="border rounded px-2 py-1 w-full"
-                        value={editingUser.nome}
-                        onChange={e => setEditingUser({ ...editingUser, nome: e.target.value })}
-                      />
-                    ) : user.nome}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {editingUser?.id === user.id ? (
-                      <select
-                        className="border rounded px-2 py-1 text-sm"
-                        value={editingUser.role}
-                        onChange={e => setEditingUser({ ...editingUser, role: e.target.value })}
-                      >
-                        <option value="USER">User</option>
-                        <option value="ASSISTENTE">Assistente</option>
-                        <option value="PRESIDENTE">Presidente</option>
-                        <option value="ADMIN">Admin</option>
-                      </select>
-                    ) : (
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${user.role === 'ADMIN' ? 'bg-red-100 text-red-800' :
-                          user.role === 'PRESIDENTE' ? 'bg-purple-100 text-purple-800' :
-                            user.role === 'ASSISTENTE' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {user.role || 'USER'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {editingUser?.id === user.id ? (
-                      <div className="flex gap-2">
-                        <button disabled={isSubmitting} onClick={handleUpdateUser} className="text-green-600 hover:text-green-800 font-medium disabled:opacity-50">
-                          {isSubmitting ? '...' : 'Salvar'}
-                        </button>
-                        <button disabled={isSubmitting} onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600 disabled:opacity-50">Cancelar</button>
+                <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-6 py-5 text-gray-900 font-medium align-middle">
+                    <div className="flex items-center justify-between">
+                      <span>{user.nome}</span>
+                      {/* Inline Actions (Only visible on hover or if editing) */}
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setEditingUser(user)} className="p-1 text-gray-400 hover:text-blue-600" title="Editar"><Search size={14} /></button>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <button onClick={() => setEditingUser(user)} className="text-blue-600 hover:text-blue-800 font-medium">Editar</button>
-                        <button
-                          onClick={() => setConfirmingUser({ ...user, action: 'RESET' })}
-                          className="text-gray-500 hover:text-red-600"
-                          title="Redefinir Senha"
-                        >
-                          <Key size={18} />
-                        </button>
-                          {userProfile?.id !== user.id && (
-                            <button
-                              onClick={() => setConfirmingUser({ ...user, action: 'DELETE' })}
-                              className="text-gray-400 hover:text-red-600"
-                              title="Excluir Usuário"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          )}
-                      </div>
-                    )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-gray-500 text-sm align-middle">
+                    {user.email}
                   </td>
                 </tr>
               ))}
@@ -316,38 +267,31 @@ export const AdminUsersPage = () => {
                   />
                 </div>
 
-                <div className="overflow-y-auto flex-1 border border-gray-100 rounded-lg">
+                  <div className="overflow-y-auto flex-1 border border-gray-100 rounded-lg max-h-[400px]">
                   {pendingUsers.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
                       Nenhum participante disponível para vínculo.
                     </div>
                   ) : (
-                    <table className="min-w-full divide-y divide-gray-100">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email Atual</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Ação</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {pendingUsers.map(user => (
-                          <tr key={user.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.nome}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500 truncate max-w-[150px]">{user.email || '-'}</td>
-                            <td className="px-4 py-3 text-right">
+                        <ul className="divide-y divide-gray-100">
+                          {pendingUsers.map(user => (
+                            <li key={user.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                              <div className="min-w-0 flex-1 mr-4">
+                                <div className="font-medium text-gray-900 truncate">{user.nome}</div>
+                                {user.email && (
+                                  <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                                )}
+                              </div>
                               <button
                                 onClick={() => initCredentialGeneration(user)}
-                                className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium hover:bg-blue-100"
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors"
                               >
                                 <Key size={14} />
-                                Gerar Acesso
+                                Gerar
                               </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </li>
+                          ))}
+                        </ul>
                   )}
                 </div>
               </>
@@ -355,6 +299,75 @@ export const AdminUsersPage = () => {
           </div>
         </div>
       )}
+
+      {/* Edit User Modal */}
+      {
+        editingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-800">Editar Usuário</h2>
+                <button onClick={() => setEditingUser(null)} className="text-gray-400 hover:text-gray-600">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                  <input
+                    type="text"
+                    value={editingUser.nome}
+                    onChange={(e) => setEditingUser({ ...editingUser, nome: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Função (Role)</label>
+                  <select
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  >
+                    <option value="USER">User (Padrão)</option>
+                    <option value="ASSISTENTE">Assistente</option>
+                    <option value="PRESIDENTE">Presidente</option>
+                    <option value="ADMIN">Administrador</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-8 space-y-3">
+                <button
+                  onClick={handleUpdateUser}
+                  disabled={isSubmitting}
+                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+
+                <div className="pt-4 border-t border-gray-100 flex gap-3">
+                  <button
+                    onClick={() => setConfirmingUser({ ...editingUser, action: 'RESET' })}
+                    className="flex-1 py-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center gap-2"
+                  >
+                    <Key size={14} /> Redefinir Senha
+                  </button>
+                  {userProfile?.id !== editingUser.id && (
+                    <button
+                      onClick={() => setConfirmingUser({ ...editingUser, action: 'DELETE' })}
+                      className="flex-1 py-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={14} /> Excluir
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Confirmation Modal */}
       {confirmingUser && (

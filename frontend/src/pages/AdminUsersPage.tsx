@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
-import { UserPlus, Copy, Shield, Check, Key, Search, X, Trash2 } from 'lucide-react';
+import { UserPlus, Copy, Shield, Check, Key, Search, X, Trash2, Info } from 'lucide-react';
 
 export const AdminUsersPage = () => {
   const { userProfile } = useAuth();
@@ -131,14 +131,13 @@ export const AdminUsersPage = () => {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="p-4 sm:p-6 max-w-lg mx-auto relative min-h-screen bg-gray-50/50">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
           <Shield className="text-blue-600" size={20} />
           <h1 className="text-xl font-bold text-gray-800">
-            Usuários
+            Acessos
           </h1>
         </div>
         <button
@@ -148,6 +147,11 @@ export const AdminUsersPage = () => {
           <UserPlus size={16} />
           <span>Adicionar</span>
         </button>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 flex items-start gap-2 text-sm text-blue-800">
+        <Info size={16} className="mt-0.5 shrink-0" />
+        <p>Apenas usuários com email cadastrado podem receber acesso.</p>
       </div>
 
       {/* Success Message Banner (Global) */}

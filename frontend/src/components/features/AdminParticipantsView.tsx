@@ -14,6 +14,7 @@ interface Participant {
   gender: string;
   phone?: string;
   active?: boolean;
+  email?: string;
   abilities: string[];
 }
 
@@ -89,7 +90,7 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
       type: p.type,
       gender: p.gender,
       phone: p.phone || '',
-      email: (p as any).email || '', // Cast to any to access email if it exists on Participant type in runtime but not yet in interface
+      email: p.email || '',
       active: p.active !== false
     });
     setIsModalOpen(true);
@@ -196,7 +197,7 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2 sm:ml-0"><ArrowLeft size={20} /></Button>
-              <h1 className="font-bold text-gray-800 text-lg sm:text-lg truncate max-w-[200px] sm:max-w-none">Cadastro de Usuários</h1>
+              <h1 className="font-bold text-gray-800 text-lg sm:text-lg truncate max-w-[200px] sm:max-w-none">Publicadores</h1>
             </div>
             <Button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', email: '', active: true }); setIsModalOpen(true); }} size="sm" className="whitespace-nowrap">
               <Plus size={16} /> <span className="hidden sm:inline">Novo Usuário</span><span className="sm:hidden">Novo</span>

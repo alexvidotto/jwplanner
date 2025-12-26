@@ -251,6 +251,7 @@ export const transformParticipantsToFrontend = (users: any[]) => {
       gender: gender,
       active: u.podeDesignar,
       phone: u.telefone || '',
+      email: u.email || '',
       abilities: abilities
     };
   });

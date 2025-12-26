@@ -65,7 +65,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     // Grouped in Menu for mobile (index >= 4)
     { to: '/participants', icon: Users, label: 'Publicadores', roles: ['ADMIN'] },
     { to: '/parts', icon: List, label: 'Partes', roles: ['ADMIN'] },
-    { to: '/admin/users', icon: Shield, label: 'Usuários', roles: ['ADMIN'] },
+    { to: '/admin/users', icon: Shield, label: 'Acessos', roles: ['ADMIN'] },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(userRole));

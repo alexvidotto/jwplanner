@@ -7,9 +7,10 @@ interface MonthRangePickerProps {
   startDate: Date;
   endDate: Date;
   onChange: (start: Date, end: Date) => void;
+  trigger?: React.ReactNode;
 }
 
-export const MonthRangePicker = ({ startDate, endDate, onChange }: MonthRangePickerProps) => {
+export const MonthRangePicker = ({ startDate, endDate, onChange, trigger }: MonthRangePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewYear, setViewYear] = useState(startDate.getFullYear());
   const popupRef = useRef<HTMLDivElement>(null);
@@ -74,26 +75,32 @@ export const MonthRangePicker = ({ startDate, endDate, onChange }: MonthRangePic
 
   return (
     <div className="relative" ref={popupRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:ring-1 hover:ring-blue-500 transition-all text-sm font-medium text-gray-700 w-64 justify-between"
-      >
-        <div className="flex items-center gap-2">
-          <CalendarIcon size={16} className="text-gray-400" />
-          <span>
-            {format(startDate, 'MMM/yy', { locale: ptBR })} - {format(endDate, 'MMM/yy', { locale: ptBR })}
-          </span>
-        </div>
-      </button>
+      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+        {trigger ? (
+          trigger
+        ) : (
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:ring-1 hover:ring-blue-500 transition-all text-sm font-medium text-gray-700 w-64 justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <CalendarIcon size={16} className="text-gray-400" />
+                <span>
+                  {format(startDate, 'MMM/yy', { locale: ptBR })} - {format(endDate, 'MMM/yy', { locale: ptBR })}
+                </span>
+              </div>
+            </button>
+        )}
+      </div>
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-4 w-72 z-50 animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center justify-between mb-4">
-            <button onClick={() => setViewYear(y => y - 1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+            <button onClick={(e) => { e.stopPropagation(); setViewYear(y => y - 1); }} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
               <ChevronLeft size={20} />
             </button>
             <span className="font-bold text-gray-800">{viewYear}</span>
-            <button onClick={() => setViewYear(y => y + 1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+            <button onClick={(e) => { e.stopPropagation(); setViewYear(y => y + 1); }} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
               <ChevronRight size={20} />
             </button>
           </div>
@@ -102,7 +109,7 @@ export const MonthRangePicker = ({ startDate, endDate, onChange }: MonthRangePic
             {months.map(m => (
               <button
                 key={m}
-                onClick={() => handleMonthClick(m)}
+                onClick={(e) => { e.stopPropagation(); handleMonthClick(m); }}
                 className={getMonthClass(m)}
               >
                 {format(new Date(viewYear, m, 1), 'MMM', { locale: ptBR }).toUpperCase()}

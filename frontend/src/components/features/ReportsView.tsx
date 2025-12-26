@@ -505,27 +505,34 @@ export const ReportsView = () => {
 
             {/* Stats Cards - Grid */}
             <div className="grid grid-cols-1 gap-4">
-              {/* Total */}
-              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                <h3 className="text-blue-600 font-bold mb-2 text-xs uppercase tracking-wider">Total de<br />Designações</h3>
-                <p className="text-5xl font-bold text-gray-900 tracking-tight">{data.totalDesignations}</p>
-              </div>
+              {/* Periodo - FIRST NOW */}
+              <MonthRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onChange={(start, end) => {
+                  const adjustedStart = getFirstMonday(start.getFullYear(), start.getMonth());
+                  const adjustedEnd = endOfMonth(end);
+                  setStartDate(adjustedStart);
+                  setEndDate(adjustedEnd);
+                  setActiveFilter('custom');
+                }}
+                trigger={
+                  <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:border-purple-200 transition-colors group relative">
+                    <h3 className="text-purple-600 font-bold mb-2 text-xs uppercase tracking-wider group-hover:text-purple-700">Período<br />Selecionado</h3>
+                    <div className="flex flex-col gap-1 mt-3">
+                      <span className="text-lg font-medium text-gray-900">{formatDateRange(startDate)}</span>
+                      <span className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">ATÉ</span>
+                      <span className="text-lg font-medium text-gray-900">{formatDateRange(endDate)}</span>
+                    </div>
+                    {/* Hover hint */}
+                    <div className="absolute top-4 right-4 text-purple-200 group-hover:text-purple-500 transition-colors">
+                      <Calendar size={20} />
+                    </div>
+                  </div>
+                }
+              />
 
-              {/* Participantes */}
-              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                <h3 className="text-emerald-600 font-bold mb-2 text-xs uppercase tracking-wider">Participantes<br />Ativos</h3>
-                <p className="text-5xl font-bold text-gray-900 tracking-tight">{data.count}</p>
-              </div>
 
-              {/* Periodo */}
-              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                <h3 className="text-purple-600 font-bold mb-2 text-xs uppercase tracking-wider">Período<br />Selecionado</h3>
-                <div className="flex flex-col gap-1 mt-3">
-                  <span className="text-lg font-medium text-gray-900">{formatDateRange(startDate)}</span>
-                  <span className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">ATÉ</span>
-                  <span className="text-lg font-medium text-gray-900">{formatDateRange(endDate)}</span>
-                </div>
-              </div>
             </div>
 
             {/* Filters Stack */}
@@ -544,21 +551,6 @@ export const ReportsView = () => {
                   <FilterButton active={activeFilter === 'last_6_months'} onClick={() => setRange('last_6_months')} label="Últimos 6 Meses" />
                   <FilterButton active={activeFilter === 'this_year'} onClick={() => setRange('this_year')} label="Este Ano" />
                   <FilterButton active={activeFilter === 'all_time'} onClick={() => setRange('all_time')} label="Todo o Período" />
-                </div>
-
-                <div className="pt-2">
-                  <div className="text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-wider">Intervalo Personalizado</div>
-                  <MonthRangePicker
-                    startDate={startDate}
-                    endDate={endDate}
-                    onChange={(start, end) => {
-                      const adjustedStart = getFirstMonday(start.getFullYear(), start.getMonth());
-                      const adjustedEnd = endOfMonth(end);
-                      setStartDate(adjustedStart);
-                      setEndDate(adjustedEnd);
-                      setActiveFilter('custom');
-                    }}
-                  />
                 </div>
               </div>
 
@@ -675,6 +667,21 @@ export const ReportsView = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Stats Cards - Summary */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Total */}
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-blue-600 font-bold mb-2 text-xs uppercase tracking-wider">Total de<br />Designações</h3>
+                <p className="text-5xl font-bold text-gray-900 tracking-tight">{data.totalDesignations}</p>
+              </div>
+
+              {/* Participantes */}
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-emerald-600 font-bold mb-2 text-xs uppercase tracking-wider">Participantes<br />Ativos</h3>
+                <p className="text-5xl font-bold text-gray-900 tracking-tight">{data.count}</p>
               </div>
             </div>
 

@@ -10,7 +10,7 @@ import { AuthModule } from './auth/auth.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env', // Explicit path
+      envFilePath: process.env.ENV_FILE || '.env', // Dynamic path
     }),
     FirebaseModule,
     AuthModule,

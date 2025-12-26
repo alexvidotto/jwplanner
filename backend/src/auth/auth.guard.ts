@@ -26,20 +26,12 @@ export class AuthGuard implements CanActivate {
       });
 
       if (!user) {
-        // Option: Auto-create user or throw error. For strict role access, we might want to throw or assign default.
-        // For now, let's attach the decoded token but with NO role if not found in DB?
-        // Better: require DB presence for meaningful access.
-        // But for initial login, maybe we need to relax this? 
-        // Plan says: "Admins create users". So user SHOULD exist in DB with uidAuth if they have logged in.
-        // If Admins create users, they might set uidAuth AFTER the user logs in for the first time?
-        // No, Admins create users in Firebase AND DB. So link should be there.
         console.warn(`User with UID ${decodedToken.uid} not found in DB`);
       }
 
       request.user = user ? { ...user, uid: decodedToken.uid } : { ...decodedToken, role: 'USER' };
       return true;
     } catch (error) {
-      console.error('Auth Guard Error:', error);
       throw new UnauthorizedException('Invalid token');
     }
   }

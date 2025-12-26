@@ -3,8 +3,9 @@ import { PrismaClient, Role, Privilegio } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load env from root
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// Load env based on ENV_FILE or default to .env
+const envFile = process.env.ENV_FILE || '.env';
+dotenv.config({ path: path.join(__dirname, '../../', envFile), override: true });
 
 const prisma = new PrismaClient();
 

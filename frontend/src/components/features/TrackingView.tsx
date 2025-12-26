@@ -227,7 +227,11 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
 
   // Grouping Logic
   const pendingAssignments = assignments.filter(a => a.status === 'PENDENTE');
-  const definedAssignments = assignments.filter(a => a.status !== 'PENDENTE');
+  const refusedAssignments = assignments.filter(a => a.status === 'RECUSADO');
+  // const definedAssignments = assignments.filter(a => a.status !== 'PENDENTE');
+
+  const hasRefused = refusedAssignments.length > 0;
+  const hasPending = pendingAssignments.length > 0;
 
   const renderCard = (a: any) => {
     const phone = getParticipantPhone(a.assigneeId);
@@ -235,7 +239,8 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
     const hasLink = generateAssignmentLink(a);
 
     return (
-      <div key={a.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 transition-all hover:shadow-md">
+      <div key={a.id} className={`bg-white rounded-xl shadow-sm border p-4 transition-all hover:shadow-md ${a.status === 'RECUSADO' ? 'border-red-200 bg-red-50/30' : 'border-gray-100'
+        }`}>
         {/* Header: Name + Status */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center gap-2">
@@ -354,35 +359,37 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
 
       <div className="max-w-lg mx-auto p-4 space-y-6">
 
-        {/* PENDING SECTION */}
-        {pendingAssignments.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-              <h2 className="text-sm font-bold text-gray-800 uppercase tracking-widest">
-                Aguardando ({pendingAssignments.length})
-              </h2>
-            </div>
-            <div className="space-y-3">
-              {pendingAssignments.map(renderCard)}
-            </div>
-          </section>
-        )}
+        {/* Summary Header */}
+        <div className={`rounded-xl p-4 flex items-center justify-between shadow-sm border ${hasRefused
+            ? 'bg-red-50 border-red-100 text-red-800'
+            : hasPending
+              ? 'bg-amber-50 border-amber-100 text-amber-800'
+              : 'bg-emerald-50 border-emerald-100 text-emerald-800'
+          }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${hasRefused ? 'bg-red-500 animate-pulse' :
+                hasPending ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
+              }`} />
+            <span className="font-bold text-sm tracking-wide">
+              {hasRefused ? (
+                <span>
+                  {refusedAssignments.length} {refusedAssignments.length === 1 ? 'Recusado' : 'Recusados'}
+                  {hasPending && <span className="mx-1.5 opacity-70">•</span>}
+                  {hasPending && `${pendingAssignments.length} ${pendingAssignments.length === 1 ? 'Pendente' : 'Pendentes'}`}
+                </span>
+              ) : hasPending ? (
+                `${pendingAssignments.length} ${pendingAssignments.length === 1 ? 'Pendente' : 'Pendentes'}`
+              ) : (
+                'Sem pendências'
+              )}
+            </span>
+          </div>
+        </div>
 
-        {/* DEFINED SECTION */}
-        {definedAssignments.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-3 px-1 mt-6 border-t border-gray-200 pt-6">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">
-                Definidos ({definedAssignments.length})
-              </h2>
-            </div>
-            <div className="space-y-3 opacity-90">
-              {definedAssignments.map(renderCard)}
-            </div>
-          </section>
-        )}
+        {/* Unified List */}
+        <div className="space-y-4">
+          {assignments.map(renderCard)}
+        </div>
 
         {assignments.length === 0 && (
           <div className="text-center py-20 text-gray-400">

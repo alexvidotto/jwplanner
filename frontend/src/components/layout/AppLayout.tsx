@@ -89,12 +89,12 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 <h1 className="font-bold text-gray-800 text-lg tracking-tight">JW Planner</h1>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">v0.1.0</span>
-                  {import.meta.env.MODE !== 'production' && (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${import.meta.env.MODE === 'qa'
+                  {(import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE) !== 'production' && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${(import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE) === 'qa'
                       ? 'bg-amber-50 text-amber-600 border-amber-200'
                       : 'bg-emerald-50 text-emerald-600 border-emerald-200'
                       }`}>
-                      {import.meta.env.MODE.toUpperCase()}
+                      {(import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE).toUpperCase()}
                     </span>
                   )}
                 </div>
@@ -182,12 +182,12 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
               <Calendar className="text-white" size={16} />
             </div>
             <span className="font-bold text-gray-800">JW Planner</span>
-            {import.meta.env.MODE !== 'production' && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${import.meta.env.MODE === 'qa'
-                ? 'bg-amber-50 text-amber-600 border-amber-200'
-                : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+            {(import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE) !== 'production' && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${(import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE) === 'qa'
+                  ? 'bg-amber-50 text-amber-600 border-amber-200'
+                  : 'bg-emerald-50 text-emerald-600 border-emerald-200'
                 }`}>
-                {import.meta.env.MODE.toUpperCase()}
+                {(import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE).toUpperCase()}
               </span>
             )}
           </div>

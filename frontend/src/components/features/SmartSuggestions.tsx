@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, Filter, Clock } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 
 interface SmartSuggestionsProps {
   templates: any[];
@@ -105,9 +105,7 @@ export const SmartSuggestions = ({ templates }: SmartSuggestionsProps) => {
         // 1. Main Role (Titular / Leitor)
         // Verify if history exists
         const lastDate = user.history[skillId];
-        let status = 'NEVER';
-        let label = 'Nunca Fez';
-        let monthsDiff = 999;
+
 
         const getRoleSuffix = (isAsst = false) => {
           if (isAsst) return ' (Ajudante)';

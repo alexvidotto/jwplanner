@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { format, addDays, subDays, isMonday, endOfMonth } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
 import { BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUp, ArrowDown, Sparkles, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import { formatDateRange } from '../../lib/transformers';
@@ -179,7 +179,7 @@ export const ReportsView = () => {
 
   // Process Data
   const processData = () => {
-    if (!weeks) return { byRole: [], byTemplate: [], totalParts: 0, byParticipant: [] };
+    if (!weeks) return { byRole: [], byTemplate: [], totalParts: 0, byParticipant: [] as any[] };
 
     const stats: any = {};
 

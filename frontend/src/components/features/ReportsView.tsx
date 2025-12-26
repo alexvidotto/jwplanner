@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { format, addDays, subDays, isMonday, endOfMonth } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUpDown, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
+import { BarChart3, Filter, Eye, EyeOff, Calendar, Search, ArrowUp, ArrowDown, Sparkles, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { MonthRangePicker } from '../ui/MonthRangePicker';
 import { formatDateRange } from '../../lib/transformers';
 import { SmartSuggestions } from './SmartSuggestions';
@@ -88,6 +88,8 @@ export const ReportsView = () => {
   const [showChart, setShowChart] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'total', direction: 'desc' });
+  // Expanded rows as a Set for multiple toggles
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Format for API
   const startStr = format(startDate, 'yyyy-MM-dd');
@@ -148,23 +150,30 @@ export const ReportsView = () => {
       setStartDate(first.start);
       setEndDate(last.end);
     } else if (type === 'all_time') {
-      setStartDate(new Date(2000, 0, 1));
-      setEndDate(new Date(2100, 11, 31));
+      setStartDate(new Date(2023, 0, 1));
+      setEndDate(new Date());
     }
   };
 
-  const togglePrivilege = (priv: string) => {
-    if (priv === 'ALL') {
+  const togglePrivilege = (type: string) => {
+    if (type === 'ALL') {
       setSelectedPrivileges([]);
-      return;
+    } else {
+      setSelectedPrivileges(prev =>
+        prev.includes(type) ? prev.filter(p => p !== type) : [...prev, type]
+      );
     }
+  };
 
-    setSelectedPrivileges(prev => {
-      if (prev.includes(priv)) {
-        return prev.filter(p => p !== priv);
+  const toggleRow = (name: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(name)) {
+        newSet.delete(name);
       } else {
-        return [...prev, priv];
+        newSet.add(name);
       }
+      return newSet;
     });
   };
 
@@ -378,7 +387,7 @@ export const ReportsView = () => {
   const FilterButton = ({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) => (
     <button
       onClick={onClick}
-      className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${active
+      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all border ${active
         ? "bg-blue-600 text-white border-blue-600 shadow-sm"
         : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
         }`}
@@ -392,7 +401,7 @@ export const ReportsView = () => {
     return (
       <button
         onClick={() => togglePrivilege(type)}
-        className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${isActive
+        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all border ${isActive
           ? "bg-purple-600 text-white border-purple-600 shadow-sm"
           : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
           }`}
@@ -405,7 +414,7 @@ export const ReportsView = () => {
   const RoleTypeButton = ({ type, label }: { type: RoleType, label: string }) => (
     <button
       onClick={() => setAssignmentType(type)}
-      className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${assignmentType === type
+      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all border ${assignmentType === type
         ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
         : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
         }`}
@@ -417,7 +426,7 @@ export const ReportsView = () => {
   const PartFilterButton = ({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) => (
     <button
       onClick={onClick}
-      className={`px-2 py-1 text-xs font-medium rounded-md transition-all border ${active
+      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all border ${active
         ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
         : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
         }`}
@@ -443,29 +452,11 @@ export const ReportsView = () => {
     return [{ value: t.id, label: t.titulo }];
   });
 
-  const SortableHeader = ({ label, sortKey, center = false }: { label: string, sortKey: string, center?: boolean }) => {
-    const isActive = sortConfig?.key === sortKey;
-    return (
-      <th
-        className={`px-6 py-3 cursor-pointer hover:bg-gray-100 transition-colors ${center ? 'text-center' : 'text-left'}`}
-        onClick={() => handleSort(sortKey)}
-      >
-        <div className={`flex items-center gap-2 ${center ? 'justify-center' : 'justify-start'}`}>
-          {label}
-          {isActive ? (
-            sortConfig?.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600" /> : <ArrowDown size={14} className="text-blue-600" />
-          ) : (
-            <ArrowUpDown size={14} className="text-gray-400 opacity-0 group-hover:opacity-50" />
-          )}
-        </div>
-      </th>
-    );
-  };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-8 print:p-0 print:max-w-none">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 bg-gray-50/50 min-h-screen">
       {/* Header */}
-      <div className="flex justify-between items-center print:hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900">
             <BarChart3 className="text-blue-600" />
@@ -474,47 +465,78 @@ export const ReportsView = () => {
           <p className="text-gray-500 text-sm mt-1">Análise detalhada de designações e participação</p>
         </div>
 
-        <div className="flex gap-2">
-          <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-4">
-            <button
-              onClick={() => setViewMode('REPORTS')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'REPORTS'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-                }`}
-            >
-              <BarChart3 size={16} />
-              Relatórios
-            </button>
-            <button
-              onClick={() => setViewMode('SUGGESTIONS')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'SUGGESTIONS'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-                }`}
-            >
-              <Sparkles size={16} />
-              Sugestões
-            </button>
-          </div>
-
-
+        <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto items-center">
+          <button
+            onClick={() => refetch()}
+            disabled={isLoadingReports}
+            className="p-2 text-gray-500 hover:text-blue-600 rounded-md transition-colors disabled:opacity-50"
+            title="Atualizar"
+          >
+            <RefreshCw size={16} className={isLoadingReports ? "animate-spin" : ""} />
+          </button>
+          <div className="w-[1px] h-4 bg-gray-200 mx-1"></div>
+          <button
+            onClick={() => setViewMode('REPORTS')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'REPORTS'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            <BarChart3 size={16} />
+            Relatórios
+          </button>
+          <button
+            onClick={() => setViewMode('SUGGESTIONS')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'SUGGESTIONS'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            <Sparkles size={16} />
+            Sugestões
+          </button>
         </div>
       </div>
 
       {viewMode === 'SUGGESTIONS' ? (
         <SmartSuggestions templates={templates} />
       ) : (
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          {/* Sidebar Filters */}
-          <aside className="w-full md:w-[320px] shrink-0 space-y-4 md:sticky md:top-6 md:h-[calc(100vh-120px)] md:overflow-y-auto pr-2 custom-scrollbar relative">
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-200 space-y-4 print:hidden">
+          <div className="flex flex-col gap-6">
 
-              {/* Period Section */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            {/* Stats Cards - Grid */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Total */}
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-blue-600 font-bold mb-2 text-xs uppercase tracking-wider">Total de<br />Designações</h3>
+                <p className="text-5xl font-bold text-gray-900 tracking-tight">{data.totalDesignations}</p>
+              </div>
+
+              {/* Participantes */}
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-emerald-600 font-bold mb-2 text-xs uppercase tracking-wider">Participantes<br />Ativos</h3>
+                <p className="text-5xl font-bold text-gray-900 tracking-tight">{data.count}</p>
+              </div>
+
+              {/* Periodo */}
+              <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-purple-600 font-bold mb-2 text-xs uppercase tracking-wider">Período<br />Selecionado</h3>
+                <div className="flex flex-col gap-1 mt-3">
+                  <span className="text-lg font-medium text-gray-900">{formatDateRange(startDate)}</span>
+                  <span className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">ATÉ</span>
+                  <span className="text-lg font-medium text-gray-900">{formatDateRange(endDate)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Filters Stack */}
+            <div className="space-y-6">
+
+              {/* Period Card */}
+              <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                   <Calendar size={14} /> Período
                 </div>
+
                 <div className="flex flex-wrap gap-2">
                   <FilterButton active={activeFilter === 'this_cycle'} onClick={() => setRange('this_cycle')} label="Ciclo Atual" />
                   <FilterButton active={activeFilter === 'next_cycle'} onClick={() => setRange('next_cycle')} label="Próximo Ciclo" />
@@ -523,12 +545,9 @@ export const ReportsView = () => {
                   <FilterButton active={activeFilter === 'this_year'} onClick={() => setRange('this_year')} label="Este Ano" />
                   <FilterButton active={activeFilter === 'all_time'} onClick={() => setRange('all_time')} label="Todo o Período" />
                 </div>
-              </div>
 
-              {/* Custom Date Picker */}
-              <div className="space-y-2">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Intervalo Personalizado</div>
-                <div className="w-full">
+                <div className="pt-2">
+                  <div className="text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-wider">Intervalo Personalizado</div>
                   <MonthRangePicker
                     startDate={startDate}
                     endDate={endDate}
@@ -543,9 +562,9 @@ export const ReportsView = () => {
                 </div>
               </div>
 
-              {/* Privilege Section */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {/* Privilege Card */}
+              <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                   <Filter size={14} /> Privilégio
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -557,25 +576,25 @@ export const ReportsView = () => {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 my-4"></div>
-
-              {/* Part Filters Section */}
-              <div className="space-y-6">
+              {/* Parts Filter Card */}
+              <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    <Filter size={14} /> Filtar Partes
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <Filter size={14} /> Filtrar Partes
                   </div>
-                  <button
-                    onClick={() => setSelectedTemplateIds([])}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:bg-blue-50 px-2 py-1 rounded transition-colors"
-                  >
-                    Limpar
-                  </button>
+                  {selectedTemplateIds.length > 0 && (
+                    <button
+                      onClick={() => setSelectedTemplateIds([])}
+                      className="text-xs text-blue-600 font-medium hover:underline"
+                    >
+                      Limpar
+                    </button>
+                  )}
                 </div>
 
                 {/* Tesouros */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Tesouros</h4>
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Tesouros</h4>
                   <div className="flex flex-wrap gap-2">
                     {filterOptions.filter((o: any) => {
                       const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
@@ -591,13 +610,12 @@ export const ReportsView = () => {
                   </div>
                 </div>
 
-                {/* FSM with Role Type */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Faça Seu Melhor</h4>
+                {/* FSM */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Faça Seu Melhor</h4>
 
-                  {/* Role Type Filter Nested in FSM */}
-                  <div className="bg-gray-50/50 p-2 rounded-lg border border-gray-100">
-                    <div className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Tipo de Designação</div>
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-wider">Tipo de Designação</div>
                     <div className="flex flex-wrap gap-2">
                       <RoleTypeButton type="ALL" label="Ambos" />
                       <RoleTypeButton type="TITULAR" label="Titular" />
@@ -620,183 +638,204 @@ export const ReportsView = () => {
                   </div>
                 </div>
 
-                {/* NVC */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Nossa Vida Cristã</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {filterOptions.filter((o: any) => {
-                      const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
-                      return t?.secao === 'nvc';
-                    }).map((option: any) => (
-                      <PartFilterButton
-                        key={option.value}
-                        active={selectedTemplateIds.includes(option.value)}
-                        onClick={() => toggleTemplate(option.value)}
-                        label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
-                      />
-                    ))}
+                {/* NVC & Outros */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Nossa Vida Cristã</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {filterOptions.filter((o: any) => {
+                        const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
+                        return t?.secao === 'nvc';
+                      }).map((option: any) => (
+                        <PartFilterButton
+                          key={option.value}
+                          active={selectedTemplateIds.includes(option.value)}
+                          onClick={() => toggleTemplate(option.value)}
+                          label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Outros */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-b border-gray-100 pb-1">Outros</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <PartFilterButton
-                      active={selectedTemplateIds.includes('tpl_presidente')}
-                      onClick={() => toggleTemplate('tpl_presidente')}
-                      label="Presidente"
-                    />
-                    {filterOptions.filter((o: any) => {
-                      const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
-                      return !['tesouros', 'fsm', 'nvc'].includes(t?.secao || '') && o.value !== 'tpl_presidente';
-                    }).map((option: any) => (
-                      <PartFilterButton
-                        key={option.value}
-                        active={selectedTemplateIds.includes(option.value)}
-                        onClick={() => toggleTemplate(option.value)}
-                        label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
-                      />
-                    ))}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Outros</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <PartFilterButton active={selectedTemplateIds.includes('tpl_presidente')} onClick={() => toggleTemplate('tpl_presidente')} label="Presidente" />
+                      {filterOptions.filter((o: any) => {
+                        const t = templates.find((t: any) => t.id === (o.value as string).replace('-READER', ''));
+                        return !['tesouros', 'fsm', 'nvc'].includes(t?.secao || '') && o.value !== 'tpl_presidente';
+                      }).map((option: any) => (
+                        <PartFilterButton
+                          key={option.value}
+                          active={selectedTemplateIds.includes(option.value)}
+                          onClick={() => toggleTemplate(option.value)}
+                          label={option.label.replace(' (Titular/Condutor)', '').replace(' (Leitor)', ' (L)')}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="pt-4 border-t border-gray-100">
+            {/* Charts */}
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                  <BarChart3 size={20} className="text-gray-400" /> Participantes por Volume
+                </h3>
                 <button
-                  onClick={() => refetch()}
-                  disabled={isLoadingReports}
-                  className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 font-semibold shadow-sm transition-all active:scale-95 text-sm"
+                  onClick={() => setShowChart(!showChart)}
+                  className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                  {isLoadingReports ? <Loader2 className="animate-spin" size={16} /> : 'Atualizar Relatório'}
+                  {showChart ? <><EyeOff size={16} /> Ocultar Gráfico</> : <><Eye size={16} /> Ver Gráfico</>}
                 </button>
               </div>
-            </div>
-          </aside>
 
-          {/* Main Content */}
-          <div className="flex-1 min-w-0 space-y-8">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3">
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[140px]">
-                <div className="absolute top-0 right-0 p-4 opacity-5">
-                  <BarChart3 size={80} className="text-blue-600" />
+              {showChart && (
+                <div className="space-y-4">
+                  {data.byParticipant.slice(0, 15).map((p: any, index: number) => {
+                    const max = data.byParticipant[0]?.total || 1;
+                    const percent = (p.total / max) * 100;
+                    return (
+                      <div key={p.name} className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-gray-500 w-4 text-right">{index + 1}</span>
+                        <div className="w-24 sm:w-32 text-sm font-medium text-gray-700 truncate text-right shrink-0" title={p.name}>{p.name}</div>
+                        <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        <div className="w-8 text-sm font-bold text-gray-900 text-left shrink-0">{p.total}</div>
+                      </div>
+                    );
+                  })}
+                  {data.byParticipant.length > 15 && (
+                    <div className="text-center pt-2">
+                      <span className="text-xs text-gray-400 italic">Exibindo top 15 de {data.byParticipant.length} participantes</span>
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-blue-600 font-bold mb-1 text-xs uppercase tracking-wider z-10 leading-tight">Total de<br />Designações</h3>
-                <p className="text-4xl font-bold text-gray-900 z-10">{data.totalDesignations}</p>
-              </div>
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[140px]">
-                <div className="absolute top-0 right-0 p-4 opacity-5">
-                  <Filter size={80} className="text-emerald-600" />
-                </div>
-                <h3 className="text-emerald-600 font-bold mb-1 text-xs uppercase tracking-wider z-10 leading-tight">Participantes<br />Ativos</h3>
-                <p className="text-4xl font-bold text-gray-900 z-10">{data.count}</p>
-              </div>
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[140px]">
-                <div className="absolute top-0 right-0 p-4 opacity-5">
-                  <Calendar size={80} className="text-purple-600" />
-                </div>
-                <h3 className="text-purple-600 font-bold mb-1 text-xs uppercase tracking-wider z-10 leading-tight">Período<br />Selecionado</h3>
-                <div className="text-sm font-medium text-gray-900 z-10 flex flex-col gap-0.5 mt-2">
-                  <span>{formatDateRange(startDate)}</span>
-                  <span className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">até</span>
-                  <span>{formatDateRange(endDate)}</span>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Charts with Toggle */}
-            <div className="grid grid-cols-1 gap-8 print:break-inside-avoid">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <BarChart3 size={18} className="text-gray-500" /> Participantes por Volume
-                  </h3>
-                  <button
-                    onClick={() => setShowChart(!showChart)}
-                    className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-2"
-                  >
-                    {showChart ? <><EyeOff size={16} /> Ocultar Gráfico</> : <><Eye size={16} /> Ver Gráfico</>}
-                  </button>
-                </div>
 
-                {showChart && (
-                  <ResponsiveContainer width="100%" height={Math.max(400, data.byParticipant.length * 40)}>
-                    <BarChart
-                      data={data.byParticipant}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} />
-                      <XAxis type="number" allowDecimals={false} />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={150}
-                        interval={0}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        cursor={{ fill: '#f3f4f6' }}
-                      />
-                      <Bar dataKey="total" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Designações" barSize={20} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
-            {/* Detailed Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden print:border-none print:shadow-none">
-              <div className="p-4 border-b border-gray-100 bg-gray-50/50 print:bg-transparent print:border-b-2 print:border-black flex justify-between items-center">
-                <h3 className="font-semibold text-gray-800">Detalhamento por Participante</h3>
-                <div className="relative print:hidden">
+            {/* Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h3 className="font-bold text-gray-800">Detalhamento por Participante</h3>
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input
                     type="text"
                     placeholder="Buscar participante..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                    className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-semibold print:bg-transparent">
+
+              <div className="w-full">
+                <table className="w-full text-sm text-left table-fixed">
+                  <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <SortableHeader label="Nome" sortKey="name" />
-                      <SortableHeader label="Total" sortKey="total" center />
-                      <SortableHeader label="Titular" sortKey="TITULAR" center />
-                      <SortableHeader label="Ajudante" sortKey="AJUDANTE" center />
-                      <SortableHeader label="Leitor" sortKey="LEITOR" center />
-                      <SortableHeader label="Oração" sortKey="ORACAO" center />
-                      <th className="px-6 py-3">Partes</th>
+                      <th className="w-[8px] sm:w-0 p-0"></th>
+                      <th className="px-2 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-left" onClick={() => handleSort('name')}>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nome</span>
+                          {sortConfig?.key === 'name' && (
+                            sortConfig.direction === 'asc' ? <ArrowUp size={12} className="text-blue-600" /> : <ArrowDown size={12} className="text-blue-600" />
+                          )}
+                        </div>
+                      </th>
+                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('total')}>
+                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Total</span>
+                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tot</span>
+                      </th>
+                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('TITULAR')}>
+                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Titular</span>
+                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">TIT</span>
+                      </th>
+                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('AJUDANTE')}>
+                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Ajudante</span>
+                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">AJD</span>
+                      </th>
+                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('LEITOR')}>
+                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Leitor</span>
+                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">LEI</span>
+                      </th>
+                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('ORACAO')}>
+                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Oração</span>
+                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">ORA</span>
+                      </th>
+                      <th className="hidden sm:table-cell px-6 py-3 text-left w-[30%]">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Partes</span>
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-50">
                     {processedList.map((p: any) => (
-                      <tr key={p.name} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-3 font-medium text-gray-900">{p.name}</td>
-                        <td className="px-6 py-3 text-center font-bold text-blue-600 bg-blue-50/30">{p.total}</td>
-                        <td className="px-6 py-3 text-center text-gray-600">{p.roles['TITULAR'] || '-'}</td>
-                        <td className="px-6 py-3 text-center text-gray-600">{p.roles['AJUDANTE'] || '-'}</td>
-                        <td className="px-6 py-3 text-center text-gray-600">{p.roles['LEITOR'] || '-'}</td>
-                        <td className="px-6 py-3 text-center text-gray-600">{p.roles['ORACAO'] || '-'}</td>
-                        <td className="px-6 py-3 text-gray-500 text-xs">
+                      <>
+                        <tr
+                          key={p.name}
+                          className="hover:bg-gray-50 transition-colors cursor-pointer sm:cursor-default group"
+                          onClick={() => toggleRow(p.name)}
+                        >
+                          <td className="sm:hidden pl-3 text-gray-400 align-middle">
+                            <div className={`p-1 rounded-full text-gray-400 group-hover:bg-gray-100 group-hover:text-blue-500 transition-colors ${expandedRows.has(p.name) ? 'bg-blue-50 text-blue-600' : ''}`}>
+                              {expandedRows.has(p.name) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </div>
+                          </td>
+                          <td className="px-2 py-4 font-medium text-gray-900 bg-white truncate max-w-[120px] sm:max-w-none">
+                            {p.name}
+                          </td>
+                          <td className="px-1 py-4 text-center font-bold text-blue-600 bg-blue-50/10">{p.total}</td>
+                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['TITULAR'] || '-'}</td>
+                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['AJUDANTE'] || '-'}</td>
+                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['LEITOR'] || '-'}</td>
+                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['ORACAO'] || '-'}</td>
+                          <td className="hidden sm:table-cell px-6 py-4 text-gray-500 text-xs text-wrap">
                           {Object.entries(p.templates)
                             .sort(([, a]: any, [, b]: any) => b - a)
                             .map(([k, v]) => `${k} (${v})`)
                             .join(', ')}
                         </td>
                       </tr>
+                        {expandedRows.has(p.name) && (
+                          <tr className="sm:hidden bg-gray-50 animate-in slide-in-from-top-1">
+                            <td colSpan={7} className="px-4 py-3 text-xs text-gray-600 border-b border-gray-100">
+                              <div className="font-semibold mb-1 text-gray-800">Partes Designadas:</div>
+                              {Object.keys(p.templates).length > 0 ? (
+                                Object.entries(p.templates)
+                                  .sort(([, a]: any, [, b]: any) => b - a)
+                                  .map(([k, v]) => (
+                                    <div key={k} className="flex justify-between py-1 border-b border-gray-200/50 last:border-0">
+                                      <span>{k}</span>
+                                      <span className="font-medium bg-white px-1.5 rounded text-gray-700">{v as number}</span>
+                                    </div>
+                                  ))
+                              ) : (
+                                <span className="italic text-gray-400">Nenhuma parte neste período.</span>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     ))}
+                    {processedList.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-12 text-center text-gray-400 italic">
+                          Nenhum registro encontrado.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
-          </div>
+
         </div>
       )}
     </div>

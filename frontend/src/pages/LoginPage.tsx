@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Lock } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -24,83 +25,98 @@ export const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error(err);
-      setError('Falha ao entrar. Verifique suas credenciais.');
+      setError('Credenciais inválidas. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="mx-auto h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-blue-600/20">
-          <Lock size={24} />
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
+
+      {/* Brand / Logo Area */}
+      <div className="mb-8 text-center">
+        <div className="mx-auto h-16 w-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl shadow-blue-600/20 transform rotate-3">
+          <Lock size={32} strokeWidth={2.5} />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Entrar no Sistema
-        </h2>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Bem-vindo de volta</h1>
+        <p className="text-gray-500 mt-2 text-sm">Acesse o sistema para gerenciar designações</p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl border border-red-100 font-medium text-center animate-in fade-in slide-in-from-top-1">
+                {error}
               </div>
             )}
             
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
+                  Email
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="seu@email.com"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50/30 focus:bg-white"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
+                  Senha
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    placeholder="••••••••"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50/30 focus:bg-white"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Senha
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {loading ? 'Entrando...' : 'Entrar'}
-              </button>
-            </div>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-base font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20 h-12"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin h-5 w-5" />
+              ) : (
+                <span className="flex items-center gap-2">
+                  Entrar <ArrowRight size={18} />
+                </span>
+              )}
+            </Button>
           </form>
         </div>
+
+        <p className="mt-8 text-center text-xs text-gray-400">
+          JW Planner © {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   );

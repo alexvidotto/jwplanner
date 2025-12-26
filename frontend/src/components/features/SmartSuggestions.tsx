@@ -87,12 +87,14 @@ export const SmartSuggestions = ({ templates }: SmartSuggestionsProps) => {
 
     let result = suggestions.map((user: any) => {
       // Enhance user with "Ready Parts"
-      const readyParts = user.skills.map((skillId: string) => {
+      const readyParts = user.skills.flatMap((skillId: string) => {
         const isReader = skillId.endsWith('_reader');
         const realId = isReader ? skillId.replace('_reader', '') : skillId;
         const template = templates.find(t => t.id === realId);
 
-        if (!template) return null;
+        if (!template) return [];
+
+        const parts = [];
 
         // Name Disambiguation
         const isDuplicate = nameCounts[template.titulo] > 1;
@@ -100,52 +102,78 @@ export const SmartSuggestions = ({ templates }: SmartSuggestionsProps) => {
           ? `${template.titulo} (${formatSection(template.secao)})`
           : template.titulo;
 
+        // 1. Main Role (Titular / Leitor)
+        // Verify if history exists
         const lastDate = user.history[skillId];
-        let status = 'NEVER'; // NEVER, READY, RECENT
+        let status = 'NEVER';
         let label = 'Nunca Fez';
         let monthsDiff = 999;
 
-        // Label Logic
-        // isReader -> (Leitor)
-        // isAssistant -> (Ajudante) (handled in the assistant filter block mainly, but good to be generic if logic changes)
-        // Main -> (Titular) ONLY if section is 'fsm'
-
-        const getRoleSuffix = () => {
+        const getRoleSuffix = (isAsst = false) => {
+          if (isAsst) return ' (Ajudante)';
           if (isReader) return ' (Leitor)';
-          // For main parts, only show (Titular) if it is FSM
           if (template.secao === 'fsm') return ' (Titular)';
           return '';
         };
 
-        if (lastDate) {
-          const date = parseISO(lastDate);
+        const calculateStatus = (dateStr?: string) => {
+          if (!dateStr) return { status: 'NEVER', label: 'Nunca Fez', monthsDiff: 999 };
+          const date = parseISO(dateStr);
           const now = new Date();
-          // Diff in months rough calc
-          monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+          const diff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+          const st = diff < minMonths ? 'RECENT' : 'READY';
+          const lbl = formatDistanceToNow(date, { locale: ptBR, addSuffix: true });
+          return { status: st, label: lbl, monthsDiff: diff };
+        };
 
-          if (monthsDiff < minMonths) {
-            status = 'RECENT';
-          } else {
-            status = 'READY';
-          }
-          label = formatDistanceToNow(date, { locale: ptBR, addSuffix: true }) + getRoleSuffix();
-        } else {
-          label = 'Nunca Fez' + getRoleSuffix();
-        }
+        const mainStats = calculateStatus(lastDate);
 
-        return {
+        parts.push({
           id: skillId,
           realId,
           name: displayName,
           isReader,
+          isAssistant: false,
           section: template.secao,
-          status,
-          label,
+          status: mainStats.status,
+          label: mainStats.label + getRoleSuffix(false),
           lastDate,
-          monthsDiff
+          monthsDiff: mainStats.monthsDiff
+        });
+
+        // 2. Assistant Role (if applicable and NOT reader)
+        if (!isReader && template.requerAjudante) {
+          const assistantKey = `${realId}_assistant`;
+          const asstDate = user.history[assistantKey];
+          const asstStats = calculateStatus(asstDate);
+
+          parts.push({
+            id: assistantKey,
+            realId,
+            name: displayName, // Same name
+            isReader: false,
+            isAssistant: true,
+            section: template.secao,
+            status: asstStats.status,
+            label: asstStats.label + getRoleSuffix(true),
+            lastDate: asstDate,
+            monthsDiff: asstStats.monthsDiff
+          });
+        }
+
+        return parts;
+      }).sort((a: any, b: any) => {
+        // Sort by status priority: NEVER > READY > RECENT
+        const getWeight = (s: string) => {
+          if (s === 'NEVER') return 3;
+          if (s === 'READY') return 2;
+          return 1;
         };
-      }).filter((p: any) => p !== null)
-        .sort((a: any, b: any) => b.monthsDiff - a.monthsDiff); // Most "ready" (oldest/never) first
+        const wA = getWeight(a.status);
+        const wB = getWeight(b.status);
+        if (wA !== wB) return wB - wA;
+        return b.monthsDiff - a.monthsDiff;
+      });
 
       return { ...user, readyParts };
     });
@@ -162,66 +190,13 @@ export const SmartSuggestions = ({ templates }: SmartSuggestionsProps) => {
       }
       // 3. Part Filter
       if (selectedPartId) {
-        if (selectedPartId.endsWith('_assistant')) {
-          const realId = selectedPartId.replace('_assistant', '');
-          // Check if they have the base skill (meaning they can do the part)
-          const hasSkill = user.readyParts.some((p: any) => p.realId === realId);
-          if (!hasSkill) return false;
-        } else {
-          // Strict match for normal parts/readers
-          const hasSkill = user.readyParts.some((p: any) => p.id === selectedPartId);
-          if (!hasSkill) return false;
-        }
+        const hasSkill = user.readyParts.some((p: any) => p.id === selectedPartId);
+        if (!hasSkill) return false;
       }
       return true;
     }).map((user: any) => {
-      // If Part Filter is active, filter readyParts
+      // If Part Filter is active, filter readyParts locally
       if (selectedPartId) {
-        if (selectedPartId.endsWith('_assistant')) {
-          const realId = selectedPartId.replace('_assistant', '');
-          const basePart = user.readyParts.find((p: any) => p.realId === realId);
-
-          if (basePart) {
-            const assistantKey = `${realId}_assistant`;
-            const lastDate = user.history[assistantKey];
-
-            let status = 'NEVER';
-            let label = 'Nunca Fez (Ajudante)';
-            let monthsDiff = 999;
-
-            if (lastDate) {
-              const date = parseISO(lastDate);
-              const now = new Date();
-              monthsDiff = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-
-              if (monthsDiff < minMonths) {
-                status = 'RECENT';
-              } else {
-                status = 'READY';
-              }
-              label = formatDistanceToNow(date, { locale: ptBR, addSuffix: true }) + ' (Ajudante)';
-            } else {
-              label = 'Nunca Fez (Ajudante)';
-            }
-
-            return {
-              ...user,
-              readyParts: [{
-                id: assistantKey,
-                realId: realId,
-                name: basePart.name, // Will include section if duplicate
-                isReader: false,
-                isAssistant: true,
-                status,
-                label,
-                lastDate,
-                monthsDiff
-              }]
-            };
-          }
-          return { ...user, readyParts: [] };
-        }
-
         return {
           ...user,
           readyParts: user.readyParts.filter((p: any) => p.id === selectedPartId)
@@ -356,49 +331,38 @@ export const SmartSuggestions = ({ templates }: SmartSuggestionsProps) => {
             <div className="p-4 space-y-3">
               {user.readyParts.length === 0 ? (
                 <div className="text-center py-6 text-gray-400 text-sm">
-                  Nenhuma habilidade cadastrada
+                  Nenhuma habilidade correspondente
                 </div>
               ) : (
                 user.readyParts.map((part: any) => (
-                  <div key={part.id} className="flex justify-between items-center group">
+                  <div key={part.id} className="flex justify-between items-center group py-1 border-b border-gray-50/50 last:border-0 hover:bg-gray-50/80 px-2 -mx-2 rounded transition-colors">
                     <div className="min-w-0 flex-1 pr-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium truncate ${part.status === 'NEVER' ? 'text-green-700' :
-                          part.status === 'READY' ? 'text-blue-700' :
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-sm font-semibold truncate ${part.status === 'NEVER' ? 'text-green-700' :
+                            part.status === 'READY' ? 'text-blue-700' :
                             'text-gray-400'
                           }`}>
                           {part.name}
                         </span>
-                        {part.isReader && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] rounded uppercase tracking-wider">
-                            Leitor
-                          </span>
-                        )}
-                        {part.isAssistant && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] rounded uppercase tracking-wider">
-                            Ajudante
-                          </span>
-                        )}
                       </div>
-                      <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                        <Clock size={10} />
-                        {part.label}
+                      <div className="text-xs text-gray-400 flex items-center gap-1.5">
+                        <span className="opacity-75">{part.label}</span>
                       </div>
                     </div>
 
-                    <div>
+                    <div className="shrink-0">
                       {part.status === 'NEVER' && (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 uppercase tracking-wide border border-green-200">
                           Nunca
                         </span>
                       )}
                       {part.status === 'READY' && (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 uppercase tracking-wide border border-blue-100">
                           Disponível
                         </span>
                       )}
                       {part.status === 'RECENT' && (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-400">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-50 text-gray-400 uppercase tracking-wide">
                           Recente
                         </span>
                       )}

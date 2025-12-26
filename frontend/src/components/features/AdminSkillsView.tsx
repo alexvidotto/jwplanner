@@ -12,7 +12,7 @@ interface AdminSkillsViewProps {
   setIsDirty?: (dirty: boolean) => void;
 }
 
-export const AdminSkillsView = ({ participants, setParticipants, parts, onBack, isDirty, setIsDirty }: AdminSkillsViewProps) => {
+export const AdminSkillsView = ({ participants, setParticipants, parts, onBack, setIsDirty }: AdminSkillsViewProps) => {
   const [localParticipants, setLocalParticipants] = useState<any[]>(participants);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [changedUserIds, setChangedUserIds] = useState<Set<string>>(new Set());

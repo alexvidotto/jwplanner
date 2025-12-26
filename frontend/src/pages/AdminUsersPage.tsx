@@ -89,7 +89,7 @@ export const AdminUsersPage = () => {
   };
 
   const activeUsers = users.filter(u => u.uidAuth);
-  const pendingUsers = users.filter(u => !u.uidAuth && u.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+  const pendingUsers = users.filter(u => !u.uidAuth && u.email && u.nome.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const confirmResetPassword = async () => {
     if (!confirmingUser) return;
@@ -103,6 +103,7 @@ export const AdminUsersPage = () => {
         password: response.data.password
       });
       setConfirmingUser(null);
+      setEditingUser(null); // Close the edit modal so the user can see the credentials banner
       // Ensure specific modal is closed if any (we reuse confirmingUser for both)
     } catch (error: any) {
       console.error('Failed to reset password', error);
@@ -192,17 +193,13 @@ export const AdminUsersPage = () => {
                   </td>
                 </tr>
               ) : activeUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
+                <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => setEditingUser(user)}>
                   <td className="px-6 py-5 text-gray-900 font-medium align-middle">
                     <div className="flex items-center justify-between">
                       <span>{user.nome}</span>
-                      {/* Inline Actions (Only visible on hover or if editing) */}
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => setEditingUser(user)} className="p-1 text-gray-400 hover:text-blue-600" title="Editar"><Search size={14} /></button>
-                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-gray-500 text-sm align-middle">
+                  <td className="px-6 py-5 text-gray-500 text-sm align-middle max-w-[150px] truncate">
                     {user.email}
                   </td>
                 </tr>

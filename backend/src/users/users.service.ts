@@ -12,30 +12,57 @@ export class UsersService {
   ) { }
 
   async createWithAuth(data: Prisma.ParticipanteCreateInput & { role?: any }) {
-    // 1. Generate random password
-    const password = crypto.randomBytes(8).toString('hex');
-
-    // 2. Create user in Firebase
-    let uidAuth = '';
-    try {
-      const userRecord = await this.firebaseService.getAuth().createUser({
-        email: data.email,
-        password: password,
-        displayName: data.nome,
-      });
-      uidAuth = userRecord.uid;
-    } catch (error) {
-      console.error('Error creating Firebase user:', error);
-      throw error;
+    // 0. Check if user with same email already exists (if email is provided)
+    if (data.email) {
+      const existingUser = await this.usersRepository.findByEmail(data.email);
+      if (existingUser) {
+        throw new Error(`Usuário com o email '${data.email}' já existe.`);
+      }
     }
 
-    // 3. Create user in Postgres with uidAuth
-    const user = await this.usersRepository.create({
-      ...data,
-      uidAuth,
-    });
+    let uidAuth = '';
+    let password = '';
 
-    return { user, password };
+    // 1. If email is provided, create in Firebase
+    if (data.email) {
+      // Generate random password
+      password = crypto.randomBytes(8).toString('hex');
+
+      try {
+        const userRecord = await this.firebaseService.getAuth().createUser({
+          email: data.email,
+          password: password,
+          displayName: data.nome,
+        });
+        uidAuth = userRecord.uid;
+      } catch (error: any) {
+        if (error.code === 'auth/email-already-exists') {
+          throw new Error(`Usuário com o email '${data.email}' já existe no sistema de autenticação.`);
+        }
+        console.error('Error creating Firebase user:', error);
+        throw error;
+      }
+    }
+
+    // 2. Create user in Postgres
+    try {
+      const user = await this.usersRepository.create({
+        ...data,
+        uidAuth: uidAuth || null, // Only set uidAuth if created in Firebase
+      });
+      return { user, password: password || null };
+    } catch (error) {
+      console.error('Error creating user in DB:', error);
+      // Cleanup Firebase if it was created
+      if (uidAuth) {
+        try {
+          await this.firebaseService.getAuth().deleteUser(uidAuth);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup Firebase user after DB failure:', cleanupError);
+        }
+      }
+      throw error;
+    }
   }
 
   async create(data: Prisma.ParticipanteCreateInput): Promise<Participante> {
@@ -172,18 +199,12 @@ export class UsersService {
         await this.firebaseService.getAuth().deleteUser(user.uidAuth);
       } catch (error: any) {
         console.warn(`Failed to delete Firebase user ${user.uidAuth}:`, error.message);
-        // Continue to unlink in DB
+        // Continue to delete in DB
       }
     }
 
-    // 2. Unlink from DB (Keep the participant, just remove access)
-    await this.usersRepository.update(id, {
-      uidAuth: null,
-      role: 'USER', // Reset role to basic user
-      // We keep the email so they can be re-invited or linked again later if needed
-      // ensuring we don't lose their contact info if it was real.
-      // If the email was generated, it stays there, which is fine.
-    });
+    // 2. Perform Hard Delete (Repository handles cleanup of relations)
+    await this.usersRepository.delete(id);
 
     return { success: true };
   }

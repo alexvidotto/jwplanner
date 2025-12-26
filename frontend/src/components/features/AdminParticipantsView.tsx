@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { ArrowLeft, Plus, Edit2, Trash2, Check, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Toast } from '../ui/Toast';
 import { PRIVILEGE_OPTIONS } from '../../lib/constants';
 import { useCreateParticipant, useUpdateParticipant, useDeleteParticipant, useParticipantHistory } from '../../hooks/useParticipants';
 import { Loader2 } from 'lucide-react';
@@ -27,10 +28,14 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: history, isLoading: isLoadingHistory } = useParticipantHistory(editingId);
-  const [formData, setFormData] = useState({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', active: true });
+  const [formData, setFormData] = useState({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', email: '', active: true });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Participant | 'status' | 'privilege'; direction: 'asc' | 'desc' } | null>(null);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; isVisible: boolean }>({ message: '', type: 'success', isVisible: false });
 
   const createParticipant = useCreateParticipant();
   const updateParticipant = useUpdateParticipant();
@@ -45,57 +50,74 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
 
   const handleSave = async () => {
     if (!formData.name) return;
+    setIsSaving(true);
 
     try {
       const payload = {
         nome: formData.name,
-        privilegio: formData.type as any, // Cast to match enum if needed
-        // Gender is implied by privilegio (PUB_HOMEM vs PUB_MULHER) for database,
-        // but frontend tracks gender to help select specific privilege.
-        // We ensure formData.type is correct before saving.
+        privilegio: formData.type as any,
         telefone: formData.phone || null,
-        podeDesignar: formData.active
+        podeDesignar: formData.active,
+        email: formData.email || null,
       };
 
       if (editingId) {
         await updateParticipant.mutateAsync({ id: editingId, ...payload });
       } else {
-        // Auto-generate email like in other parts of app for consistency, or leave null
-        const email = `${formData.name.toLowerCase().replace(/\s/g, '.')}@example.com`;
-        await createParticipant.mutateAsync({ ...payload, email });
+        // If email is empty, backend/service will generate one, but if provided, it's used
+        await createParticipant.mutateAsync(payload);
       }
 
+      // Success Feedback
       setIsModalOpen(false);
       setEditingId(null);
-      setFormData({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', active: true });
-    } catch (error) {
+      setFormData({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', email: '', active: true });
+      setToast({ message: 'Salvo com sucesso!', type: 'success', isVisible: true });
+    } catch (error: any) {
       console.error('Failed to save participant:', error);
-      alert('Erro ao salvar participante. Verifique o console.');
+      const msg = error.response?.data?.message || 'Erro ao salvar participante. Verifique se todos os campos estão corretos.';
+      setToast({ message: msg, type: 'error', isVisible: true });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleEdit = (p: Participant) => {
     setEditingId(p.id);
-    setFormData({ name: p.name, type: p.type, gender: p.gender, phone: p.phone || '', active: p.active !== false });
+    setFormData({
+      name: p.name,
+      type: p.type,
+      gender: p.gender,
+      phone: p.phone || '',
+      email: (p as any).email || '', // Cast to any to access email if it exists on Participant type in runtime but not yet in interface
+      active: p.active !== false
+    });
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
+    setIsDeleting(true);
     try {
       await deleteParticipant.mutateAsync(id);
       setConfirmDelete(null);
-    } catch (error) {
+      setToast({ message: 'Participante removido com sucesso!', type: 'success', isVisible: true });
+    } catch (error: any) {
       console.error('Failed to delete participant:', error);
-      alert('Erro ao excluir participante.');
+      const msg = error.response?.data?.message || 'Erro ao excluir participante. Tente novamente.';
+      setToast({ message: msg, type: 'error', isVisible: true });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const toggleActive = async (id: string, currentActive: boolean | undefined) => {
+    // Optimistic toggle usually doesn't need full blocking loader, but let's be safe
     try {
       await updateParticipant.mutateAsync({ id, podeDesignar: !currentActive });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to toggle active status:', error);
-      alert('Erro ao alterar status.');
+      const msg = error.response?.data?.message || 'Erro ao alterar status.';
+      setToast({ message: msg, type: 'error', isVisible: true });
     }
   };
 
@@ -110,6 +132,7 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
       formData.type !== original.type ||
       formData.gender !== original.gender ||
       (formData.phone || '') !== (original.phone || '') ||
+      (formData.email || '') !== ((original as any).email || '') ||
       formData.active !== (original.active !== false)
     );
   }, [formData, editingId, participants]);
@@ -175,7 +198,7 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
               <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2 sm:ml-0"><ArrowLeft size={20} /></Button>
               <h1 className="font-bold text-gray-800 text-lg sm:text-lg truncate max-w-[200px] sm:max-w-none">Cadastro de Usuários</h1>
             </div>
-            <Button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', active: true }); setIsModalOpen(true); }} size="sm" className="whitespace-nowrap">
+            <Button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'PUB_HOMEM', gender: 'PH', phone: '', email: '', active: true }); setIsModalOpen(true); }} size="sm" className="whitespace-nowrap">
               <Plus size={16} /> <span className="hidden sm:inline">Novo Usuário</span><span className="sm:hidden">Novo</span>
             </Button>
           </div>
@@ -249,8 +272,8 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
                       <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(participant); }} title="Editar">
                         <Edit2 size={16} className="text-blue-600" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmDelete(participant.id); }} title="Excluir">
-                        <Trash2 size={16} className="text-red-600" />
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmDelete(participant.id); }} title="Excluir" disabled={isDeleting}>
+                        <Trash2 size={16} className={`text-red-600 ${isDeleting ? 'opacity-50' : ''}`} />
                       </Button>
                     </div>
                   </td>
@@ -269,6 +292,16 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
               <div>
                 <label className="text-sm text-gray-600 block mb-1">Nome Completo</label>
                 <input className="w-full border rounded p-2" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-sm text-gray-600 block mb-1">Email <span className="text-xs text-gray-400 font-normal">(Opcional)</span></label>
+                <input
+                  type="email"
+                  className="w-full border rounded p-2"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Opcional (para acesso ao sistema)"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -398,7 +431,8 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={!isDirty}>
+              <Button onClick={handleSave} disabled={!isDirty || isSaving}>
+                {isSaving ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
                 {editingId ? 'Salvar Alterações' : 'Criar Usuário'}
               </Button>
             </div>
@@ -406,7 +440,20 @@ export const AdminParticipantsView = ({ participants, onBack }: AdminParticipant
         </div>
       )}
 
-      <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => confirmDelete && handleDelete(confirmDelete)} title="Excluir Participante" message="Tem certeza? Isso pode afetar designações existentes." />
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+        title="Excluir Participante"
+        message="Tem certeza? Isso pode afetar designações existentes."
+        isLoading={isDeleting}
+      />
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+      />
     </div>
   );
 };

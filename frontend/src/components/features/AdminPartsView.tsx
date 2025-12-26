@@ -2,6 +2,7 @@ import { useState, useMemo as useMemo2 } from 'react';
 import { ArrowLeft, Plus, Edit2, Trash2, Book, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Toast } from '../ui/Toast';
 import { useCreatePart, useUpdatePart, useDeletePart, usePartHistory } from '../../hooks/useParts';
 import { Loader2 } from 'lucide-react';
 
@@ -31,12 +32,17 @@ export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof PartTemplate; direction: 'asc' | 'desc' } | null>(null);
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; isVisible: boolean }>({ message: '', type: 'success', isVisible: false });
+
   const createPart = useCreatePart();
   const updatePart = useUpdatePart();
   const deletePart = useDeletePart();
 
   const handleSave = async () => {
     if (!formData.title) return;
+    setIsSaving(true);
 
     try {
       const timeInt = parseInt(formData.defaultTime.replace(/\D/g, '')) || 5;
@@ -60,9 +66,13 @@ export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
       setIsModalOpen(false);
       setEditingId(null);
       setFormData({ title: '', defaultTime: '5 min', section: 'fsm', requiresAssistant: false, requiresReader: false, hasObservation: false, hasTime: false });
-    } catch (error) {
+      setToast({ message: 'Parte salva com sucesso!', type: 'success', isVisible: true });
+    } catch (error: any) {
       console.error('Failed to save part:', error);
-      alert('Erro ao salvar parte.');
+      const msg = error.response?.data?.message || 'Erro ao salvar parte.';
+      setToast({ message: msg, type: 'error', isVisible: true });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -73,12 +83,17 @@ export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
   };
 
   const handleDelete = async (id: string) => {
+    setIsDeleting(true);
     try {
       await deletePart.mutateAsync(id);
       setConfirmDelete(null);
-    } catch (error) {
+      setToast({ message: 'Parte removida com sucesso!', type: 'success', isVisible: true });
+    } catch (error: any) {
       console.error('Failed to delete part:', error);
-      alert('Erro ao excluir parte.');
+      const msg = error.response?.data?.message || 'Erro ao excluir parte.';
+      setToast({ message: msg, type: 'error', isVisible: true });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -223,8 +238,8 @@ export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
                       <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(p); }} title="Editar">
                         <Edit2 size={16} className="text-blue-600" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmDelete(p.id); }} title="Excluir">
-                        <Trash2 size={16} className="text-red-600" />
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setConfirmDelete(p.id); }} title="Excluir" disabled={isDeleting}>
+                        <Trash2 size={16} className={`text-red-600 ${isDeleting ? 'opacity-50' : ''}`} />
                       </Button>
                     </div>
                   </td>
@@ -320,13 +335,29 @@ export const AdminPartsView = ({ parts, onBack }: AdminPartsViewProps) => {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={!isDirty}>Salvar</Button>
+              <Button onClick={handleSave} disabled={!isDirty || isSaving}>
+                {isSaving ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
+                Salvar
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      <ConfirmModal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => confirmDelete && handleDelete(confirmDelete)} title="Excluir Parte Template" message="Isso não removerá designações já criadas na grade, apenas a opção de criar novas." />
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+        title="Excluir Parte Template"
+        message="Isso não removerá designações já criadas na grade, apenas a opção de criar novas."
+        isLoading={isDeleting}
+      />
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+      />
     </div>
   );
 };

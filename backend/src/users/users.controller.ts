@@ -10,9 +10,13 @@ export class UsersController {
   @Post()
   @UseGuards(AuthGuard) // Only Admins should create users
   async create(@Request() req, @Body() data: Prisma.ParticipanteCreateInput) {
-    // TODO: explicit role check if needed, e.g. if (req.user.role !== 'ADMIN') throw ForbiddenException
-    // For now, trusting the guard or will add role check soon.
-    return this.usersService.createWithAuth(data);
+    // TODO: explicit role check if needed
+    try {
+      return await this.usersService.createWithAuth(data);
+    } catch (e: any) {
+      // Return 400 Bad Request with the error message (e.g., "User already exists")
+      throw new HttpException(e.message || String(e), HttpStatus.BAD_REQUEST);
+    }
   }
 
   @Get()

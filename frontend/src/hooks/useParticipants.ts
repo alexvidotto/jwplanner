@@ -18,7 +18,7 @@ export const useCreateParticipant = () => {
       const { data } = await api.post('/users', participant);
       return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['participants'] });
     },
   });
@@ -31,7 +31,7 @@ export const useUpdateParticipant = () => {
       const { data: res } = await api.put(`/users/${id}`, data);
       return res;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['participants'] });
     },
   });
@@ -43,7 +43,7 @@ export const useDeleteParticipant = () => {
     mutationFn: async (id: string) => {
       await api.delete(`/users/${id}`);
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['participants'] });
     },
   });
@@ -56,7 +56,7 @@ export const useBulkUpdateParticipants = () => {
       const { data } = await api.post('/users/bulk-skills', { updates });
       return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['participants'] });
     },
   });

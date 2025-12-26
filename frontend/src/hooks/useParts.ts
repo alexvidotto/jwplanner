@@ -18,7 +18,7 @@ export const useCreatePart = () => {
       const { data } = await api.post('/parts', part);
       return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
       queryClient.invalidateQueries({ queryKey: ['week'] });
     },
@@ -32,7 +32,7 @@ export const useUpdatePart = () => {
       const { data: res } = await api.put(`/parts/${id}`, data);
       return res;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
       queryClient.invalidateQueries({ queryKey: ['week'] });
     },
@@ -45,7 +45,7 @@ export const useDeletePart = () => {
     mutationFn: async (id: string) => {
       await api.delete(`/parts/${id}`);
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['parts'] });
       queryClient.invalidateQueries({ queryKey: ['week'] });
     },

@@ -13,6 +13,16 @@ export const ChangePasswordPage = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to logout', error);
+      navigate('/login');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -50,20 +60,25 @@ export const ChangePasswordPage = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
+        <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+          <div className="mx-auto h-24 w-24 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl shadow-blue-600/20 transform rotate-3">
+            <Lock size={40} strokeWidth={2.5} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Senha Alterada!</h1>
+        </div>
+
+        <div className="w-full max-w-sm">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center animate-in slide-in-from-bottom-4 duration-500 delay-100">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-50 mb-6 border border-green-100">
+              <CheckCircle className="h-8 w-8 text-green-600" strokeWidth={2.5} />
             </div>
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Senha Alterada!
-            </h3>
-            <div className="mt-2">
-              <p className="text-sm text-gray-500">
-                Sua senha foi alterada com sucesso. Você será redirecionado para o login em instantes.
-              </p>
-            </div>
+            <p className="text-gray-600 mb-2">
+              Sua senha foi atualizada com sucesso.
+            </p>
+            <p className="text-sm text-gray-400">
+              Redirecionando para o login...
+            </p>
           </div>
         </div>
       </div>
@@ -71,99 +86,100 @@ export const ChangePasswordPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <Lock className="text-blue-600" size={24} />
-          </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
+
+      {/* Brand / Logo Area */}
+      <div className="mb-8 text-center animate-in fade-in zoom-in duration-500">
+        <div className="mx-auto h-24 w-24 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl shadow-blue-600/20 transform rotate-3">
+          <Lock size={40} strokeWidth={2.5} />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Alterar Senha
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Por segurança, você deve alterar sua senha no primeiro acesso.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Alterar Senha</h1>
+        <p className="text-gray-500 mt-2 text-sm">Por segurança, altere sua senha no primeiro acesso</p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500 delay-100">
+          <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start gap-3">
-                <AlertCircle className="text-red-500 mt-0.5" size={18} />
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl border border-red-100 font-medium text-center animate-in fade-in slide-in-from-top-1 flex items-center justify-center gap-2">
+                <AlertCircle size={16} />
+                {error}
               </div>
             )}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Nova Senha
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="password" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
+                  Nova Senha
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50/30 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
+                  Confirmar Nova Senha
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <CheckCircle className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50/30 focus:bg-white"
+                  />
+                </div>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirmar Nova Senha
-              </label>
-              <div className="mt-1">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {isSubmitting ? 'Alterando...' : 'Alterar Senha'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl text-base font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20 h-12 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Alterando...' : 'Alterar Senha'}
+            </button>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Ou
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <button
-                onClick={logout}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Sair
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors"
+            >
+              Cancelar e Sair
               </button>
-            </div>
           </div>
+        </div>
+
+        <div className="mt-8 text-center space-y-2">
+          <p className="text-xs text-gray-400">
+            JW Planner © {new Date().getFullYear()}
+          </p>
+          <p className="text-[10px] text-gray-300 font-medium">
+            Made within Antigravity by Alex Vidotto
+          </p>
         </div>
       </div>
     </div>

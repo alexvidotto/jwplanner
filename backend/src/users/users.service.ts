@@ -189,18 +189,26 @@ export class UsersService {
     return { success: true };
   }
 
-  async delete(id: string) {
+  async delete(id: string, options?: { scope?: string }) {
     const user = await this.usersRepository.findById(id);
     if (!user) throw new Error('User not found');
 
-    // 1. Delete from Firebase if exists
+    // 1. Delete from Firebase if exists (common for both modes if they have auth)
     if (user.uidAuth) {
       try {
         await this.firebaseService.getAuth().deleteUser(user.uidAuth);
       } catch (error: any) {
         console.warn(`Failed to delete Firebase user ${user.uidAuth}:`, error.message);
-        // Continue to delete in DB
+        // Continue
       }
+    }
+
+    // 1.5. If scope is 'access', ONLY unlink auth and return (Soft Delete/Unlink)
+    // This allows keeping the Participant record (for history/assignments) but removing system access.
+    // We keep the email as requested, just removing the link to the auth system.
+    if (options?.scope === 'access') {
+      await this.usersRepository.update(id, { uidAuth: null });
+      return { success: true, message: 'User access removed (unlinked), participant retained.' };
     }
 
     // 2. Perform Hard Delete (Repository handles cleanup of relations)

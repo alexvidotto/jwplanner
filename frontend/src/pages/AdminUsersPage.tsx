@@ -120,9 +120,14 @@ export const AdminUsersPage = () => {
     setIsSubmitting(true);
 
     try {
-      await api.delete(`/users/${user.id}`);
-      setUsers(users.filter(u => u.id !== user.id));
+      await api.delete(`/users/${user.id}?scope=access`);
+      setUsers(users.map(u => u.id === user.id ? { ...u, uidAuth: null, email: null } : u).filter(u => u.uidAuth)); // Optimistic update: unlinked users shouldn't be in the 'activeUsers' list (which filters by uidAuth)
+      // Actually, activeUsers = users.filter(u => u.uidAuth). If we nullify uidAuth, they drop out.
+      // But let's just re-fetch or filter out.
+      setUsers(users.map(u => u.id === user.id ? { ...u, uidAuth: null } : u));
+
       setConfirmingUser(null);
+      setEditingUser(null); // Also close the edit modal!
     } catch (error: any) {
       console.error('Failed to delete user', error);
       alert('Erro ao excluir usuário: ' + (error.response?.data?.message || 'Erro desconhecido'));
@@ -156,7 +161,7 @@ export const AdminUsersPage = () => {
 
       {/* Success Message Banner (Global) */}
       {createdCredentials && !isLinkModalOpen && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-start animate-in fade-in slide-in-from-top-2">
+        <div className="mb-6 p-4 pr-12 bg-green-50 border border-green-200 rounded-lg flex justify-between items-start animate-in fade-in slide-in-from-top-2 relative">
           <div>
             <h3 className="text-sm font-bold text-green-800 mb-1">Credenciais Geradas com Sucesso!</h3>
             <div className="text-sm text-green-700">
@@ -164,18 +169,22 @@ export const AdminUsersPage = () => {
               <p>Senha: {createdCredentials.password}</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div>
             <button
               onClick={copyToClipboard}
-              className="flex items-center gap-1 px-3 py-1 bg-white border border-green-200 rounded text-sm font-medium text-green-700 hover:bg-green-50"
+              className="flex items-center justify-center p-2 bg-white border border-green-200 rounded-md text-green-700 hover:bg-green-50 shadow-sm transition-colors"
+              title={copied ? 'Copiado!' : 'Copiar Credenciais'}
             >
-              {copied ? <Check size={14} /> : <Copy size={14} />}
-              {copied ? 'Copiado' : 'Copiar'}
-            </button>
-            <button onClick={() => setCreatedCredentials(null)} className="text-green-600 hover:text-green-800">
-              <X size={18} />
+              {copied ? <Check size={16} /> : <Copy size={16} />}
             </button>
           </div>
+          <button
+            onClick={() => setCreatedCredentials(null)}
+            className="absolute top-3 right-3 text-green-600 hover:text-green-800 p-1 hover:bg-green-100/50 rounded-full transition-colors"
+            title="Fechar"
+          >
+            <X size={18} />
+          </button>
         </div>
       )}
 
@@ -235,7 +244,7 @@ export const AdminUsersPage = () => {
                 </p>
                 <div className="bg-white p-4 rounded border border-green-200 w-full mb-4">
                   <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-mono font-medium text-gray-900 mb-2">{createdCredentials.email}</p>
+                  <p className="font-mono font-medium text-gray-900 mb-2 break-all">{createdCredentials.email}</p>
                   <p className="text-sm text-gray-500">Senha</p>
                   <p className="font-mono font-medium text-gray-900">{createdCredentials.password}</p>
                 </div>
@@ -400,9 +409,12 @@ export const AdminUsersPage = () => {
                 className={`px-3 py-2 text-sm text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${(confirmingUser.action === 'RESET' || confirmingUser.action === 'DELETE') ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
                   }`}
               >
-                {isSubmitting ? 'Processando...' : (
+                {isSubmitting ? (
+                  confirmingUser.action === 'DELETE' ? 'Excluindo...' :
+                    confirmingUser.action === 'RESET' ? 'Redefinindo...' : 'Gerando...'
+                ) : (
                   confirmingUser.action === 'RESET' ? 'Redefinir' :
-                    confirmingUser.action === 'DELETE' ? 'Excluir' : 'Sim, Gerar'
+                      confirmingUser.action === 'DELETE' ? 'Sim, Remover Acesso' : 'Sim, Gerar'
                 )}
               </button>
             </div>

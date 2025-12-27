@@ -748,7 +748,21 @@ export const ReportsView = () => {
                 <table className="w-full text-sm text-left table-fixed">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="w-[8px] sm:w-0 p-0"></th>
+                      <th className="w-[40px] px-2 py-3 text-center">
+                        <button
+                          onClick={() => {
+                            if (expandedRows.size === processedList.length) {
+                              setExpandedRows(new Set());
+                            } else {
+                              setExpandedRows(new Set(processedList.map((p: any) => p.name)));
+                            }
+                          }}
+                          className="text-gray-400 hover:text-blue-600 transition-colors p-1 rounded hover:bg-gray-100"
+                          title={expandedRows.size === processedList.length ? "Recolher Todos" : "Expandir Todos"}
+                        >
+                          {expandedRows.size === processedList.length ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      </th>
                       <th className="px-2 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-left" onClick={() => handleSort('name')}>
                         <div className="flex items-center gap-1">
                           <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nome</span>
@@ -757,28 +771,11 @@ export const ReportsView = () => {
                           )}
                         </div>
                       </th>
-                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('total')}>
-                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tot</span>
+                      <th className="w-[80px] px-2 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('total')}>
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total</span>
                       </th>
-                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('TITULAR')}>
-                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Titular</span>
-                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">TIT</span>
-                      </th>
-                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('AJUDANTE')}>
-                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Ajudante</span>
-                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">AJD</span>
-                      </th>
-                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('LEITOR')}>
-                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Leitor</span>
-                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">LEI</span>
-                      </th>
-                      <th className="w-[12%] sm:w-[10%] px-1 py-3 cursor-pointer hover:bg-gray-100 transition-colors text-center" onClick={() => handleSort('ORACAO')}>
-                        <span className="hidden sm:inline text-xs font-bold text-gray-400 uppercase tracking-wider">Oração</span>
-                        <span className="sm:hidden text-[10px] font-bold text-gray-400 uppercase tracking-wider">ORA</span>
-                      </th>
-                      <th className="hidden sm:table-cell px-6 py-3 text-left w-[30%]">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Partes</span>
+                      <th className="hidden sm:table-cell px-6 py-3 text-left w-[60%]">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Partes (Resumo)</span>
                       </th>
                     </tr>
                   </thead>
@@ -790,20 +787,15 @@ export const ReportsView = () => {
                           className="hover:bg-gray-50 transition-colors cursor-pointer sm:cursor-default group"
                           onClick={() => toggleRow(p.name)}
                         >
-                          <td className="sm:hidden pl-3 text-gray-400 align-middle">
-                            <div className={`p-1 rounded-full text-gray-400 group-hover:bg-gray-100 group-hover:text-blue-500 transition-colors ${expandedRows.has(p.name) ? 'bg-blue-50 text-blue-600' : ''}`}>
-                              {expandedRows.has(p.name) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </div>
+                          <td className="pl-3 text-center align-middle">
+                            {/* Indicator dot or empty */}
+                            <div className={`w-1.5 h-1.5 rounded-full mx-auto transition-colors ${expandedRows.has(p.name) ? 'bg-blue-400' : 'bg-gray-200'}`} />
                           </td>
-                          <td className="px-2 py-4 font-medium text-gray-900 bg-white truncate max-w-[120px] sm:max-w-none">
+                          <td className="px-2 py-4 font-medium text-gray-900 bg-white truncate max-w-[150px] sm:max-w-none">
                             {p.name}
                           </td>
-                          <td className="px-1 py-4 text-center font-bold text-blue-600 bg-blue-50/10">{p.total}</td>
-                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['TITULAR'] || '-'}</td>
-                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['AJUDANTE'] || '-'}</td>
-                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['LEITOR'] || '-'}</td>
-                          <td className="px-1 py-4 text-center text-gray-500">{p.roles['ORACAO'] || '-'}</td>
-                          <td className="hidden sm:table-cell px-6 py-4 text-gray-500 text-xs text-wrap">
+                          <td className="px-2 py-4 text-center font-bold text-blue-600 bg-blue-50/10 text-base">{p.total}</td>
+                          <td className="hidden sm:table-cell px-6 py-4 text-gray-500 text-xs text-wrap leading-relaxed">
                           {Object.entries(p.templates)
                             .sort(([, a]: any, [, b]: any) => b - a)
                             .map(([k, v]) => `${k} (${v})`)
@@ -812,7 +804,7 @@ export const ReportsView = () => {
                       </tr>
                         {expandedRows.has(p.name) && (
                           <tr className="sm:hidden bg-gray-50 animate-in slide-in-from-top-1">
-                            <td colSpan={7} className="px-4 py-3 text-xs text-gray-600 border-b border-gray-100">
+                            <td colSpan={3} className="px-4 py-3 text-xs text-gray-600 border-b border-gray-100">
                               <div className="font-semibold mb-1 text-gray-800">Partes Designadas:</div>
                               {Object.keys(p.templates).length > 0 ? (
                                 Object.entries(p.templates)

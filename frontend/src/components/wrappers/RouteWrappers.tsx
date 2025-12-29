@@ -17,7 +17,6 @@ export const PlannerWrapper = () => {
     <AdminPlanner
       weekData={context.activeWeek}
       setWeekData={context.handleUpdateWeek}
-      onBack={() => navigate('/')}
       onNavigateWeek={context.handleNavigateWeek}
       onJumpToCurrentWeek={context.handleJumpToCurrentWeek}
       onSelectDate={context.handleDateSelect}

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, Calendar, Wand2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, Loader2, Calendar, Wand2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 import { EditableField } from '../ui/EditableField';
@@ -14,7 +14,6 @@ import { getWolWeekContent } from '../../services/wol';
 interface AdminPlannerProps {
   weekData: any; // Type accurately if possible
   setWeekData: (data: any) => void;
-  onBack: () => void;
   onNavigateWeek: (direction: number) => void;
   onJumpToCurrentWeek: () => void;
   onSelectDate: (date: Date) => void;
@@ -29,7 +28,6 @@ interface AdminPlannerProps {
 export const AdminPlanner = ({
   weekData,
   setWeekData,
-  onBack,
   onNavigateWeek,
   onJumpToCurrentWeek,
   onSelectDate,
@@ -386,7 +384,7 @@ export const AdminPlanner = ({
           return;
         }
 
-        const existingPartIndex = existingPartsPool.findIndex(p => p.templateId === wolItem.parteTemplateId && !p._used);
+        const existingPartIndex = existingPartsPool.findIndex((p: any) => p.templateId === wolItem.parteTemplateId && !p._used);
 
         let finalPart: any;
 
@@ -1438,7 +1436,7 @@ export const AdminPlanner = ({
         message="Isso atualizará os títulos e observações com base no WOL. Partes não encontradas serão removidas."
         confirmLabel="Sim, Buscar"
         cancelLabel="Cancelar"
-        variant="info"
+        variant="primary"
       />
     </div>
   );

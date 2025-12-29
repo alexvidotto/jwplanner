@@ -8,7 +8,7 @@ import { ParticipantView } from '../features/ParticipantView';
 import { MonthView } from '../features/MonthView';
 
 export const PlannerWrapper = () => {
-  const navigate = useNavigate();
+
   const context: any = useOutletContext();
 
   if (!context.activeWeek) return <div className="flex items-center justify-center min-h-screen text-gray-500">Carregando semana...</div>;

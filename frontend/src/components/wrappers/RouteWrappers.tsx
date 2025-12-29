@@ -23,7 +23,7 @@ export const PlannerWrapper = () => {
       participants={context.participants}
       partTemplates={context.parts}
       onSave={context.handleSaveWeek}
-      readOnly={context.userProfile?.role !== 'ADMIN'}
+      readOnly={context.userProfile?.role !== 'ADMIN' && context.userProfile?.role !== 'PRESIDENTE'}
       isDirty={context.isDirty}
       setIsDirty={context.setIsDirty}
     />

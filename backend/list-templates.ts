@@ -1,16 +1,10 @@
 
 import { PrismaClient } from '@prisma/client';
-
 const prisma = new PrismaClient();
-
 async function main() {
-  const templates = await prisma.parteTemplate.findMany();
-  console.log('Templates found:', templates.length);
-  templates.forEach(t => {
-    console.log(`ID: ${t.id} | Title: "${t.titulo}" | Section: ${t.secao}`);
-  });
+  const tpls = await prisma.parteTemplate.findMany();
+  console.log(JSON.stringify(tpls, null, 2));
 }
-
 main()
   .catch(e => console.error(e))
   .finally(async () => await prisma.$disconnect());

@@ -4,9 +4,10 @@ import { Plus, FileText } from 'lucide-react';
 interface EditableDescriptionProps {
   value: string;
   onChange: (value: string) => void;
+  renderPreview?: (text: string) => React.ReactNode;
 }
 
-export const EditableDescription = ({ value, onChange }: EditableDescriptionProps) => {
+export const EditableDescription = ({ value, onChange, renderPreview }: EditableDescriptionProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value || '');
 
@@ -32,9 +33,9 @@ export const EditableDescription = ({ value, onChange }: EditableDescriptionProp
   }
 
   return (
-    <div onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="mt-1 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer p-1 rounded border border-transparent hover:border-gray-200 flex items-start gap-1">
+    <div onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="mt-1 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer p-1 rounded border border-transparent hover:border-gray-200 flex items-start gap-1 w-full">
       <FileText size={14} className="mt-0.5 text-gray-400 flex-shrink-0" />
-      <span>{value}</span>
+      <span className="break-words w-full">{renderPreview ? renderPreview(value) : value}</span>
     </div>
   );
 };

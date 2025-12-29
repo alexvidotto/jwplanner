@@ -5,6 +5,7 @@ import { PlanningModule } from './planning/planning.module';
 import { PartsModule } from './parts/parts.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './auth/auth.module';
+import { WolModule } from './modules/wol/wol.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './auth/auth.module';
     UsersModule,
     PlanningModule,
     PartsModule,
+    WolModule,
   ],
   controllers: [],
   providers: [],

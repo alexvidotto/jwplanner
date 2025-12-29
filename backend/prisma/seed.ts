@@ -14,7 +14,7 @@ const INITIAL_PART_TEMPLATES = [
 
   { id: 'tpl_necessidades', title: 'Necessidades Locais', secao: 'nvc', tempoPadrao: 15, requerAjudante: false },
   { id: 'tpl_estudo', title: 'Estudo Bíblico', secao: 'nvc', tempoPadrao: 30, requerAjudante: true },
-  { id: 'tpl_oracao', title: 'Oração Final', secao: 'nvc', tempoPadrao: 5, requerAjudante: false },
+  { id: 'tpl_oracao', title: 'Oração Final', secao: 'nvc', tempoPadrao: 5, requerAjudante: false, temTempo: false },
 ];
 
 async function main() {
@@ -29,6 +29,7 @@ async function main() {
         secao: tpl.secao,
         requerAjudante: tpl.requerAjudante,
         tempoPadrao: tpl.tempoPadrao,
+        temTempo: (tpl as any).temTempo ?? true,
       },
       create: {
         id: tpl.id,
@@ -36,6 +37,7 @@ async function main() {
         secao: tpl.secao,
         requerAjudante: tpl.requerAjudante,
         tempoPadrao: tpl.tempoPadrao,
+        temTempo: (tpl as any).temTempo ?? true,
       }
     });
   }

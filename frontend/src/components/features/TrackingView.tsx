@@ -233,6 +233,30 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
   const hasRefused = refusedAssignments.length > 0;
   const hasPending = pendingAssignments.length > 0;
 
+  // Helper to render text with markdown links
+  const renderTextWithLinks = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
+    return parts.map((part, index) => {
+      const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (match) {
+        return (
+          <a
+            key={index}
+            href={match[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline cursor-pointer relative z-20"
+            onClick={(e) => e.stopPropagation()} // Prevent triggering parent clicks
+          >
+            {match[1]}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   const renderCard = (a: any) => {
     const phone = getParticipantPhone(a.assigneeId);
     const waLink = generateWhatsAppLink(a);
@@ -281,7 +305,7 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
           </p>
           {a.observation && (
             <div className={`text-sm text-gray-500 bg-gray-50 p-2 rounded-lg mt-2 italic border border-gray-100 relative group cursor-pointer ${expandedObsIds.has(a.id) ? '' : 'truncate'}`} onClick={() => toggleObs(a.id)}>
-              {a.observation}
+              {renderTextWithLinks(a.observation)}
             </div>
           )}
           <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
@@ -332,10 +356,11 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
     );
   };
 
+
   return (
     <div className="bg-gray-50 min-h-screen pb-20 font-sans">
       {/* HEADER */}
-      <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
+      <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-m mx-auto px-4 py-3 flex items-center justify-between">
           <Button variant="ghost" size="icon" onClick={onBack} className="-ml-2 text-gray-600">
             <ArrowLeft size={20} />

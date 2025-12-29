@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, MoreVertical, CheckCircle, Info, CalendarX, Briefcase, Users, Plus, Trash2, AlertTriangle, Clock, XCircle, Search, Check, ArrowLeft, Loader2, Calendar, Wand2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 import { EditableField } from '../ui/EditableField';
@@ -9,6 +9,7 @@ import { Toast } from '../ui/Toast';
 import { parseTime, formatTotalTime } from '../../lib/utils';
 import { useSuggestions } from '../../hooks/useSuggestions';
 import { WeekPicker } from '../ui/WeekPicker';
+import { getWolWeekContent } from '../../services/wol';
 
 interface AdminPlannerProps {
   weekData: any; // Type accurately if possible
@@ -61,7 +62,9 @@ export const AdminPlanner = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeAddMenu, setActiveAddMenu] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState<{ isOpen: boolean; type: string; partId: string; role: string } | null>(null);
+  const [showAutoFillConfirm, setShowAutoFillConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [draggedPart, setDraggedPart] = useState<{ partId: string, sectionId: string } | null>(null);
 
@@ -131,6 +134,30 @@ export const AdminPlanner = ({
       return pAcc + parseTime(part.time)
     }, 0);
   }, 0);
+
+  // Helper to render text with markdown links
+  const renderTextWithLinks = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
+    return parts.map((part, index) => {
+      const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (match) {
+        return (
+          <a
+            key={index}
+            href={match[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline cursor-pointer relative z-20"
+            onClick={(e) => e.stopPropagation()} // Prevent triggering parent clicks
+          >
+            {match[1]}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
 
   const partNumbers = useMemo(() => {
     const map = new Map<string, number>();
@@ -284,6 +311,168 @@ export const AdminPlanner = ({
     setIsMenuOpen(false);
     setIsDirty(true);
   };
+
+  // Handle Auto-Fill Logic
+  const handleAutoFill = async () => {
+    setShowAutoFillConfirm(false);
+    try {
+      setIsAutoFilling(true);
+      const dateStr = weekData.date instanceof Date
+        ? weekData.date.toISOString().split('T')[0]
+        : new Date(weekData.date).toISOString().split('T')[0];
+
+      const content = await getWolWeekContent(dateStr);
+      console.log("WOL Content DETAILS:", JSON.stringify(content, null, 2));
+
+      // Deep Sync Logic
+      const existingPartsPool = weekData.sections.flatMap((s: any) => s.parts.map((p: any) => ({ ...p, _used: false, _sectionId: s.id })));
+
+      const newSections = weekData.sections.map((section: any) => ({
+        ...section,
+        parts: [] // We will rebuild this
+      }));
+
+      const getTemplate = (id: string) => partTemplates.find(t => t.id === id);
+
+      // Fallback Map if template data is incomplete
+      const SECTION_MAP: Record<string, string> = {
+        'tpl_discurso': 'tesouros',
+        'tpl_joias': 'tesouros',
+        'tpl_leitura': 'tesouros',
+        'tpl_iniciando': 'fsm',
+        'tpl_cultivando': 'fsm',
+        'tpl_fazendo': 'fsm',
+        'tpl_crencas': 'fsm',
+        'tpl_discurso_fsm': 'fsm',
+        'tpl_estudo': 'nvc',
+        'tpl_necessidades': 'nvc',
+        'tpl_oracao': 'nvc'
+      };
+
+      // Section Matcher Helper
+      const findTargetSection = (templateSecao: string) => {
+        if (!templateSecao) return undefined;
+        return newSections.find((s: any) => {
+          const sId = s.id.toLowerCase();
+          const tSecao = templateSecao.toLowerCase();
+          return sId === tSecao ||
+            (tSecao === 'fsm' && (sId.includes('ministerio') || sId.includes('faça'))) ||
+            (tSecao === 'nvc' && (sId.includes('vida') || sId.includes('cristã'))) ||
+            (tSecao === 'tesouros' && sId.includes('tesouros'));
+        });
+      };
+
+      let partsAdded = 0;
+
+      content.forEach((wolItem) => {
+        const template = getTemplate(wolItem.parteTemplateId);
+        // Even if template is missing from props, we might want to proceed if we have a fallback map?
+        // But we need the Title and Duration defaults.
+        // Let's assume template might be missing properties but ID is valid.
+
+        let secao = template?.secao;
+        if (!secao) {
+          secao = SECTION_MAP[wolItem.parteTemplateId];
+        }
+
+        if (!secao) {
+          console.warn(`Could not determine Section for template [${wolItem.parteTemplateId}]. Skipped.`);
+          return;
+        }
+
+        const targetSection = findTargetSection(secao);
+        if (!targetSection) {
+          console.warn(`Target section not found for section name [${secao}]. Available sections:`, newSections.map((s: any) => s.id));
+          return;
+        }
+
+        const existingPartIndex = existingPartsPool.findIndex(p => p.templateId === wolItem.parteTemplateId && !p._used);
+
+        let finalPart: any;
+
+        if (existingPartIndex !== -1) {
+          const existingPart = existingPartsPool[existingPartIndex];
+          existingPartsPool[existingPartIndex]._used = true;
+
+          // FIX: Map Portuguese WOL keys to English UI keys
+          const newTitle = wolItem.tituloDoTema || existingPart.title;
+
+          // Check if template permits observation
+          const shouldHaveObservation = template?.hasObservation ?? true;
+          const newObservation = shouldHaveObservation ? (wolItem.observacao || '') : '';
+
+          // Format Time
+          let newTime = existingPart.time;
+          if (wolItem.tempo) {
+            newTime = String(wolItem.tempo).endsWith('min') ? String(wolItem.tempo) : `${wolItem.tempo} min`;
+          }
+
+          finalPart = {
+            ...existingPart,
+            title: newTitle, // Correctly update Title
+            observation: newObservation, // Correctly update Observation
+            time: newTime,
+            // Ensure flags are set so UI renders them
+            hasObservation: shouldHaveObservation,
+            hasTime: wolItem.parteTemplateId === 'tpl_oracao' ? false : (template?.temTempo ?? true)
+          };
+
+          delete finalPart._used;
+          delete finalPart._sectionId;
+        } else {
+          // Check if template permits observation
+          const shouldHaveObservation = template?.hasObservation ?? true;
+
+          let newTime = template?.tempoPadrao ? String(template.tempoPadrao) : '0';
+          if (wolItem.tempo) {
+            newTime = String(wolItem.tempo).endsWith('min') ? String(wolItem.tempo) : `${wolItem.tempo} min`;
+          } else if (newTime && !newTime.endsWith('min') && newTime !== '0') {
+            newTime += ' min';
+          }
+
+          finalPart = {
+            id: `temp-${Math.random().toString(36).substr(2, 9)}`,
+            templateId: wolItem.parteTemplateId,
+            title: wolItem.tituloDoTema || template?.titulo || 'Parte', // Correctly set Title
+            observation: shouldHaveObservation ? (wolItem.observacao || '') : '',
+            time: newTime,
+            hasObservation: shouldHaveObservation,
+            hasTime: wolItem.parteTemplateId === 'tpl_oracao' ? false : (template?.temTempo ?? true),
+            assignedTo: null,
+            assistantId: null,
+            readerId: null,
+            status: 'PENDENTE',
+
+            // Keep legacy keys just in case, but UI uses above
+            titulo: template?.titulo,
+            tituloDoTema: wolItem.tituloDoTema
+          };
+        }
+
+        targetSection.parts.push(finalPart);
+        partsAdded++;
+      });
+
+      // Safety Check
+      if (partsAdded === 0 && content.length > 0) {
+        console.error("Safety Abort: WOL content exists but no parts were mapped.");
+        showToast("Erro de Mapeamento: Não foi possível corresponder as partes do WOL com as seções da semana.", "error");
+        setIsAutoFilling(false);
+        return;
+      }
+
+      setWeekData({ ...weekData, sections: newSections });
+      setIsDirty(true);
+      showToast("Estrutura da semana sincronizada com WOL!", "success");
+    } catch (error) {
+      console.error("Auto-Fill Error:", error);
+      showToast("Erro ao sincronizar com WOL.", "error");
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
+
+
 
   const handleUpdatePart = (sectionId: string, partId: string, field: string, value: any) => {
     if (readOnly) return;
@@ -575,7 +764,7 @@ export const AdminPlanner = ({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
+    <div className="bg-gray-50 min-h-screen pb-40 md:pb-20 font-sans relative">
       <WeekPicker
         currentDate={weekData.date}
         isOpen={isPickerOpen}
@@ -585,10 +774,10 @@ export const AdminPlanner = ({
           onSelectDate(d);
         }}
       />
-      <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
+      <header className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between relative">
           <div className="flex items-center gap-3 z-10">
-            <Button variant="ghost" size="icon" onClick={() => onBack()}><ArrowLeft size={20} /></Button>
+
           </div>
 
           <div className="flex items-center gap-4 w-max md:absolute md:left-1/2 md:top-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2">
@@ -613,16 +802,21 @@ export const AdminPlanner = ({
               <Calendar size={20} />
             </Button>
             {!readOnly && (
-              <Button
-                size="sm"
-                variant={isDirty ? "warning" : "primary"}
-                onClick={handleSave}
-                disabled={isSaving}
-                className={`flex ${isDirty ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600' : ''}`}
-              >
-                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                <span className="hidden sm:inline ml-2">{isSaving ? 'Salvando...' : (isDirty ? 'Salvar Alterações' : 'Salvar')}</span>
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setShowAutoFillConfirm(true)}
+                  disabled={isSaving}
+                  className="flex items-center text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                  title="Preencher automaticamente (WOL)"
+                >
+                  <Wand2 size={20} />
+                  <span className="hidden sm:inline ml-2">Auto-Fill</span>
+                </Button>
+
+
+              </>
             )}
 
             {!readOnly && (
@@ -850,9 +1044,9 @@ export const AdminPlanner = ({
                                   </div>
                                 )}
                                 {readOnly ? (
-                                  <div className="font-bold text-gray-800 truncate">{part.title}</div>
+                                  <div className="font-bold text-gray-800">{part.title}</div>
                                 ) : (
-                                  <EditableField value={part.title} onChange={(val) => handleUpdatePart(section.id, part.id, 'title', val)} className="font-bold text-gray-800 truncate" />
+                                    <EditableField value={part.title} onChange={(val) => handleUpdatePart(section.id, part.id, 'title', val)} className="font-bold text-gray-800" />
                                 )}
                                 {part.hasTime !== false && (
                                   readOnly ? (
@@ -866,9 +1060,13 @@ export const AdminPlanner = ({
                               {part.hasObservation && (
                                 <div className="mb-2 max-w-md">
                                   {readOnly ? (
-                                    part.observation ? <p className="text-gray-600 text-sm italic">{part.observation}</p> : null
+                                    part.observation ? <p className="text-gray-600 text-sm italic">{renderTextWithLinks(part.observation)}</p> : null
                                   ) : (
-                                    <EditableDescription value={part.observation} onChange={(val) => handleUpdatePart(section.id, part.id, 'observation', val)} />
+                                      <EditableDescription
+                                        value={part.observation}
+                                        onChange={(val) => handleUpdatePart(section.id, part.id, 'observation', val)}
+                                        renderPreview={renderTextWithLinks}
+                                      />
                                   )}
                                 </div>
                               )}
@@ -1179,6 +1377,61 @@ export const AdminPlanner = ({
           </div>
         </div>
       )}
+
+
+      {/* Responsive Save Button */}
+      {isDirty && !readOnly && !isAutoFilling && (
+        <>
+          {/* Mobile: Full Width Bar above Bottom Nav */}
+          <div className="md:hidden fixed bottom-[58px] left-0 right-0 z-50 p-3 bg-white/80 backdrop-blur-sm border-t border-gray-100 animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <Button
+              size="lg"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full shadow-lg h-12 bg-orange-600 hover:bg-orange-700 text-white border-none rounded-xl flex items-center justify-center gap-2"
+            >
+              {isSaving ? <Loader2 size={20} className="animate-spin text-orange-100" /> : <Save size={20} />}
+              <span className="font-bold text-base">{isSaving ? 'Salvando...' : 'Salvar Alterações'}</span>
+            </Button>
+          </div>
+
+          {/* Desktop: Standard FAB */}
+          <div className="hidden md:block fixed bottom-8 right-8 z-50 animate-in zoom-in-95 duration-200">
+            <Button
+              size="lg"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="rounded-full shadow-xl flex items-center gap-2 pl-5 pr-6 h-14 bg-orange-600 hover:bg-orange-700 text-white border-none transition-all hover:scale-105 active:scale-95"
+            >
+              {isSaving ? <Loader2 size={20} className="animate-spin text-orange-100" /> : <Save size={20} />}
+              <span className="font-bold text-base">{isSaving ? 'Salvando...' : 'Salvar'}</span>
+            </Button>
+          </div>
+        </>
+      )}
+
+      {/* Full Screen Blocking Auto-Fill Loader */}
+      {isAutoFilling && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
+          <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
+          <p className="text-xl font-semibold text-gray-700">Buscando dados da Biblioteca On-line...</p>
+        </div>
+      )}
+
+      {/* Auto-Fill Confirm Modal */}
+      <ConfirmModal
+        isOpen={showAutoFillConfirm}
+        onClose={() => setShowAutoFillConfirm(false)}
+        onConfirm={() => {
+          setShowAutoFillConfirm(false);
+          handleAutoFill();
+        }}
+        title="Buscar dados da Biblioteca On-line?"
+        message="Isso atualizará os títulos e observações com base no WOL. Partes não encontradas serão removidas."
+        confirmLabel="Sim, Buscar"
+        cancelLabel="Cancelar"
+        variant="info"
+      />
     </div>
   );
 };

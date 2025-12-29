@@ -145,6 +145,13 @@ export class WolService {
                     const nextContent = $h.nextUntil('h2, h3');
                     let linksText = extractTextWithLinks(nextContent as any);
 
+                    // Generic Time Extraction
+                    let extractedTime: number | undefined;
+                    const timeMatch = titleRaw.match(/\((\d+)\s*min\)/) || nextContent.text().match(/\((\d+)\s*min\)/);
+                    if (timeMatch) {
+                        extractedTime = parseInt(timeMatch[1], 10);
+                    }
+
                     // TESOUROS SECTION
                     if (currentSection === 'TESOUROS') {
                         // Discurso
@@ -162,13 +169,15 @@ export class WolService {
                             assignments.push({
                                 parteTemplateId: 'tpl_discurso',
                                 tituloDoTema: theme,
-                                observacao: linksText
+                                observacao: linksText,
+                                tempo: extractedTime
                             });
                         }
                         else if (titleRaw.includes('Joias espirituais')) {
                             assignments.push({
                                 parteTemplateId: 'tpl_joias',
-                                observacao: linksText
+                                observacao: linksText,
+                                tempo: extractedTime
                             });
                         }
                         else if (titleRaw.includes('Leitura da Bíblia')) {
@@ -179,7 +188,8 @@ export class WolService {
                             }
                             assignments.push({
                                 parteTemplateId: 'tpl_leitura',
-                                observacao: linksText.replace(/\n*FAÇA SEU MELHOR NO MINISTÉRIO\s*$/, '').trim()
+                                observacao: linksText.replace(/\n*FAÇA SEU MELHOR NO MINISTÉRIO\s*$/, '').trim(),
+                                tempo: extractedTime
                             });
                         }
                     }
@@ -187,22 +197,39 @@ export class WolService {
                     // FSM SECTION
                     else if (currentSection === 'FSM') {
                         if (titleRaw.includes('Iniciando conversas')) {
-                            assignments.push({ parteTemplateId: 'tpl_iniciando', observacao: linksText });
+                            assignments.push({
+                                parteTemplateId: 'tpl_iniciando',
+                                tituloDoTema: 'Iniciando Conversas',
+                                observacao: linksText,
+                                tempo: extractedTime
+                            });
                         } else if (titleRaw.includes('Cultivando o interesse')) {
-                            assignments.push({ parteTemplateId: 'tpl_cultivando', observacao: linksText });
+                            assignments.push({
+                                parteTemplateId: 'tpl_cultivando',
+                                tituloDoTema: 'Cultivando o Interesse',
+                                observacao: linksText,
+                                tempo: extractedTime
+                            });
                         } else if (titleRaw.includes('Fazendo discípulos')) {
-                            assignments.push({ parteTemplateId: 'tpl_fazendo', observacao: linksText });
+                            assignments.push({
+                                parteTemplateId: 'tpl_fazendo',
+                                tituloDoTema: 'Fazendo Discípulos',
+                                observacao: linksText,
+                                tempo: extractedTime
+                            });
                         } else if (titleRaw.includes('Explique suas crenças') || titleRaw.includes('Explicando suas crenças')) {
                             assignments.push({
                                 parteTemplateId: 'tpl_crencas',
                                 tituloDoTema: titleRaw.replace(/^\d+\.\s*/, '').replace(/\(.*\)/, '').trim(),
-                                observacao: linksText
+                                observacao: linksText,
+                                tempo: extractedTime
                             });
                         } else if (titleRaw.includes('Discurso')) {
                             assignments.push({
                                 parteTemplateId: 'tpl_discurso_fsm',
                                 tituloDoTema: titleRaw.replace(/^\d+\.\s*/, '').replace(/\(.*\)/, '').trim(),
-                                observacao: linksText.replace(/\n*NOSSA VIDA CRISTÃ\s*$/, '').trim()
+                                observacao: linksText.replace(/\n*NOSSA VIDA CRISTÃ\s*$/, '').trim(),
+                                tempo: extractedTime
                             });
                         } else {
                             this.logger.debug(`Unhandled FSM Part: ${titleRaw}`);

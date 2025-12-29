@@ -619,7 +619,7 @@ export const AdminPlanner = ({
 
   const handleAddPart = (sectionId: string, template: any) => {
     const newPart = {
-      id: `new-${Date.now()}`,
+      id: `new-${Math.random().toString(36).substr(2, 9)}`,
       templateId: template.id,
       title: template.title,
       time: template.defaultTime,

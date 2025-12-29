@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Smartphone, Copy, Check, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, MessageCircle, Smartphone, Copy, Check, Link as LinkIcon, Calendar } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { StatusEditMenu } from '../ui/StatusEditMenu';
 
@@ -367,13 +367,23 @@ export const TrackingView = ({ weekData, participants, onBack, onNavigateWeek, o
           </Button>
 
           <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2 bg-gray-100 rounded-full px-1 p-0.5">
-              <button onClick={() => onNavigateWeek(-1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white text-gray-500 hover:shadow-sm transition-all">
-                <ChevronLeft size={14} />
+            <div className="flex items-center gap-2 text-gray-800 font-bold text-lg leading-none mb-0.5">
+              <span>Semana</span>
+              <Calendar size={18} className="text-blue-600" />
+            </div>
+            <div className="flex items-center gap-2 bg-gray-100 rounded-full px-1 p-0.5 mt-1">
+              <button
+                onClick={() => onNavigateWeek(-1)}
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white text-gray-600 hover:text-gray-900 hover:shadow-sm transition-all active:scale-95 active:bg-white active:text-gray-900"
+              >
+                <ChevronLeft size={16} />
               </button>
-              <span className="text-xs font-semibold text-gray-700 px-2">{weekData.dateLabel}</span>
-              <button onClick={() => onNavigateWeek(1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white text-gray-500 hover:shadow-sm transition-all">
-                <ChevronRight size={14} />
+              <span className="capitalize min-w-[120px] text-center text-xs text-gray-600 font-semibold">{weekData.dateLabel}</span>
+              <button
+                onClick={() => onNavigateWeek(1)}
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white text-gray-600 hover:text-gray-900 hover:shadow-sm transition-all active:scale-95 active:bg-white active:text-gray-900"
+              >
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>

@@ -780,21 +780,29 @@ export const AdminPlanner = ({
 
           </div>
 
-          <div className="flex items-center gap-4 w-max md:absolute md:left-1/2 md:top-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2">
-            <button onClick={() => onNavigateWeek(-1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
-              <ChevronLeft size={20} />
-            </button>
-            <div className="text-center group cursor-pointer" onClick={() => setIsPickerOpen(true)} title="Selecionar Data">
-              <h1 className="font-bold text-gray-800 text-lg leading-tight flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center md:absolute md:left-1/2 md:top-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2 text-gray-800 font-bold text-lg leading-none mb-0.5" onClick={() => setIsPickerOpen(true)} title="Selecionar Data">
                 <span className="hidden xs:inline">Planejamento</span>
                 <span className="xs:hidden">Semana</span>
-                <Calendar size={16} className="text-blue-500" />
-              </h1>
-              <p className="text-xs text-gray-500 whitespace-nowrap">{weekData.dateLabel}</p>
+                <Calendar size={18} className="text-blue-600 cursor-pointer" />
+              </div>
+              <div className="flex items-center gap-2 bg-gray-100 rounded-full px-1 p-0.5 mt-1">
+                <button
+                  onClick={() => onNavigateWeek(-1)}
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white text-gray-600 hover:text-gray-900 hover:shadow-sm transition-all active:scale-95 active:bg-white active:text-gray-900"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="capitalize min-w-[120px] text-center text-xs text-gray-600 font-semibold cursor-pointer hover:text-blue-600 transition-colors" onClick={() => setIsPickerOpen(true)}>{weekData.dateLabel}</span>
+                <button
+                  onClick={() => onNavigateWeek(1)}
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white text-gray-600 hover:text-gray-900 hover:shadow-sm transition-all active:scale-95 active:bg-white active:text-gray-900"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
-            <button onClick={() => onNavigateWeek(1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-white transition-colors">
-              <ChevronRight size={20} />
-            </button>
           </div>
 
           <div className="flex items-center gap-2 z-10">

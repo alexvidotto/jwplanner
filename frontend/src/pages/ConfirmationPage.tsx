@@ -198,18 +198,45 @@ export const ConfirmationPage = () => {
             </div>
           </div>
 
+
           {/* Parte Card */}
-          <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-4 border border-gray-100">
-            <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center text-gray-400 shadow-sm border border-gray-100">
+          <div className="bg-gray-50 rounded-xl p-4 flex items-start gap-4 border border-gray-100">
+            <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center text-gray-400 shadow-sm border border-gray-100 flex-shrink-0">
               <User size={20} />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">PARTE</p>
               <p className="text-gray-900 font-bold">
                 {assignment?.parteTemplate.titulo}
               </p>
               {assignment?.tituloDoTema && assignment.tituloDoTema !== assignment.parteTemplate.titulo && (
                 <p className="text-xs text-gray-500 italic mt-0.5">"{assignment.tituloDoTema}"</p>
+              )}
+              {assignment?.observacao && (
+                <div className="mt-2 pt-2 border-t border-gray-200/60 text-sm text-gray-600">
+                  {(() => {
+                    const text = assignment.observacao;
+                    if (!text) return null;
+                    const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
+                    return parts.map((part, index) => {
+                      const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                      if (match) {
+                        return (
+                          <a
+                            key={index}
+                            href={match[2]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline font-medium"
+                          >
+                            {match[1]}
+                          </a>
+                        );
+                      }
+                      return part;
+                    });
+                  })()}
+                </div>
               )}
             </div>
           </div>

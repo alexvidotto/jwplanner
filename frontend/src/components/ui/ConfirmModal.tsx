@@ -10,9 +10,10 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   isLoading?: boolean;
+  variant?: 'danger' | 'primary';
 }
 
-export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirmar', cancelLabel = 'Cancelar', isLoading = false }: ConfirmModalProps) => {
+export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Confirmar', cancelLabel = 'Cancelar', isLoading = false, variant = 'danger' }: ConfirmModalProps) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -21,7 +22,7 @@ export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confi
         <p className="text-gray-600">{message}</p>
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="secondary" onClick={onClose} disabled={isLoading}>{cancelLabel}</Button>
-          <Button variant="danger" onClick={onConfirm} disabled={isLoading}>
+          <Button variant={variant} onClick={onConfirm} disabled={isLoading}>
             {isLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
             {confirmLabel}
           </Button>

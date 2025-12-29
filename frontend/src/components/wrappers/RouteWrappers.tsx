@@ -4,8 +4,8 @@ import { AdminParticipantsView } from '../features/AdminParticipantsView';
 import { AdminPartsView } from '../features/AdminPartsView';
 import { AdminSkillsView } from '../features/AdminSkillsView';
 import { TrackingView } from '../features/TrackingView';
-import { ParticipantView } from '../features/ParticipantView';
 import { MonthView } from '../features/MonthView';
+import { MyAssignmentsView } from '../features/MyAssignmentsView';
 
 export const PlannerWrapper = () => {
 
@@ -76,17 +76,7 @@ export const TrackingWrapper = () => {
 };
 
 export const MyAssignmentsWrapper = () => {
-  const navigate = useNavigate();
-  const context: any = useOutletContext();
-  return (
-    <ParticipantView
-      weekData={context.activeWeek}
-      setWeekData={context.handleUpdateWeek}
-      currentUser={context.participants[0]} // Mock as before
-      onBack={() => navigate('/')}
-      participants={context.participants}
-    />
-  );
+  return <MyAssignmentsView />;
 };
 
 export const MonthWrapper = () => {

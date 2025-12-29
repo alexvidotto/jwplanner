@@ -697,4 +697,108 @@ export class WeeksService {
       };
     });
   }
+
+  async findAssignmentsByPersonId(personId: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1. Fetch Assignments (Titular/Ajudante)
+    const assignments = await this.prisma.designacao.findMany({
+      where: {
+        OR: [
+          { titularId: personId },
+          { ajudanteId: personId }
+        ],
+        semana: {
+          dataInicio: {
+            gte: today
+          }
+        }
+      },
+      include: {
+        semana: true,
+        parteTemplate: true,
+        titular: { select: { id: true, nome: true } },
+        ajudante: { select: { id: true, nome: true } }
+      },
+      orderBy: { semana: { dataInicio: 'asc' } }
+    });
+
+    // 2. Fetch Week Roles (President/Prayer)
+    const weekRoles = await this.prisma.semana.findMany({
+      where: {
+        OR: [
+          { presidenteId: personId },
+          { oracaoId: personId }
+        ],
+        dataInicio: {
+          gte: today
+        }
+      },
+      orderBy: { dataInicio: 'asc' }
+    });
+
+    // 3. Normalize and Combine
+    const normalizedAssignments = [];
+
+    for (const a of assignments) {
+      let role = 'TITULAR';
+      let status = a.status;
+
+      if (a.ajudanteId === personId) {
+        role = a.parteTemplate.requerLeitor ? 'LEITOR' : 'AJUDANTE';
+        status = a.statusAjudante;
+      }
+
+      normalizedAssignments.push({
+        id: a.id,
+        date: a.semana.dataInicio,
+        weekDescription: a.semana.descricao,
+        partTitle: a.parteTemplate.titulo,
+        themeTitle: a.tituloDoTema,
+        role: role,
+        status: status,
+        observations: a.observacao,
+        partner: role === 'TITULAR' ? a.ajudante?.nome : a.titular?.nome,
+        partnerRole: role === 'TITULAR' ? (a.parteTemplate.requerLeitor ? 'Leitor' : 'Ajudante') : 'Titular',
+        time: a.tempo
+      });
+    }
+
+    for (const w of weekRoles) {
+      if (w.presidenteId === personId) {
+        normalizedAssignments.push({
+          id: `week-${w.id}-president`,
+          date: w.dataInicio,
+          weekDescription: w.descricao,
+          partTitle: 'Presidente',
+          themeTitle: null,
+          role: 'PRESIDENTE',
+          status: w.statusPresidente,
+          observations: null,
+          partner: null,
+          partnerRole: null,
+          time: null
+        });
+      }
+      if (w.oracaoId === personId) {
+        normalizedAssignments.push({
+          id: `week-${w.id}-prayer`,
+          date: w.dataInicio,
+          weekDescription: w.descricao,
+          partTitle: 'Oração Inicial',
+          themeTitle: null,
+          role: 'ORAÇÃO',
+          status: w.statusOracao,
+          observations: null,
+          partner: null,
+          partnerRole: null,
+          time: 5
+        });
+      }
+    }
+
+    // Sort combined list by date
+    return normalizedAssignments.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
 }

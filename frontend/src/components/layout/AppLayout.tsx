@@ -58,10 +58,11 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const userRole = userProfile?.role || 'Publicador';
 
   const allNavItems = [
-    { to: '/planner', icon: Calendar, label: 'Semanas', roles: ['USER', 'ASSISTENTE', 'PRESIDENTE', 'ADMIN'] },
+    { to: '/my-assignments', icon: Calendar, label: 'Designações', roles: ['USER', 'ASSISTENTE', 'PRESIDENTE', 'ADMIN'] },
+    { to: '/planner', icon: Grid, label: 'Semanas', roles: ['USER', 'ASSISTENTE', 'PRESIDENTE', 'ADMIN'] },
     { to: '/tracking', icon: MessageCircle, label: 'Status', roles: ['ADMIN', 'PRESIDENTE', 'ASSISTENTE'] },
     { to: '/reports', icon: BarChart3, label: 'Relatórios', roles: ['ADMIN', 'PRESIDENTE'] },
-    { to: '/skills', icon: Grid, label: 'Matriz', roles: ['ADMIN'] },
+    { to: '/skills', icon: List, label: 'Matriz', roles: ['ADMIN'] },
     // Grouped in Menu for mobile (index >= 4)
     { to: '/participants', icon: Users, label: 'Publicadores', roles: ['ADMIN'] },
     { to: '/parts', icon: List, label: 'Partes', roles: ['ADMIN'] },

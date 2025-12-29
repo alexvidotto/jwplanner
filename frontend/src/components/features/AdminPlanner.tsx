@@ -851,7 +851,7 @@ export const AdminPlanner = ({
                             </div>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 leading-tight">Desativa a grade e notifica participantes.</p>
+                        <p className="text-xs text-gray-500 leading-tight">Desativa a grade de participações.</p>
                       </div>
                     </div>
                   </div>

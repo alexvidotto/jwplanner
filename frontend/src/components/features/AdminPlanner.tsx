@@ -1436,9 +1436,9 @@ export const AdminPlanner = ({
           setShowAutoFillConfirm(false);
           handleAutoFill();
         }}
-        title="Buscar dados da Biblioteca On-line?"
-        message="Isso atualizará os títulos e observações com base no WOL. Partes não encontradas serão removidas."
-        confirmLabel="Sim, Buscar"
+        title="Sincronizar com a Biblioteca On-line?"
+        message="Deseja atualizar os títulos e as descrições com base na apostila?"
+        confirmLabel="Sim, sincronizar"
         cancelLabel="Cancelar"
         variant="primary"
       />

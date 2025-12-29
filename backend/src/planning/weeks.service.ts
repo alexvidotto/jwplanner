@@ -761,7 +761,10 @@ export class WeeksService {
         observations: a.observacao,
         partner: role === 'TITULAR' ? a.ajudante?.nome : a.titular?.nome,
         partnerRole: role === 'TITULAR' ? (a.parteTemplate.requerLeitor ? 'Leitor' : 'Ajudante') : 'Titular',
-        time: a.tempo
+        time: a.tempo,
+        requiresAssistant: a.parteTemplate.requerAjudante,
+        requiresReader: a.parteTemplate.requerLeitor,
+        hasTime: a.parteTemplate.titulo === 'Oração Inicial' ? false : a.parteTemplate.temTempo
       });
     }
 
@@ -778,7 +781,10 @@ export class WeeksService {
           observations: null,
           partner: null,
           partnerRole: null,
-          time: null
+          time: null,
+          requiresAssistant: false,
+          requiresReader: false,
+          hasTime: false
         });
       }
       if (w.oracaoId === personId) {
@@ -793,7 +799,10 @@ export class WeeksService {
           observations: null,
           partner: null,
           partnerRole: null,
-          time: 5
+          time: 5,
+          requiresAssistant: false,
+          requiresReader: false,
+          hasTime: false
         });
       }
     }

@@ -15,6 +15,9 @@ interface MyAssignment {
   partner?: string;
   partnerRole?: string;
   time?: number;
+  requiresAssistant?: boolean;
+  requiresReader?: boolean;
+  hasTime?: boolean;
 }
 
 export const MyAssignmentsView = () => {
@@ -124,6 +127,10 @@ export const MyAssignmentsView = () => {
             const month = dateObj.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
             const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
 
+            // Badge Logic
+            const showTitularBadge = assignment.role === 'TITULAR' && (assignment.requiresAssistant || assignment.requiresReader);
+            const showBadge = assignment.role !== 'PRESIDENTE' && (assignment.role !== 'TITULAR' || showTitularBadge);
+
             return (
               <div
                 key={assignment.id}
@@ -166,10 +173,12 @@ export const MyAssignmentsView = () => {
                     {/* Main Title & Role */}
                     <div>
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getRoleBadgeStyle(assignment.role)}`}>
-                          {assignment.role}
-                        </span>
-                        {assignment.time && (
+                        {showBadge && (
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getRoleBadgeStyle(assignment.role)}`}>
+                            {assignment.role}
+                          </span>
+                        )}
+                        {assignment.time && assignment.hasTime !== false && (
                           <span className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
                             <Clock size={10} /> {assignment.time} min
                           </span>

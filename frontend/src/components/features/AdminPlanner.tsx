@@ -412,7 +412,9 @@ export const AdminPlanner = ({
             time: newTime,
             // Ensure flags are set so UI renders them
             hasObservation: shouldHaveObservation,
-            hasTime: wolItem.parteTemplateId === 'tpl_oracao' ? false : (template?.temTempo ?? true)
+            hasTime: wolItem.parteTemplateId === 'tpl_oracao' ? false : (template?.temTempo ?? true),
+            requiresAssistant: template?.requiresAssistant ?? template?.requerAjudante ?? false,
+            requiresReader: template?.requiresReader ?? template?.requerLeitor ?? false
           };
 
           delete finalPart._used;
@@ -436,6 +438,8 @@ export const AdminPlanner = ({
             time: newTime,
             hasObservation: shouldHaveObservation,
             hasTime: wolItem.parteTemplateId === 'tpl_oracao' ? false : (template?.temTempo ?? true),
+            requiresAssistant: template?.requiresAssistant ?? template?.requerAjudante ?? false,
+            requiresReader: template?.requiresReader ?? template?.requerLeitor ?? false,
             assignedTo: null,
             assistantId: null,
             readerId: null,

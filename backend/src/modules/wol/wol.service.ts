@@ -143,7 +143,16 @@ export class WolService {
                 if (tagName === 'h3' && currentSection) {
                     const titleRaw = text;
                     const nextContent = $h.nextUntil('h2, h3');
-                    let linksText = extractTextWithLinks(nextContent as any);
+
+                    // CRITICAL FIX: Stop if we encounter a nested H2 (which indicates a section start wrapped in a div)
+                    // nextUntil only checks siblings, but section headers like "NOSSA VIDA CRISTÃ" are often inside a div sibling.
+                    const validElements: any[] = [];
+                    nextContent.each((_, el) => {
+                        if ($(el).find('h2').length > 0) return false; // Break loop
+                        validElements.push(el);
+                    });
+
+                    let linksText = extractTextWithLinks($(validElements));
 
                     // Generic Time Extraction
                     let extractedTime: number | undefined;
@@ -188,7 +197,7 @@ export class WolService {
                             }
                             assignments.push({
                                 parteTemplateId: 'tpl_leitura',
-                                observacao: linksText.replace(/\n*FAÇA SEU MELHOR NO MINISTÉRIO\s*$/, '').trim(),
+                                observacao: linksText,
                                 tempo: extractedTime
                             });
                         }
@@ -228,7 +237,7 @@ export class WolService {
                             assignments.push({
                                 parteTemplateId: 'tpl_discurso_fsm',
                                 tituloDoTema: titleRaw.replace(/^\d+\.\s*/, '').replace(/\(.*\)/, '').trim(),
-                                observacao: linksText.replace(/\n*NOSSA VIDA CRISTÃ\s*$/, '').trim(),
+                                observacao: linksText,
                                 tempo: extractedTime
                             });
                         } else {
@@ -246,11 +255,15 @@ export class WolService {
                             }
                             assignments.push({ parteTemplateId: 'tpl_estudo', observacao: linksText });
                         }
-                        else if (titleRaw.includes('Necessidades locais') || (nextContent.text().includes('(15 min)') && !titleRaw.includes('Estudo'))) {
+                        else if (
+                            titleRaw.includes('Necessidades locais') ||
+                            (extractedTime && !titleRaw.includes('Estudo') && !titleRaw.includes('Cântico') && !titleRaw.toLowerCase().includes('oração'))
+                        ) {
                             assignments.push({
                                 parteTemplateId: 'tpl_necessidades',
                                 tituloDoTema: titleRaw.replace(/^\d+\.\s*/, '').replace(/\(.*\)/, '').trim(),
-                                observacao: linksText
+                                observacao: linksText,
+                                tempo: extractedTime
                             });
                         }
                         // Closing Prayer / Final Comments

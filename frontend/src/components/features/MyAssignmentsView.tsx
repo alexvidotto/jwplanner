@@ -127,79 +127,79 @@ export const MyAssignmentsView = () => {
             return (
               <div
                 key={assignment.id}
-                className={`relative bg-white rounded-3xl p-6 md:p-8 shadow-sm border transition-all duration-300 hover:shadow-xl group
-                  ${isConfirmed ? 'border-green-200 shadow-green-100/50' : 'border-gray-100 shadow-gray-100'}
+                className={`relative bg-white rounded-2xl p-4 md:p-5 shadow-sm border transition-all duration-300 hover:shadow-md group
+                  ${isConfirmed ? 'border-green-200 shadow-green-100/30' : 'border-gray-100 shadow-gray-100'}
                   ${isRefused ? 'opacity-75 bg-gray-50' : ''}
                 `}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Status Indicator Line */}
-                <div className={`absolute left-0 top-8 bottom-8 w-1 rounded-r-full
+                <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-full
                   ${isConfirmed ? 'bg-green-500' : isRefused ? 'bg-red-400' : 'bg-blue-500'}
                 `} />
 
-                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                <div className="flex flex-col md:flex-row gap-4">
                   {/* Left Column: Date */}
-                  <div className="flex flex-row md:flex-col items-center md:items-start gap-4 md:gap-2 min-w-[80px]">
-                    <div className={`flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl border-2 
+                  <div className="flex flex-row md:flex-col items-center md:items-start gap-3 md:gap-1 min-w-[70px]">
+                    <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl border 
                       ${isConfirmed ? 'bg-green-50 border-green-100 text-green-700' : 'bg-white border-gray-100 text-gray-900'}
                     `}>
-                      <span className="text-[10px] md:text-xs font-bold tracking-widest uppercase opacity-60">{month}</span>
-                      <span className="text-2xl md:text-3xl font-black leading-none tracking-tighter">{day}</span>
+                      <span className="text-[10px] font-bold tracking-widest uppercase opacity-60">{month}</span>
+                      <span className="text-xl font-black leading-none tracking-tighter">{day}</span>
                     </div>
                     <div className="md:hidden">
-                      <p className="font-bold text-gray-900">{assignment.weekDescription}</p>
-                      <p className="text-sm text-gray-500 capitalize">{weekday}</p>
+                      <p className="font-bold text-gray-900 text-sm">{assignment.weekDescription}</p>
+                      <p className="text-xs text-gray-500 capitalize">{weekday}</p>
                     </div>
                   </div>
 
                   {/* Right Column: Content */}
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 space-y-3">
                     {/* Meta Header */}
-                    <div className="hidden md:flex items-center gap-3 text-sm text-gray-500 border-b border-gray-50 pb-3">
-                      <Calendar size={14} className="text-gray-400" />
+                    <div className="hidden md:flex items-center gap-2 text-xs text-gray-500 border-b border-gray-50 pb-2">
+                      <Calendar size={12} className="text-gray-400" />
                       <span className="font-medium">{assignment.weekDescription}</span>
-                      <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                      <span className="w-0.5 h-0.5 bg-gray-300 rounded-full" />
                       <span className="capitalize">{weekday}</span>
                     </div>
 
                     {/* Main Title & Role */}
                     <div>
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${getRoleBadgeStyle(assignment.role)}`}>
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getRoleBadgeStyle(assignment.role)}`}>
                           {assignment.role}
                         </span>
                         {assignment.time && (
-                          <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-md">
-                            <Clock size={12} /> {assignment.time} min
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
+                            <Clock size={10} /> {assignment.time} min
                           </span>
                         )}
                       </div>
-                      <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+                      <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">
                         {assignment.partTitle}
                       </h2>
                       {assignment.themeTitle && assignment.themeTitle !== assignment.partTitle && (
-                        <p className="text-gray-600 mt-1 italic font-medium">"{assignment.themeTitle}"</p>
+                        <p className="text-gray-600 mt-0.5 italic text-sm">"{assignment.themeTitle}"</p>
                       )}
                     </div>
 
                     {/* Partner Card */}
                     {assignment.partner && (
-                      <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100/50 max-w-sm">
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-gray-100 text-gray-400 shadow-sm">
-                          <User size={14} />
+                      <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100/50 max-w-sm">
+                        <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-gray-100 text-gray-400 shadow-sm">
+                          <User size={12} />
                         </div>
                         <div className="flex flex-col leading-none">
-                          <span className="text-[10px] uppercase font-bold text-gray-400 mb-0.5">{assignment.partnerRole}</span>
-                          <span className="font-semibold text-gray-800 text-sm">{assignment.partner}</span>
+                          <span className="text-[9px] uppercase font-bold text-gray-400 mb-0.5">{assignment.partnerRole}</span>
+                          <span className="font-semibold text-gray-800 text-xs">{assignment.partner}</span>
                         </div>
                       </div>
                     )}
 
                     {/* Observations */}
                     {assignment.observations && (
-                      <div className="bg-yellow-50/70 p-4 rounded-xl border border-yellow-100 text-yellow-900/80 text-sm leading-relaxed relative overflow-hidden">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-300/50" />
+                      <div className="bg-yellow-50/70 p-3 rounded-lg border border-yellow-100 text-yellow-900/80 text-xs leading-relaxed relative overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-yellow-300/50" />
                         <div className="font-medium">
                           {(() => {
                             const text = assignment.observations;
@@ -228,56 +228,57 @@ export const MyAssignmentsView = () => {
                     )}
 
                     {/* Actions Area */}
-                    <div className="pt-4">
+                    <div className="pt-2">
                       {isPending ? (
-                        <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
                           <Button
                             onClick={() => updateStatus(assignment.id, 'CONFIRMADO')}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-xl text-base font-bold shadow-lg shadow-blue-200/50 hover:shadow-blue-300/50 transition-all active:scale-[0.98]"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-10 rounded-lg text-sm font-bold shadow-md shadow-blue-100 hover:shadow-blue-200 transition-all active:scale-[0.98]"
                           >
-                            <Check size={18} className="mr-2" strokeWidth={3} />
+                            <Check size={16} className="mr-1.5" strokeWidth={3} />
                             Confirmar
                           </Button>
                           <button
                             onClick={() => updateStatus(assignment.id, 'RECUSADO')}
-                            className="w-full py-2 text-sm font-semibold text-gray-400 hover:text-red-600 transition-colors"
+                            className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-red-600 transition-colors whitespace-nowrap"
                           >
                             Não poderei
                           </button>
                         </div>
                       ) : (
-                        <div className="w-full flex items-center justify-between bg-gray-50 rounded-xl p-2 pl-4 border border-gray-100">
-                          <div className="flex items-center gap-2">
-                            {isConfirmed ? (
-                              <div className="flex items-center gap-2 text-green-700 font-bold">
-                                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                  <Check size={14} strokeWidth={3} />
+                          <div className="w-full flex items-center justify-between bg-gray-50 rounded-lg p-1.5 pl-3 border border-gray-100">
+                            <div className="flex items-center gap-2">
+                              {isConfirmed ? (
+                                <div className="flex items-center gap-1.5 text-green-700 font-bold text-sm">
+                                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
+                                    <Check size={12} strokeWidth={3} />
+                                  </div>
+                                  Confirmado
                                 </div>
-                                Confirmado
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-red-600 font-bold">
-                                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                                  <X size={14} strokeWidth={3} />
+                              ) : (
+                                  <div className="flex items-center gap-1.5 text-red-600 font-bold text-sm">
+                                    <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center">
+                                      <X size={12} strokeWidth={3} />
+                                    </div>
+                                  Ausência
                                 </div>
-                                Ausência Informada
-                              </div>
-                            )}
+                              )}
                           </div>
                           <button
                             onClick={() => updateStatus(assignment.id, 'PENDENTE')}
-                            className="text-xs font-semibold text-gray-400 hover:text-blue-600 px-3 py-1.5 rounded-lg hover:bg-white transition-all"
+                              className="text-[10px] font-semibold text-gray-400 hover:text-blue-600 px-2 py-1 rounded hover:bg-white transition-all border border-transparent hover:border-gray-100"
                           >
                             Desfazer
                           </button>
                         </div>
                       )}
                     </div>
-
                   </div>
                 </div>
               </div>
             );
+
+
           })}
         </div>
       )}
